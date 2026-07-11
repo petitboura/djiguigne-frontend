@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS miroir de tailwind.config.ts — utiles hors classes
+   utilitaires (SVG inline, styles calculés). Source de vérité réelle :
+   assistant-etudiants/faces/vues/theme_djiguigne.py */
+:root {
+  --dj-fond: #0b0908;
+  --dj-surface: #161210;
+  --dj-surface-haute: #1e1813;
+  --dj-bordure: rgba(255, 255, 255, 0.08);
+  --dj-bordure-forte: rgba(232, 147, 74, 0.35);
+  --dj-accent-1: #e8934a;
+  --dj-accent-2: #c1440e;
+  --dj-texte: #f5ece0;
+  --dj-texte-muet: #a79a8c;
+  --dj-succes: #4ade80;
+  --dj-inactif: #6b6259;
+}
+
+* {
+  border-color: var(--dj-bordure);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--dj-fond);
+  background-image: radial-gradient(
+    ellipse 120% 60% at 50% -10%,
+    rgba(232, 147, 74, 0.1),
+    transparent 60%
+  );
+  background-attachment: fixed;
+  color: var(--dj-texte);
+}
+
+/* Sélection de texte à la couleur de marque plutôt que le bleu par défaut */
+::selection {
+  background: var(--dj-accent-1);
+  color: #1a0d02;
+}
+
+/* Focus clavier visible partout, en accent — jamais supprimé sans
+   remplacement (accessibilité). */
+:focus-visible {
+  outline: 2px solid var(--dj-accent-1);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Scrollbar discrète mais dans le ton de la marque (Chromium/WebKit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--dj-fond);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dj-surface-haute);
+  border-radius: 999px;
+  border: 2px solid var(--dj-fond);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dj-bordure-forte);
+}
+
+/* Respect du confort de lecture : coupe les animations infinies/de
+   grande amplitude pour qui le demande, sans supprimer le contenu. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Utilitaire pour les reveals au scroll pilotés par IntersectionObserver
+   (voir components/ScrollReveal.tsx) : invisible tant que le JS n'a pas
+   ajouté .is-visible, mais dégrade proprement si JS désactivé. */
+.dj-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.dj-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dj-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
