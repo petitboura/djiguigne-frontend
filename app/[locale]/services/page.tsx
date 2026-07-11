@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDictionary } from "@/lib/dictionaries";
-import type { Locale } from "@/lib/site-config";
+import { siteConfig, type Locale } from "@/lib/site-config";
 import { JsonLd } from "@/components/JsonLd";
 
 export function generateMetadata({ params }: { params: { locale: Locale } }): Metadata {
@@ -39,13 +39,22 @@ export default function ServicesPage({ params }: { params: { locale: Locale } })
           {dict.services.intro}
         </p>
 
-        <Link
-          href={`/${locale}/contact`}
-          className="mt-8 inline-block animate-dj-fade-up rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
-          style={{ animationDelay: "0.2s" }}
-        >
-          {dict.nav.cta}
-        </Link>
+        <div className="mt-8 flex flex-col gap-3 animate-dj-fade-up sm:flex-row sm:items-center" style={{ animationDelay: "0.2s" }}>
+          <Link
+            href={siteConfig.appUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
+          >
+            {dict.nav.cta}
+          </Link>
+          <Link
+            href={`/${locale}/contact`}
+            className="text-sm font-medium text-dj-texte-muet underline-offset-4 hover:text-dj-texte hover:underline"
+          >
+            {dict.nav.contact}
+          </Link>
+        </div>
 
         <div className="mt-14">
           <h2 className="mb-6 font-display text-2xl font-bold text-dj-texte">{dict.services.faqTitle}</h2>
