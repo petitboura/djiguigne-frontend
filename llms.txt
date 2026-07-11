@@ -1,0 +1,14 @@
+# Djiguignè AI
+
+> Djiguignè AI est une plateforme qui permet à n'importe qui de créer un agent IA ou une IA spécialisée dans un domaine précis, avec son propre style, sans écrire de code. Basée à Tunis, Tunisie. Fondée par Bourama Diarra le 10/07/2026.
+
+## Pages principales
+- [Accueil](https://djiguigne.com/fr): présentation de la plateforme
+- [À propos](https://djiguigne.com/fr/about): mission, fondateur, informations légales
+- [Produit](https://djiguigne.com/fr/services): comment créer un agent IA
+- [Contact](https://djiguigne.com/fr/contact): boumiservice@gmail.com
+
+## English
+- [Home](https://djiguigne.com/en)
+- [About](https://djiguigne.com/en/about)
+- [Product](https://djiguigne.com/en/services)
