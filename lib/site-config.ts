@@ -9,6 +9,13 @@ export const siteConfig = {
   legalName: "Djiguignè AI (Boumi Diarra, auto-entrepreneur)",
   domain: "djiguigne.com",
   url: "https://djiguigne.com",
+  // URL de l'application produit (création d'agent / chat), distincte du
+  // site vitrine. Piloté par variable d'environnement (à définir dans
+  // Vercel : Project Settings -> Environment Variables) pour pouvoir
+  // changer d'hébergement (ex: Streamlit Cloud -> Railway) sans toucher
+  // au code ni redéployer manuellement. Le repli ci-dessous n'est utilisé
+  // que si la variable n'est pas définie (ex: en développement local).
+  appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://djiguigne.up.railway.app",
   foundingDate: "2026-07-10",
   legalStatus: "Auto-entrepreneur",
   mission: {
