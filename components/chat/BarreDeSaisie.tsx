@@ -57,7 +57,8 @@ export function BarreDeSaisie({
     texte: string,
     longueur: LongueurReponse,
     fichier: File | null,
-    localisation: LocalisationJointe
+    localisation: LocalisationJointe,
+    texteColle: string | null
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -67,6 +68,14 @@ export function BarreDeSaisie({
   const [fichier, setFichier] = useState<File | null>(null);
   const [apercuFichier, setApercuFichier] = useState<string | null>(null);
   const [imageOuverte, setImageOuverte] = useState(false);
+  // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
+  // comportement Claude -- coller un gros pavé de texte ne l'insère pas
+  // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
+  // peut retirer/relire, comme un fichier joint mais sans upload : le
+  // texte est déjà là côté client, pas besoin d'aller-retour serveur).
+  const SEUIL_COLLAGE_LONG = 800;
+  const [texteColle, setTexteColle] = useState<string | null>(null);
+  const [texteColleOuvert, setTexteColleOuvert] = useState(false);
   // Plein écran de la saisie (2026-07-23, demande de Bourama : l'agrandissement
   // auto restait trop limité pour écrire un long message confortablement).
   const [pleinEcranSaisie, setPleinEcranSaisie] = useState(false);
@@ -210,12 +219,21 @@ export function BarreDeSaisie({
     alert("Pas disponible pour le moment.");
   }
 
+  function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const texteColleBrut = e.clipboardData.getData("text/plain");
+    if (texteColleBrut.length > SEUIL_COLLAGE_LONG) {
+      e.preventDefault();
+      setTexteColle(texteColleBrut);
+    }
+  }
+
   function envoyer() {
-    if (!texte.trim() || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation);
+    if ((!texte.trim() && !texteColle) || desactive) return;
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
+    setTexteColle(null);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -287,7 +305,7 @@ export function BarreDeSaisie({
   return (
     <div className="w-full">
       {/* Vignettes d'aperçu (fichier joint / position jointe), avant envoi. */}
-      {(fichier || localisation) && (
+      {(fichier || localisation || texteColle) && (
         <div className="mb-2 flex flex-wrap items-center gap-2">
           {fichier && (
             apercuFichier ? (
@@ -352,6 +370,26 @@ export function BarreDeSaisie({
               </button>
             </div>
           )}
+          {texteColle && (
+            <button
+              onClick={() => setTexteColleOuvert(true)}
+              className="flex w-fit items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-xs text-dj-texte-muet hover:text-dj-texte"
+            >
+              <FileText size={14} />
+              <span>Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères</span>
+              <span
+                role="button"
+                aria-label="Retirer le texte collé"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTexteColle(null);
+                }}
+                className="hover:text-dj-texte"
+              >
+                <X size={14} />
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -394,6 +432,7 @@ export function BarreDeSaisie({
               setTexte(e.target.value);
               ajusterHauteurTexte();
             }}
+            onPaste={gererCollage}
             onScroll={(e) => {
               if (calqueRef.current) calqueRef.current.scrollTop = e.currentTarget.scrollTop;
             }}
@@ -531,7 +570,7 @@ export function BarreDeSaisie({
               >
                 <Square size={14} />
               </button>
-            ) : texte.trim() ? (
+            ) : texte.trim() || texteColle ? (
               <button
                 onClick={envoyer}
                 disabled={desactive}
@@ -563,6 +602,32 @@ export function BarreDeSaisie({
           </div>
         </div>
       </div>
+
+      {texteColleOuvert && texteColle && (
+        <div
+          className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-6"
+          onClick={() => setTexteColleOuvert(false)}
+        >
+          <div className="flex items-center justify-between pb-4">
+            <span className="text-sm text-dj-texte-muet">
+              Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères
+            </span>
+            <button
+              onClick={() => setTexteColleOuvert(false)}
+              aria-label="Fermer"
+              className="flex items-center gap-1.5 rounded-lg border border-dj-bordure px-2.5 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
+            >
+              <X size={14} /> Fermer
+            </button>
+          </div>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-dj-texte"
+          >
+            {texteColle}
+          </div>
+        </div>
+      )}
 
       {imageOuverte && apercuFichier && (
         <div
@@ -624,6 +689,7 @@ export function BarreDeSaisie({
               autoFocus
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
+              onPaste={gererCollage}
               onScroll={(e) => {
                 if (calquePleinEcranRef.current) calquePleinEcranRef.current.scrollTop = e.currentTarget.scrollTop;
               }}
@@ -644,7 +710,7 @@ export function BarreDeSaisie({
                 envoyer();
                 setPleinEcranSaisie(false);
               }}
-              disabled={!texte.trim() || desactive}
+              disabled={(!texte.trim() && !texteColle) || desactive}
               aria-label="Envoyer"
               className="flex items-center gap-2 rounded-full bg-dj-gradient px-5 py-2.5 text-sm font-medium text-[#1A0D02] disabled:opacity-60"
             >
