@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, isValidElement, ReactNode } from "react";
+import { useEffect, useRef, useState, isValidElement, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -29,6 +29,27 @@ function texteBrut(node: ReactNode): string {
   if (Array.isArray(node)) return node.map(texteBrut).join("");
   if (isValidElement(node)) return texteBrut((node.props as { children?: ReactNode }).children);
   return "";
+}
+
+// Nettoie le markdown avant lecture à voix haute (Web Speech API, voir
+// lireAVoixHaute() dans le composant) -- sans ça, la synthèse vocale lit
+// les symboles bruts tels quels (dièses, astérisques, syntaxe de lien),
+// ce qui donne une lecture pénible à l'oreille. Volontairement simple
+// (regex, pas un vrai parseur) : le but est une lecture agréable, pas
+// une reconstruction fidèle -- les blocs de code sont carrément sautés
+// (lire du code à voix haute n'a pas de sens).
+function nettoyerMarkdownPourLecture(source: string): string {
+  return source
+    .replace(/```[\s\S]*?```/g, " ") // blocs de code entiers
+    .replace(/`([^`]+)`/g, "$1") // code inline -> juste le texte
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // liens -> juste le libellé
+    .replace(/^#{1,6}\s+/gm, "") // titres
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // gras
+    .replace(/\*([^*]+)\*/g, "$1") // italique
+    .replace(/^[-*+]\s+/gm, "") // puces de liste
+    .replace(/^\d+\.\s+/gm, "") // listes numérotées
+    .trim();
 }
 
 // Le modèle mélange parfois du HTML brut dans son Markdown (le plus
@@ -158,6 +179,7 @@ export function BulleMessage({
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState(false);
   const [texteEdition, setTexteEdition] = useState(message.content);
+  const [enLecture, setEnLecture] = useState(false);
   const estUtilisateur = message.role === "user";
 
   // Sélection de texte -> "expliquer ce passage" (2026-07-20). Signal
@@ -185,11 +207,41 @@ export function BulleMessage({
     });
   }
 
-  // Boutons pas encore branchés (voir section 4 du récap) : comportement
-  // placeholder, jamais silencieux -- l'utilisateur sait que ça arrive.
-  function pasDisponible() {
-    alert("Pas disponible pour le moment.");
+  // Lecture à voix haute (2026-07-23, bouton jusqu'ici un placeholder) --
+  // Web Speech API native du navigateur, pas de clé/coût/backend. Toggle :
+  // cliquer pendant la lecture l'arrête (speechSynthesis.cancel()) plutôt
+  // que de relancer une deuxième lecture par-dessus.
+  function lireAVoixHaute() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      alert("La lecture à voix haute n'est pas prise en charge par ce navigateur.");
+      return;
+    }
+    if (enLecture) {
+      window.speechSynthesis.cancel();
+      setEnLecture(false);
+      return;
+    }
+    // Un seul message lu à la fois sur toute la page -- annule toute
+    // lecture en cours (y compris d'un autre message) avant de démarrer.
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(nettoyerMarkdownPourLecture(message.content));
+    utterance.lang = "fr-FR";
+    utterance.onend = () => setEnLecture(false);
+    utterance.onerror = () => setEnLecture(false);
+    setEnLecture(true);
+    window.speechSynthesis.speak(utterance);
   }
+
+  // Coupe la lecture si la bulle disparaît pendant qu'elle parle (ex:
+  // régénération de la réponse, changement de conversation).
+  useEffect(() => {
+    return () => {
+      if (enLecture && typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (enEdition) {
     return (
@@ -409,7 +461,11 @@ export function BulleMessage({
           </>
         ) : (
           <>
-            <button onClick={pasDisponible} aria-label="Lire à voix haute" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+            <button
+              onClick={lireAVoixHaute}
+              aria-label={enLecture ? "Arrêter la lecture" : "Lire à voix haute"}
+              className={`rounded-md p-1.5 hover:text-dj-texte ${enLecture ? "text-dj-accent-1" : "text-dj-texte-muet"}`}
+            >
               <Volume2 size={14} />
             </button>
             <button onClick={onLike} aria-label="Retour positif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
