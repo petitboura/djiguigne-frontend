@@ -120,7 +120,8 @@ export function ChatIA({
     texte: string,
     longueur: LongueurReponse,
     fichier: File | null,
-    localisation: LocalisationJointe = null
+    localisation: LocalisationJointe = null,
+    texteColle: string | null = null
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -174,7 +175,7 @@ export function ChatIA({
     //   paramètre images_base64.
     let imageUrl: string | null = null;
     let imagesBase64: string[] | null = null;
-    let texteEnrichi = texte;
+    let texteEnrichi = texteColle ? `${texte}\n\n[Texte collé joint]\n${texteColle}` : texte;
     const typeFichier = typePieceJointe;
     if (fichier) {
       try {

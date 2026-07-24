@@ -121,6 +121,14 @@ export function nettoyerMessageHistorique(content: string): {
   texte: string;
   pieceJointe: MessageAffiche["pieceJointe"];
 } {
+  // Texte collé (2026-07-23) : pas un "fichier" comme les 4 marqueurs
+  // ci-dessous (pas d'URL, pas de pieceJointe type -- juste un pavé de
+  // texte à ne pas réafficher en entier au rechargement, même bug que
+  // celui corrigé plus haut pour audio/vidéo/image/document). Repli
+  // simple : on le retire du texte affiché, sans reconstruire de puce.
+  const collageMotif = /\n\n\[Texte collé joint\]\n[\s\S]*$/;
+  content = content.replace(collageMotif, "");
+
   for (const { motif, type } of MARQUEURS_PIECE_JOINTE) {
     const correspondance = motif.exec(content);
     if (!correspondance) continue;
