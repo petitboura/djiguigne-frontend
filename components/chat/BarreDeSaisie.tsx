@@ -6,6 +6,7 @@ import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub }
 import { LecteurMedia } from "./LecteurMedia";
 import { BlocCode } from "./BlocCode";
 import hljs from "highlight.js";
+import katex from "katex";
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
 export type LocalisationJointe = { latitude: number; longitude: number } | null;
@@ -41,6 +42,12 @@ const NOMS_LANGAGE: Record<string, string> = {
   python: "Python", javascript: "JavaScript", typescript: "TypeScript",
   java: "Java", cpp: "C++", php: "PHP", latex: "LaTeX",
 };
+
+function libellePieceJointe(langageDetecte: string | null, texteColle: string): string {
+  if (langageDetecte === "latex") return "Formule collée -- LaTeX";
+  if (langageDetecte) return `Code collé -- ${NOMS_LANGAGE[langageDetecte] || langageDetecte}`;
+  return `Texte collé -- ${texteColle.length.toLocaleString("fr-FR")} caractères`;
+}
 
 function detecterLangageCode(texte: string): string | null {
   // Un extrait de code fait rarement une seule ligne -- évite de
@@ -449,11 +456,7 @@ export function BarreDeSaisie({
               className="flex w-fit items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-xs text-dj-texte-muet hover:text-dj-texte"
             >
               {langageDetecte ? <Code size={14} /> : <FileText size={14} />}
-              <span>
-                {langageDetecte
-                  ? `Code collé -- ${NOMS_LANGAGE[langageDetecte] || langageDetecte}`
-                  : `Texte collé -- ${texteColle.length.toLocaleString("fr-FR")} caractères`}
-              </span>
+              <span>{libellePieceJointe(langageDetecte, texteColle)}</span>
               <span
                 role="button"
                 aria-label="Retirer le texte collé"
@@ -705,11 +708,7 @@ export function BarreDeSaisie({
           onClick={() => setTexteColleOuvert(false)}
         >
           <div className="flex items-center justify-between pb-4">
-            <span className="text-sm text-dj-texte-muet">
-              {langageDetecte
-                ? `Code collé -- ${NOMS_LANGAGE[langageDetecte] || langageDetecte}`
-                : `Texte collé -- ${texteColle.length.toLocaleString("fr-FR")} caractères`}
-            </span>
+            <span className="text-sm text-dj-texte-muet">{libellePieceJointe(langageDetecte, texteColle)}</span>
             <button
               onClick={() => setTexteColleOuvert(false)}
               aria-label="Fermer"
@@ -718,7 +717,28 @@ export function BarreDeSaisie({
               <X size={14} /> Fermer
             </button>
           </div>
-          {langageDetecte ? (
+          {langageDetecte === "latex" ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="min-h-0 flex-1 overflow-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-6 text-dj-texte"
+              // Rendu direct en formule (fractions, intégrales, racines...),
+              // pas en texte source coloré -- demande Bourama (25/07) : "le
+              // latex, ça pourrait être direct, ça s'affiche en gros les
+              // fractions etc". KaTeX gère \begin{equation}...\end{equation}
+              // nativement, pas besoin de passer par remark-math/$ $ ici
+              // puisque tout le contenu collé EST du LaTeX (pas du markdown
+              // mélangé comme dans une réponse de l'IA).
+              dangerouslySetInnerHTML={{
+                __html: (() => {
+                  try {
+                    return katex.renderToString(texteColle, { displayMode: true, throwOnError: false });
+                  } catch {
+                    return texteColle.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string));
+                  }
+                })(),
+              }}
+            />
+          ) : langageDetecte ? (
             <div onClick={(e) => e.stopPropagation()} className="min-h-0 flex-1 overflow-auto">
               <BlocCode langage={langageDetecte} code={texteColle} />
             </div>
