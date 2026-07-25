@@ -8,7 +8,6 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
-import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Page de chat qui remplace chat.py (Streamlit) -- voir
 // MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et phase 2. Consomme la
@@ -338,53 +337,49 @@ export function ChatIA({
             <p className="mt-10 text-center text-sm text-dj-texte-muet">Pose ta question à {nomAgent}...</p>
           )
         )}
-        {messages.map((message, index) => (
-          <BulleMessage
-            key={index}
-            message={message}
-            onRegenerer={
-              message.role === "assistant"
-                ? () => regenererDepuis(index)
-                : () => envoyerMessage(message.content, "moyenne", null)
-            }
-            onEditer={message.role === "user" ? (texte) => editerMessage(index, texte) : undefined}
-            onLike={
-              message.role === "assistant" && message.id
-                ? () => setPopupFeedback({ type: "positif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
-                : undefined
-            }
-            onDislike={
-              message.role === "assistant" && message.id
-                ? () => setPopupFeedback({ type: "negatif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
-                : undefined
-            }
-            onExpliquerSelection={message.role === "assistant" ? expliquerSelection : undefined}
-          />
-        ))}
-
-        {genEnCours &&
-          statuts.length === 0 &&
-          !raisonnement &&
-          messages[messages.length - 1]?.role === "assistant" &&
-          messages[messages.length - 1]?.content === "" && (
-            // Demande Bourama (24/07) : entre l'envoi du message et le
-            // premier événement reçu (statut, raisonnement ou réponse), il
-            // ne se passait rien à l'écran -- silence total pendant tout
-            // l'aller-retour réseau + traitement backend. Cet indicateur ne
-            // dépend d'aucun événement SSE (juste genEnCours, posé
-            // immédiatement dans envoyerMessage), donc il apparaît à
-            // l'instant même de l'envoi.
-            <div className="my-1.5 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
-              <span>{nomAgent} réfléchit</span>
-              <span className="flex gap-0.5">
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
-              </span>
-            </div>
-          )}
-
-        <RaisonnementBulle nomAgent={nomAgent} texte={raisonnement} enCours={raisonnementEnCours} />
+        {messages.map((message, index) => {
+          const estDernier = index === messages.length - 1;
+          return (
+            <BulleMessage
+              key={index}
+              message={message}
+              nomAgent={nomAgent}
+              // Rattachés à CE message précis plutôt qu'en bloc séparé plus
+              // bas dans la liste (retour Bourama 24/07 : trop loin du
+              // message, le raisonnement semblait "disparaître" une fois
+              // replié en bas). enAttente : rien reçu encore (ni statut, ni
+              // raisonnement, ni texte) -- disparaît dès le premier des
+              // trois.
+              enAttente={
+                estDernier &&
+                genEnCours &&
+                message.role === "assistant" &&
+                message.content === "" &&
+                statuts.length === 0 &&
+                !raisonnement
+              }
+              raisonnement={estDernier ? raisonnement : undefined}
+              raisonnementEnCours={estDernier ? raisonnementEnCours : undefined}
+              onRegenerer={
+                message.role === "assistant"
+                  ? () => regenererDepuis(index)
+                  : () => envoyerMessage(message.content, "moyenne", null)
+              }
+              onEditer={message.role === "user" ? (texte) => editerMessage(index, texte) : undefined}
+              onLike={
+                message.role === "assistant" && message.id
+                  ? () => setPopupFeedback({ type: "positif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
+                  : undefined
+              }
+              onDislike={
+                message.role === "assistant" && message.id
+                  ? () => setPopupFeedback({ type: "negatif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
+                  : undefined
+              }
+              onExpliquerSelection={message.role === "assistant" ? expliquerSelection : undefined}
+            />
+          );
+        })}
 
         {statuts.length > 0 && (
           <div className="max-w-[80%]">
