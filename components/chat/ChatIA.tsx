@@ -212,10 +212,15 @@ export function ChatIA({
             ? `${texte}\n\n[Vidéo jointe : ${fichier.name} -- transcription audio]\n${transcript}${lienVideo}`
             : `${texte}\n\n[Vidéo jointe : ${fichier.name} -- pas de son exploitable, images seules]${lienVideo}`;
         } else {
-          const { texte: texteDocument, tronque, url: urlDocument } = await uploaderDocumentChat(fichier);
+          const { texte: texteDocument, tronque, url: urlDocument, url_apercu: urlApercu } = await uploaderDocumentChat(fichier);
           const lienDocument = urlDocument ? `\n[Lien réel du fichier : ${urlDocument}]` : "";
+          // Aperçu PDF (25/07) : lien séparé, volontairement en .pdf --
+          // FichierChip.tsx détecte l'extension et affiche automatiquement
+          // le visualiseur PDF intégré pour ce lien, sans aucun changement
+          // nécessaire dans FichierChip.tsx lui-même (voir core/conversion_pdf.py).
+          const lienApercu = urlApercu ? `\n[Aperçu visuel du fichier (PDF) : ${urlApercu}]` : "";
           texteEnrichi =
-            `${texte}\n\n[Document joint : ${fichier.name}${tronque ? " (tronqué)" : ""}]\n${texteDocument}${lienDocument}`;
+            `${texte}\n\n[Document joint : ${fichier.name}${tronque ? " (tronqué)" : ""}]\n${texteDocument}${lienDocument}${lienApercu}`;
         }
       } catch (e) {
         // Même correction que pour la dictée vocale (2026-07-20) : le

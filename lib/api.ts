@@ -193,13 +193,15 @@ export async function uploaderImageChat(fichier: File) {
 
 /**
  * Extraction texte d'un document (PDF/Word/Excel) joint à un message de
- * chat -- voir api/uploads.py:uploader_document_chat. Ne renvoie pas
- * d'URL (rien n'est stocké) : le texte extrait est injecté directement
- * dans le message avant envoi à /api/chat.
+ * chat -- voir api/uploads.py:uploader_document_chat. Le fichier original
+ * est stocké (url) et, pour Word/Excel, converti en PDF pour aperçu
+ * visuel (url_apercu, peut être null si CloudConvert indisponible/pas
+ * configuré -- voir core/conversion_pdf.py côté backend). Le texte extrait
+ * est injecté directement dans le message avant envoi à /api/chat.
  */
 export async function uploaderDocumentChat(fichier: File) {
   const resultat = await appelerApiFichier("/api/uploads/document-chat", fichier);
-  return resultat as { texte: string; tronque: boolean; url: string | null };
+  return resultat as { texte: string; tronque: boolean; url: string | null; url_apercu: string | null };
 }
 
 /**
