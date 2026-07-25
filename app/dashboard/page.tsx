@@ -173,16 +173,21 @@ export default function PageDashboard() {
               </button>
 
               {bulleHistoriqueOuverte && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setBulleHistoriqueOuverte(false)}
-                  />
-                  <div className="absolute left-1/2 top-full z-50 mt-2 w-80 -translate-x-1/2 overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl">
-                    <HistoriqueConversations />
-                  </div>
-                </>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setBulleHistoriqueOuverte(false)}
+                />
               )}
+              <div
+                className={
+                  "absolute left-1/2 top-full z-50 mt-2 w-80 origin-top -translate-x-1/2 overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl transition-all duration-150 ease-out " +
+                  (bulleHistoriqueOuverte
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none -translate-y-1 scale-95 opacity-0")
+                }
+              >
+                <HistoriqueConversations />
+              </div>
             </div>
 
             {BOUTONS_PUBLICATION.map(({ libelle, type }) => (
