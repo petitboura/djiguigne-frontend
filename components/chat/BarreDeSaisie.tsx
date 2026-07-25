@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
+import { CanvasDessin } from "./CanvasDessin";
 import { BlocCode } from "./BlocCode";
 import hljs from "highlight.js";
 import katex from "katex";
@@ -155,6 +156,11 @@ export function BarreDeSaisie({
   // Plein écran de la saisie (2026-07-23, demande de Bourama : l'agrandissement
   // auto restait trop limité pour écrire un long message confortablement).
   const [pleinEcranSaisie, setPleinEcranSaisie] = useState(false);
+  // Canvas de dessin (2026-07-25) -- géométrie/graphe/croquis, voir
+  // CanvasDessin.tsx. Le résultat rejoint le même état `fichier` qu'un
+  // upload classique (choisirFichier), donc suit exactement le même
+  // chemin d'envoi/aperçu, aucun état séparé nécessaire pour l'envoi.
+  const [canvasOuvert, setCanvasOuvert] = useState(false);
   const inputFichierRef = useRef<HTMLInputElement>(null);
   const zoneTexteRef = useRef<HTMLTextAreaElement>(null);
   const calqueRef = useRef<HTMLDivElement>(null);
@@ -549,6 +555,17 @@ export function BarreDeSaisie({
               onChange={(e) => choisirFichier(e.target.files?.[0] ?? null)}
             />
 
+            {/* Canvas de dessin (2026-07-25) -- géométrie/graphe/croquis,
+                voir CanvasDessin.tsx. */}
+            <button
+              onClick={() => setCanvasOuvert(true)}
+              aria-label="Dessiner"
+              title="Dessiner (géométrie, graphe, croquis)"
+              className="text-dj-texte-muet transition-colors hover:text-dj-texte"
+            >
+              <PenLine size={18} />
+            </button>
+
             {/* Connexion GitHub (2026-07-22) : icône de marque, couleurs et
                 style de l'app (dj-texte-muet/dj-accent-1), pas les couleurs
                 GitHub -- voir connexions/oauth_generique.py côté backend.
@@ -764,6 +781,19 @@ export function BarreDeSaisie({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={apercuFichier} alt="" className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain" />
         </div>
+      )}
+
+      {canvasOuvert && (
+        <CanvasDessin
+          onFermer={() => setCanvasOuvert(false)}
+          onValider={(fichier) => {
+            // Rejoint le pipeline "Joindre un fichier" existant -- le
+            // dessin est traité en tout point comme une image uploadée
+            // (aperçu + vision Gemini côté backend, aucun code séparé).
+            choisirFichier(fichier);
+            setCanvasOuvert(false);
+          }}
+        />
       )}
 
       {pleinEcranSaisie && (
