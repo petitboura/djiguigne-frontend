@@ -27,6 +27,7 @@ type ProfilMoi = {
   nom_affiche: string;
   bio: string;
   avatar_url: string | null;
+  notifications_proactives_actives: boolean;
 };
 
 export default function PageModifierProfil() {
@@ -38,6 +39,10 @@ export default function PageModifierProfil() {
   const [nomAffiche, setNomAffiche] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  // Proactivité (25/07) : autorise SES agents (voir agents.proactivite_active
+  // côté créateur, ProactiviteAgent.tsx) à relancer cet utilisateur en cas
+  // d'inactivité. Double opt-in obligatoire, voir core/proactivite.py.
+  const [notificationsProactives, setNotificationsProactives] = useState(false);
   const [enregistrement, setEnregistrement] = useState(false);
   const [messageProfil, setMessageProfil] = useState<string | null>(null);
 
@@ -58,6 +63,7 @@ export default function PageModifierProfil() {
         setNomAffiche(r.nom_affiche || "");
         setBio(r.bio || "");
         setAvatarUrl(r.avatar_url || "");
+        setNotificationsProactives(r.notifications_proactives_actives || false);
       })
       .catch(() => {
         // 404 tolérée : pas encore de ligne `profiles` pour ce compte
@@ -76,6 +82,7 @@ export default function PageModifierProfil() {
           nom_affiche: nomAffiche,
           bio,
           avatar_url: avatarUrl || null,
+          notifications_proactives_actives: notificationsProactives,
         }),
       });
       // Sans ça, /u/[id] pouvait montrer l'ancienne version jusqu'à 30s
@@ -132,6 +139,19 @@ export default function PageModifierProfil() {
           </div>
 
           <ChampImage label="Avatar" valeur={avatarUrl} onChange={setAvatarUrl} rond />
+
+          <label className="flex items-center gap-2 text-sm text-dj-texte">
+            <input
+              type="checkbox"
+              checked={notificationsProactives}
+              onChange={(e) => setNotificationsProactives(e.target.checked)}
+            />
+            Autoriser mes IA à me relancer si je suis inactif
+          </label>
+          <p className="-mt-3 text-xs text-dj-texte-muet">
+            Seules les IA dont le créateur a explicitement activé cette option pourront le faire, et uniquement si
+            tu as une raison concrète de reprendre le fil (jamais une simple relance sans motif).
+          </p>
 
           <div className="flex items-center gap-3">
             <button
