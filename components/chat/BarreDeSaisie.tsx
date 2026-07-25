@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3 } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -11,6 +11,34 @@ import katex from "katex";
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
 export type LocalisationJointe = { latitude: number; longitude: number } | null;
+
+// Bouton "Outils" (2026-07-25, TEST agent nucleos) -- liste statique
+// côté frontend, doit rester synchronisée à la main avec la liste réelle
+// envoyée par core/registre_outils.py + agents_outils_generation (pas de
+// requête dédiée pour l'instant, phase de test). Voir échange avec
+// Bourama du 25/07 pour le détail de chaque groupe.
+export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Search }[] = [
+  { nom: "tavily_search", label: "Recherche web", Icone: Search },
+  { nom: "tavily_extract", label: "Extraire une page", Icone: FileSearch },
+  { nom: "tavily_crawl", label: "Explorer un site", Icone: Globe },
+  { nom: "tavily_map", label: "Cartographier un site", Icone: Map },
+  { nom: "tavily_research", label: "Recherche approfondie", Icone: BookOpen },
+  { nom: "generer_document", label: "Générer un PDF/texte", Icone: FileText },
+  { nom: "generer_document_word", label: "Générer un Word", Icone: FileType },
+  { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet },
+  { nom: "generer_document_powerpoint", label: "Générer un PowerPoint", Icone: Presentation },
+  { nom: "generer_code", label: "Générer du code", Icone: Code },
+  { nom: "chercher_fichier", label: "Chercher un fichier", Icone: FolderSearch },
+  { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package },
+  { nom: "generer_bundle", label: "Générer une archive", Icone: Archive },
+  { nom: "exporter_donnees", label: "Exporter des données", Icone: Download },
+  { nom: "generer_image", label: "Générer une image", Icone: IconImage },
+  { nom: "deployer_site", label: "Déployer un site", Icone: Rocket },
+  { nom: "planifier_rappel", label: "Planifier un rappel", Icone: Bell },
+  { nom: "explorer_depot_github", label: "Explorer un dépôt GitHub", Icone: FolderTree },
+  { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode },
+  { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3 },
+];
 
 // Détection de langage pour un collage de code (2026-07-25, demande de
 // Bourama : coller du code aujourd'hui atterrit comme texte brut, sans
@@ -123,7 +151,8 @@ export function BarreDeSaisie({
     fichier: File | null,
     localisation: LocalisationJointe,
     texteColle: string | null,
-    rechercheForcee: boolean
+    rechercheForcee: boolean,
+    outilForce: string | null
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -141,6 +170,17 @@ export function BarreDeSaisie({
   // core/registre_outils.py). Un clic garantit la recherche pour LE
   // PROCHAIN message envoyé, puis se désactive (pas un mode permanent).
   const [rechercheForcee, setRechercheForcee] = useState(false);
+  // Bouton "Outils" (2026-07-25, TEST agent nucleos uniquement -- voir
+  // core/mcp_tools.py:lister_tous_les_outils). Sur cet agent précis,
+  // AUCUN outil n'est envoyé au modèle par défaut (contrairement à tous
+  // les autres agents, comportement inchangé) : il faut en sélectionner
+  // un manuellement ici pour qu'il soit disponible pour le prochain
+  // message. Un seul à la fois (pas de sélection multiple pour l'instant,
+  // voir échange avec Bourama du 25/07). Envoyé tel quel pour tous les
+  // agents (le backend ignore ce champ hors nucleos), pas besoin de
+  // conditionner l'affichage du bouton ici.
+  const [outilForce, setOutilForce] = useState<string | null>(null);
+  const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
   // comportement Claude -- coller un gros pavé de texte ne l'insère pas
   // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
@@ -313,13 +353,14 @@ export function BarreDeSaisie({
 
   function envoyer() {
     if ((!texte.trim() && !texteColle) || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee);
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee, outilForce);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
     setTexteColle(null);
     setLangageDetecte(null);
     setRechercheForcee(false);
+    setOutilForce(null);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -654,6 +695,47 @@ export function BarreDeSaisie({
             >
               <Search size={18} />
             </button>
+
+            {/* Bouton Outils (2026-07-25, TEST agent nucleos) -- sélection
+                manuelle d'UN SEUL outil pour le prochain message, voir
+                OUTILS_DISPONIBLES en haut du fichier et
+                core/mcp_tools.py:lister_tous_les_outils côté backend. */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOutilsOuvert((v) => !v)}
+                aria-label={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
+                title={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
+                className={
+                  outilForce
+                    ? "text-dj-accent-1 transition-colors"
+                    : "text-dj-texte-muet transition-colors hover:text-dj-texte"
+                }
+              >
+                <Wrench size={18} />
+              </button>
+              {menuOutilsOuvert && (
+                <div className="absolute bottom-full left-0 z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-md border border-dj-bordure bg-dj-surface p-1 shadow-lg">
+                  {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => (
+                    <button
+                      key={nom}
+                      onClick={() => {
+                        setOutilForce(outilForce === nom ? null : nom);
+                        setMenuOutilsOuvert(false);
+                      }}
+                      className={
+                        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors " +
+                        (outilForce === nom
+                          ? "bg-dj-accent-1/10 text-dj-accent-1"
+                          : "text-dj-texte hover:bg-dj-surface-haute")
+                      }
+                    >
+                      <Icone size={14} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
                 modifiable à chaque message -- section 3.3. */}

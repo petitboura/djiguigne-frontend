@@ -132,7 +132,9 @@ export function ChatIA({
     longueur: LongueurReponse,
     fichier: File | null,
     localisation: LocalisationJointe = null,
-    texteColle: string | null = null
+    texteColle: string | null = null,
+    rechercheForcee: boolean = false,
+    outilForce: string | null = null
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -262,6 +264,10 @@ export function ChatIA({
           // Fuseau du navigateur, pas une valeur figée côté code -- voir
           // core/main.py:chat(), paramètre fuseau_horaire.
           fuseau_horaire: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          // Bouton Outils (2026-07-25, TEST agent nucleos) -- voir
+          // BarreDeSaisie.tsx:OUTILS_DISPONIBLES et
+          // core/mcp_tools.py:lister_tous_les_outils côté backend.
+          outil_force: outilForce,
         },
         (evenement) => traiterEvenement(evenement)
       );
