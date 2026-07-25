@@ -182,6 +182,25 @@ export function BarreDeSaisie({
   // conditionner l'affichage du bouton ici.
   const [outilForce, setOutilForce] = useState<string | null>(null);
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
+  const menuOutilsRef = useRef<HTMLDivElement>(null);
+  const boutonOutilsRef = useRef<HTMLButtonElement>(null);
+
+  // Clic en dehors du menu Outils -> fermeture (même pattern que
+  // SidebarChat.tsx, demande de Bourama 25/07 : "il ne se ferme que
+  // quand tu cliques sur le bouton"). mousedown (pas click) pour se
+  // déclencher avant le onClick du bouton lui-même, exclu explicitement
+  // pour éviter un double-toggle fermeture-puis-réouverture immédiate.
+  useEffect(() => {
+    if (!menuOutilsOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuOutilsRef.current?.contains(cible)) return;
+      if (boutonOutilsRef.current?.contains(cible)) return;
+      setMenuOutilsOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuOutilsOuvert]);
   // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
   // comportement Claude -- coller un gros pavé de texte ne l'insère pas
   // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
@@ -735,39 +754,47 @@ export function BarreDeSaisie({
                 core/mcp_tools.py:lister_tous_les_outils côté backend. */}
             <div className="relative">
               <button
+                ref={boutonOutilsRef}
                 onClick={() => setMenuOutilsOuvert((v) => !v)}
                 aria-label={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
                 title={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
                 className={
-                  outilForce
-                    ? "text-dj-accent-1 transition-colors"
-                    : "text-dj-texte-muet transition-colors hover:text-dj-texte"
+                  "rounded-full p-1 transition-colors " +
+                  (outilForce || menuOutilsOuvert
+                    ? "bg-dj-accent-1/10 text-dj-accent-1"
+                    : "text-dj-texte-muet hover:text-dj-texte")
                 }
               >
                 <Wrench size={18} />
               </button>
-              {menuOutilsOuvert && (
-                <div className="absolute bottom-full left-0 z-20 mb-2 max-h-72 w-64 overflow-y-auto rounded-md border border-dj-bordure bg-dj-surface p-1 shadow-lg">
-                  {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => (
-                    <button
-                      key={nom}
-                      onClick={() => {
-                        setOutilForce(outilForce === nom ? null : nom);
-                        setMenuOutilsOuvert(false);
-                      }}
-                      className={
-                        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors " +
-                        (outilForce === nom
-                          ? "bg-dj-accent-1/10 text-dj-accent-1"
-                          : "text-dj-texte hover:bg-dj-surface-haute")
-                      }
-                    >
-                      <Icone size={14} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div
+                ref={menuOutilsRef}
+                className={
+                  "absolute bottom-full left-0 z-20 mb-2 max-h-72 w-64 origin-bottom-left overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                  (menuOutilsOuvert
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-1 scale-95 opacity-0")
+                }
+              >
+                {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => (
+                  <button
+                    key={nom}
+                    onClick={() => {
+                      setOutilForce(outilForce === nom ? null : nom);
+                      setMenuOutilsOuvert(false);
+                    }}
+                    className={
+                      "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
+                      (outilForce === nom
+                        ? "bg-dj-accent-1/10 text-dj-accent-1"
+                        : "text-dj-texte hover:bg-dj-surface-haute")
+                    }
+                  >
+                    <Icone size={14} />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
