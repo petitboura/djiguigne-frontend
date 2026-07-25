@@ -3,11 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 
-// Extrait le 22/07/2026 de components/NotificationsPushToggle.tsx pour
-// être partagé avec components/NotificationsPushCloche.tsx (bouton
-// compact dans la TopBar, demande de Bourama : "devrait être
-// directement à côté du bouton mon espace ... et disparaît après
-// activation").
+// CORRIGÉ le 24/07/2026 (Bourama : "quand tu envoies un premier message
+// ça marche, dans mon profil ça marche, le problème vient du bouton").
+// Cause réelle : chaque composant (cloche, profil, ChatIA) appelait
+// useNotificationsPush() avec son PROPRE useState local -- 3 mémoires
+// indépendantes qui ne se parlent jamais. Résultat : s'abonner via le
+// chat ne prévenait jamais la cloche, qui restait affichée avec un
+// état périmé. Cliquer dessus semblait "ne rien faire" (en réalité :
+// la permission était déjà accordée ailleurs, donc le navigateur ne
+// redemande rien -- comportement normal -- mais la cloche ne se
+// mettait jamais à jour pour le refléter).
+//
+// Fix : un seul état partagé (module-level), tous les composants qui
+// utilisent ce hook s'abonnent au même store et se mettent à jour
+// ensemble, quel que soit celui qui a déclenché le changement.
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -27,90 +36,134 @@ export type EtatNotificationsPush =
   | "actif"
   | "changement";
 
-export function useNotificationsPush() {
-  const [etat, setEtat] = useState<EtatNotificationsPush>("verification");
-  const [erreur, setErreur] = useState<string | null>(null);
+// --- Store partagé minimal (pas besoin d'une lib externe pour ça) ---
+let etatPartage: EtatNotificationsPush = "verification";
+let erreurPartagee: string | null = null;
+const abonnes = new Set<() => void>();
 
-  const verifierEtat = useCallback(async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setEtat("indisponible");
-      return;
-    }
-    if (Notification.permission === "denied") {
-      setEtat("refuse");
-      return;
-    }
-    try {
-      // Voir NotificationsPushToggle.tsx (historique du bug) : timeout
-      // de sécurité, navigator.serviceWorker.ready peut ne jamais se
-      // résoudre si l'enregistrement du service worker échoue/traîne.
-      const registration = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-      ]);
-      const abonnementExistant = await registration.pushManager.getSubscription();
-      setEtat(abonnementExistant ? "actif" : "inactif");
-    } catch {
-      setEtat("service_worker_bloque");
-    }
-  }, []);
+function notifierTousLesAbonnes() {
+  abonnes.forEach((notifier) => notifier());
+}
 
-  useEffect(() => {
-    verifierEtat();
-  }, [verifierEtat]);
+function definirEtat(nouvelEtat: EtatNotificationsPush) {
+  etatPartage = nouvelEtat;
+  notifierTousLesAbonnes();
+}
 
-  const activer = useCallback(async () => {
-    setErreur(null);
-    setEtat("changement");
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setEtat(permission === "denied" ? "refuse" : "inactif");
-        return false;
-      }
+function definirErreur(nouvelleErreur: string | null) {
+  erreurPartagee = nouvelleErreur;
+  notifierTousLesAbonnes();
+}
 
-      const { cle_publique } = await appelerApi("/api/notifications-push/cle-publique");
-      const registration = await navigator.serviceWorker.ready;
-      const abonnement = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(cle_publique),
-      });
+async function verifierEtatPartage() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    definirEtat("indisponible");
+    return;
+  }
+  if (Notification.permission === "denied") {
+    definirEtat("refuse");
+    return;
+  }
+  try {
+    // Timeout de sécurité : navigator.serviceWorker.ready peut ne jamais
+    // se résoudre si l'enregistrement du service worker échoue/traîne.
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+    ]);
+    const abonnementExistant = await registration.pushManager.getSubscription();
+    definirEtat(abonnementExistant ? "actif" : "inactif");
+  } catch {
+    definirEtat("service_worker_bloque");
+  }
+}
 
-      await appelerApi("/api/notifications-push/abonnement", {
-        method: "POST",
-        body: JSON.stringify(abonnement.toJSON()),
-      });
-
-      setEtat("actif");
-      return true;
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
-      setEtat("inactif");
+async function activerPartage(): Promise<boolean> {
+  definirErreur(null);
+  definirEtat("changement");
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      definirEtat(permission === "denied" ? "refuse" : "inactif");
       return false;
     }
-  }, []);
 
-  const desactiver = useCallback(async () => {
-    setErreur(null);
-    setEtat("changement");
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const abonnement = await registration.pushManager.getSubscription();
-      if (abonnement) {
-        await appelerApi("/api/notifications-push/desabonnement", {
-          method: "POST",
-          body: JSON.stringify({ endpoint: abonnement.endpoint }),
-        });
-        await abonnement.unsubscribe();
-      }
-      setEtat("inactif");
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
-      setEtat("actif");
+    // Si un AUTRE composant a déjà terminé l'abonnement entre-temps
+    // (ex: double-clic, ou un autre onglet), getSubscription() renvoie
+    // l'abonnement existant au lieu d'en recréer un pour rien.
+    const registration = await navigator.serviceWorker.ready;
+    const abonnementExistant = await registration.pushManager.getSubscription();
+    if (abonnementExistant) {
+      definirEtat("actif");
+      return true;
     }
+
+    const { cle_publique } = await appelerApi("/api/notifications-push/cle-publique");
+    const abonnement = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(cle_publique),
+    });
+
+    await appelerApi("/api/notifications-push/abonnement", {
+      method: "POST",
+      body: JSON.stringify(abonnement.toJSON()),
+    });
+
+    definirEtat("actif");
+    return true;
+  } catch (e) {
+    definirErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+    definirEtat("inactif");
+    return false;
+  }
+}
+
+async function desactiverPartage() {
+  definirErreur(null);
+  definirEtat("changement");
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const abonnement = await registration.pushManager.getSubscription();
+    if (abonnement) {
+      await appelerApi("/api/notifications-push/desabonnement", {
+        method: "POST",
+        body: JSON.stringify({ endpoint: abonnement.endpoint }),
+      });
+      await abonnement.unsubscribe();
+    }
+    definirEtat("inactif");
+  } catch (e) {
+    definirErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+    definirEtat("actif");
+  }
+}
+
+export function useNotificationsPush() {
+  // Chaque composant garde un useState local, mais UNIQUEMENT pour
+  // déclencher son propre re-render -- la valeur vient toujours du
+  // store partagé ci-dessus, jamais d'un état indépendant.
+  const [, forceRerender] = useState(0);
+
+  useEffect(() => {
+    const notifier = () => forceRerender((n) => n + 1);
+    abonnes.add(notifier);
+    // Si c'est le tout premier composant monté, lance la vérification
+    // initiale. Les suivants profitent directement de l'état déjà connu.
+    if (abonnes.size === 1 && etatPartage === "verification") {
+      verifierEtatPartage();
+    }
+    return () => {
+      abonnes.delete(notifier);
+    };
   }, []);
 
-  return { etat, erreur, activer, desactiver, verifierEtat };
+  return {
+    etat: etatPartage,
+    erreur: erreurPartagee,
+    activer: activerPartage,
+    desactiver: desactiverPartage,
+    verifierEtat: verifierEtatPartage,
+  };
 }
 
 // Déclenchement automatique sur la toute première action réelle (envoi
