@@ -7,6 +7,7 @@
    que les formules (fractions, racines, exposants...) s'affichent
    correctement plutôt qu'en texte brut mal aligné. */
 @import "katex/dist/katex.min.css";
+@import "mathlive/mathlive-fonts.css";
 
 /* Thème highlight.js sur-mesure (voir components/chat/BlocCode.tsx) --
    volontairement pas un thème importé (github-dark, atom-one...) : les

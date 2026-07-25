@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3 } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
+import { EditeurFormule } from "./EditeurFormule";
 import { BlocCode } from "./BlocCode";
 import hljs from "highlight.js";
 import katex from "katex";
@@ -201,6 +202,8 @@ export function BarreDeSaisie({
   // upload classique (choisirFichier), donc suit exactement le même
   // chemin d'envoi/aperçu, aucun état séparé nécessaire pour l'envoi.
   const [canvasOuvert, setCanvasOuvert] = useState(false);
+  // Éditeur de formule maths/chimie (2026-07-25) -- voir EditeurFormule.tsx.
+  const [editeurFormuleOuvert, setEditeurFormuleOuvert] = useState(false);
   const inputFichierRef = useRef<HTMLInputElement>(null);
   const zoneTexteRef = useRef<HTMLTextAreaElement>(null);
   const calqueRef = useRef<HTMLDivElement>(null);
@@ -339,6 +342,25 @@ export function BarreDeSaisie({
 
   function pasDisponible() {
     alert("Pas disponible pour le moment.");
+  }
+
+  // Insertion du résultat de EditeurFormule.tsx à l'endroit exact du
+  // curseur (pas juste à la fin du texte) -- continue de taper la phrase
+  // juste après, sans manipulation manuelle de sa part.
+  function insererFormule(texteLatex: string) {
+    const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
+    const el = ref.current;
+    const debut = el?.selectionStart ?? texte.length;
+    const fin = el?.selectionEnd ?? texte.length;
+    const nouveauTexte = texte.slice(0, debut) + texteLatex + texte.slice(fin);
+    setTexte(nouveauTexte);
+    setEditeurFormuleOuvert(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = debut + texteLatex.length;
+      el?.setSelectionRange(pos, pos);
+      ajusterHauteurTexte();
+    });
   }
 
   function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
@@ -523,7 +545,7 @@ export function BarreDeSaisie({
 
       {/* Rectangle à coins arrondis (plus une pilule ovale complète), tous
           les éléments alignés en bas -- voir section 3.3. */}
-      <div className="rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-3 focus-within:border-dj-bordure-forte">
+      <div className="relative rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-3 focus-within:border-dj-bordure-forte">
         <div className="relative">
           {/* Calque de couleur -- lecture seule, non interactif
               (pointer-events-none), affiche EXACTEMENT le même texte que
@@ -605,6 +627,17 @@ export function BarreDeSaisie({
               className="text-dj-texte-muet transition-colors hover:text-dj-texte"
             >
               <PenLine size={18} />
+            </button>
+
+            {/* Éditeur de formule maths/chimie (2026-07-25) -- voir
+                EditeurFormule.tsx. */}
+            <button
+              onClick={() => setEditeurFormuleOuvert((v) => !v)}
+              aria-label="Insérer une formule ou une réaction chimique"
+              title="Insérer une formule (maths) ou une réaction (chimie)"
+              className={editeurFormuleOuvert ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte"}
+            >
+              <Sigma size={18} />
             </button>
 
             {/* Connexion GitHub (2026-07-22) : icône de marque, couleurs et
@@ -799,6 +832,8 @@ export function BarreDeSaisie({
             )}
           </div>
         </div>
+
+        {editeurFormuleOuvert && <EditeurFormule onInserer={insererFormule} onFermer={() => setEditeurFormuleOuvert(false)} />}
       </div>
 
       {texteColleOuvert && texteColle && (
