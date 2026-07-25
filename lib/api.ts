@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 // URL du backend FastAPI (voir api/main.py). En local pendant le dev :
 // http://localhost:8000. Une fois déployé sur Railway : l'URL publique de
 // ce service (pas encore un domaine définitif tant que djiguigne.com n'est
-// pas branché — voir RAILWAY_DEPLOY.md du dépôt assistant-etudiants).
+// pas branché — voir RAILWAY_DEPLOY.md du dépôt djiguigne-backend).
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_URL) {

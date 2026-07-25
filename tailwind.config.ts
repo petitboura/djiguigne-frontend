@@ -1,13 +1,14 @@
 import type { Config } from "tailwindcss";
 
-// Étape D.1 (pivot social) : thème repris à l'identique de djiguigne-frontend
+// Étape D.1 (pivot social) : thème repris à l'identique de djiguigne-frontendent
 // (la vitrine) — palette, typographie, dégradés, animations. Décision de
 // Bourama (2026-07-11) : le thème visuel est commun aux deux sites, seule
 // la STRUCTURE des pages diffère (ici : feed/agent/portfolio/dashboard, pas
 // accueil/services/blog/contact). Source de vérité de ces valeurs :
-// djiguigne-frontend/tailwind.config.ts, lui-même dérivé de
-// assistant-etudiants/faces/vues/theme_djiguigne.py. Ne pas dévier de ces
-// valeurs sans changer les trois endroits à la fois.
+// djiguigne-frontendent/tailwind.config.ts, lui-même dérivé de l'ancien
+// djiguigne-backend/faces/vues/theme_djiguigne.py (fichier supprimé depuis,
+// le retrait de Streamlit). Ne pas dévier de ces
+// valeurs sans changer les deux dépôts à la fois.
 const config: Config = {
   darkMode: "class",
   content: [

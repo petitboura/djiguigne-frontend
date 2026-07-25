@@ -24,7 +24,7 @@ import {
 // la première clé sert d'axe X, les suivantes sont tracées comme séries.
 // Pour pie, on attend {name, value}.
 //
-// Le prompt système (assistant-etudiants) doit documenter cette
+// Le prompt système (djiguigne-backend) doit documenter cette
 // convention pour que le modèle la respecte -- ce composant ne fait que
 // le rendu, il ne peut pas deviner un format non respecté (dans ce cas :
 // message d'erreur discret, jamais de JSON brut affiché).
