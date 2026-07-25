@@ -8,7 +8,6 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
-import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Page de chat qui remplace chat.py (Streamlit) -- voir
 // MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et phase 2. Consomme la
@@ -409,8 +408,6 @@ export function ChatIA({
               </span>
             </div>
           )}
-
-        <RaisonnementBulle nomAgent={nomAgent} texte={raisonnement} enCours={raisonnementEnCours} />
 
         {statuts.length > 0 && (
           <div className="max-w-[80%]">
