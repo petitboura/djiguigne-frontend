@@ -20,6 +20,7 @@ import { FichierChip, extensionFichier } from "./FichierChip";
 import { FichierCode, extensionCode } from "./FichierCode";
 import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
+import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown
@@ -91,9 +92,6 @@ export interface MessageAffiche {
   // survivre à un rechargement de page, juste de montrer ce qui a été
   // envoyé dans le fil de la conversation en cours.
   pieceJointe?: { nom: string; type: "image" | "document" | "video" | "audio"; previewUrl?: string } | null;
-  // Résultats de recherche web (Tavily) utilisés pour cette réponse --
-  // voir l'événement SSE "sources" dans core/main.py:chat() (2026-07-23).
-  sources?: { titre: string; url: string }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -178,6 +176,10 @@ export function BulleMessage({
   onLike,
   onDislike,
   onExpliquerSelection,
+  nomAgent,
+  enAttente,
+  raisonnement,
+  raisonnementEnCours,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -185,6 +187,15 @@ export function BulleMessage({
   onLike?: () => void;
   onDislike?: () => void;
   onExpliquerSelection?: (texteSelectionne: string) => void;
+  // Ajouté 24/07 (retour Bourama : la bulle "réfléchit"/le raisonnement
+  // apparaissaient trop loin du message, comme un bloc séparé en bas de
+  // la liste au lieu d'être rattachés à CE message assistant précis) --
+  // uniquement fournis par ChatIA.tsx pour le dernier message pendant sa
+  // génération, voir ChatIA.tsx.
+  nomAgent?: string;
+  enAttente?: boolean;
+  raisonnement?: string;
+  raisonnementEnCours?: boolean;
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
@@ -427,34 +438,6 @@ export function BulleMessage({
           </ReactMarkdown>
         </div>
 
-        {message.sources && message.sources.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {message.sources.map((s, i) => (
-              <a
-                key={i}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={s.titre}
-                className="flex items-center gap-1 rounded-full border border-dj-bordure bg-dj-surface px-2 py-1 text-[11px] text-dj-texte-muet no-underline transition-colors hover:border-dj-bordure-forte hover:text-dj-texte"
-              >
-                <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-dj-surface-haute text-[9px] text-dj-accent-1">
-                  {i + 1}
-                </span>
-                <span className="max-w-[160px] truncate">
-                  {(() => {
-                    try {
-                      return new URL(s.url).hostname.replace(/^www\./, "");
-                    } catch {
-                      return s.titre;
-                    }
-                  })()}
-                </span>
-              </a>
-            ))}
-          </div>
-        )}
-
         {/* Bulle flottante "Expliquer" -- apparaît uniquement sur une
             sélection de texte dans une réponse assistant. position:fixed,
             calée sur la sélection native du navigateur. */}
@@ -473,6 +456,23 @@ export function BulleMessage({
           </button>
         )}
       </div>
+
+      {/* Rattachés à CE message précis (juste sous son contenu, avant les
+          boutons d'action) plutôt qu'en bloc séparé plus bas dans la liste
+          -- voir props enAttente/raisonnement ci-dessus. */}
+      {!estUtilisateur && enAttente && (
+        <div className="my-1 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
+          <span>{nomAgent} réfléchit</span>
+          <span className="flex gap-0.5">
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
+          </span>
+        </div>
+      )}
+      {!estUtilisateur && raisonnement && (
+        <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
+      )}
 
       {/* Heure : uniquement sous le message utilisateur (correction du
           2026-07-15 -- pas sous l'assistant, voir section 3.1). */}
