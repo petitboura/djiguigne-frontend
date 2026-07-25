@@ -8,8 +8,8 @@ import { CreateurCard, type CreateurResume } from "@/components/CreateurCard";
 import { PopupCategories, type Categorie } from "@/components/PopupCategories";
 import { PostCard, type PostResume } from "@/components/PostCard";
 
-// Étape D.2 (pivot social) : "/" est le feed PUBLIC (voir tableau des pages
-// dans PIVOT_SOCIAL.md), pas une page qui exige une connexion — c'est un
+// Étape D.2 (pivot social) : "/" est le feed PUBLIC, pas une page qui
+// exige une connexion — c'est un
 // changement par rapport à l'ancienne page.tsx de l'Étape D.1, qui
 // redirigeait tout visiteur non connecté vers /connexion. Cette vérification
 // de session (E2E Supabase -> FastAPI) avait rempli son rôle de preuve de

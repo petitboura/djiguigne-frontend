@@ -1,9 +1,8 @@
 // Étape D.3 (pivot social) : variante serveur de lib/api.ts, pour les
-// Server Components (SSR obligatoire pour le SEO/AEO/GEO, voir
-// PIVOT_SOCIAL.md section "Règles SEO/AEO/GEO"). appelerApi() de lib/api.ts
-// ne convient pas ici : il appelle supabase.auth.getSession(), qui lit le
-// localStorage du navigateur — indisponible côté serveur. Cette variante
-// n'attache jamais de token, donc réservée aux endpoints PUBLICS
+// Server Components (SSR obligatoire pour le SEO/AEO/GEO). appelerApi() de
+// lib/api.ts ne convient pas ici : il appelle supabase.auth.getSession(),
+// qui lit le localStorage du navigateur — indisponible côté serveur. Cette
+// variante n'attache jamais de token, donc réservée aux endpoints PUBLICS
 // (GET /api/feed, /api/agents/{id}, /api/agents/{id}/rating,
 // /api/agents/{id}/comments, /api/search, /api/profiles/{user_id}).
 // Ne jamais l'utiliser pour un endpoint qui exige une auth.

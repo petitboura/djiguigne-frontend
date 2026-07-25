@@ -14,7 +14,7 @@ import { PopupCategories, type Categorie } from "@/components/PopupCategories";
 import { DroitsAgentCreation } from "@/components/DroitsAgentCreation";
 
 // Étape D.6 (pivot social) : formulaire de création d'agent, nouveau flow
-// (voir PIVOT_SOCIAL.md — nom → icône → image vitrine → description →
+// (nom → icône → image vitrine → description →
 // config technique, ordre inchangé côté "config technique" par rapport à
 // faces/vues/creer_agent.py). Payload construit pour matcher EXACTEMENT
 // `CreerAgentPayload` (api/agents.py) — champ par champ, mêmes valeurs de

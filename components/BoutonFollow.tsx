@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 
 // Étape D.4 (pivot social). S'appuie sur GET /api/creators/{id}/follow,
-// ajouté à cette étape (voir PIVOT_SOCIAL.md) : le POST/DELETE existants
+// ajouté à cette étape : le POST/DELETE existants
 // depuis l'Étape C ne permettaient pas de savoir si l'utilisateur courant
 // suit déjà ce créateur, ni d'afficher un compteur. `utilisateur_optionnel`
 // côté backend rend ce GET public (compteur visible sans connexion).

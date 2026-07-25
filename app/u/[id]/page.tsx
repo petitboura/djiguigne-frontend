@@ -11,8 +11,8 @@ import { BoutonPartager } from "@/components/BoutonPartager";
 import { SectionsPostsCreateur } from "@/components/SectionsPostsCreateur";
 
 // Étape D.4 (pivot social) : portfolio créateur `/u/[id]` (en pratique
-// user_id, pas un vrai slug — voir docstring de api/profiles.py et
-// PIVOT_SOCIAL.md Étape B : "profiles.slug... rien ne la remplit encore").
+// user_id, pas un vrai slug — voir docstring de api/profiles.py
+// ("profiles.slug... rien ne la remplit encore").
 // Même structure que D.3 : Server Component pour le SSR/metadata, îlot
 // client pour la partie interactive (Follow).
 

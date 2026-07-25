@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 // Migration du 2026-07-15 (Bourama : migration complète du chat vers
-// Next.js/Vercel) -- voir MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et
-// phase 3.1. Remplace l'ancien BoutonUtiliser (iframe vers chat.py sur
+// Next.js/Vercel). Remplace l'ancien BoutonUtiliser (iframe vers chat.py sur
 // Railway) : c'était la cause du bug remonté par Bourama (plein écran et
 // bouton retour ouvraient chacun une "nouvelle page", parce que
 // Vercel/Next.js et Railway/Streamlit sont deux domaines séparés avec deux

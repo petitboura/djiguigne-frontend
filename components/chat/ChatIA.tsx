@@ -9,8 +9,7 @@ import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
 
-// Page de chat qui remplace chat.py (Streamlit) -- voir
-// MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et phase 2. Consomme la
+// Page de chat qui remplace chat.py (Streamlit). Consomme la
 // nouvelle route /api/chat (api/chat.py) en streaming, au lieu d'appeler
 // chat() directement en process comme le faisait Streamlit.
 //

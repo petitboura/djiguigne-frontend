@@ -10,8 +10,7 @@ import { NotificationsPushCloche } from "@/components/NotificationsPushCloche";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
 
 // Nav de la PLATEFORME, volontairement différente du Header de
-// djiguigne-frontend (pas de services/about/blog/contact — voir
-// PIVOT_SOCIAL.md, clarification thème/structure). "Mon espace" pointe vers
+// djiguigne-frontend (pas de services/about/blog/contact). "Mon espace" pointe vers
 // /dashboard, pas encore construit (Étape D.5) : le lien existe déjà pour
 // ne pas avoir à retoucher ce composant plus tard, Next.js affichera son
 // 404 par défaut tant que la page n'existe pas.

@@ -12,9 +12,8 @@ import { MisesAJourAgent } from "@/components/MisesAJourAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { BoutonProfilCreateur } from "@/components/BoutonProfilCreateur";
 
-// Étape D.3 (pivot social) : page agent publique (voir tableau des pages
-// dans PIVOT_SOCIAL.md — /agent/[id], "id" sert de slug, voir
-// PIVOT_SOCIAL.md Étape B). Server Component pour le SSR (règle SEO/AEO/GEO
+// Étape D.3 (pivot social) : page agent publique (/agent/[id], "id" sert
+// de slug). Server Component pour le SSR (règle SEO/AEO/GEO
 // du plan : "aucun contenu important derrière un clic", metadata via
 // generateMetadata plutôt que du texte statique dans le JSX) ; les parties
 // interactives (chat, note, commentaires) sont des composants clients

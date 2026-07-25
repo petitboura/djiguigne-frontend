@@ -8,7 +8,7 @@ interface Categorie {
   libelle: string;
 }
 
-// Voir MIGRATION_CHAT_VERS_NEXTJS.md, section 3.2. Règle de confidentialité
+// Règle de confidentialité
 // stricte : par défaut (rien coché/rempli), le créateur ne reçoit QUE le
 // type positif/négatif -- jamais le contenu de la conversation, sauf choix
 // explicite via les deux cases à cocher ci-dessous.

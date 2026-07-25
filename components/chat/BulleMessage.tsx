@@ -166,7 +166,6 @@ export function nettoyerMessageHistorique(content: string): {
   return { texte: content, pieceJointe: null };
 }
 
-// Voir MIGRATION_CHAT_VERS_NEXTJS.md, section 3.1 :
 // - heure affichée sous le message UTILISATEUR uniquement
 // - boutons différents selon le rôle
 export function BulleMessage({
@@ -337,10 +336,10 @@ export function BulleMessage({
           </div>
         )}
         {/* Rendu Markdown unique et cohérent (gras/liens/tableaux/listes en
-            une seule fois) -- voir MIGRATION_CHAT_VERS_NEXTJS.md 1.1 : ceci
-            règle définitivement le bug hérité de Streamlit (bloc HTML brut
-            qui empêchait toute transformation Markdown). Couleur des liens
-            fixée sur l'accent de la charte, jamais bleu (voir 1.2). */}
+            une seule fois) : ceci règle définitivement le bug hérité de
+            Streamlit (bloc HTML brut qui empêchait toute transformation
+            Markdown). Couleur des liens fixée sur l'accent de la charte,
+            jamais bleu. */}
         <div
           ref={conteneurRef}
           onMouseUp={gererFinSelection}

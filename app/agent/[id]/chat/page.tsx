@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { appelerApiPublicOuNull } from "@/lib/api-serveur";
 import { ChatAgentClient } from "@/components/chat/ChatAgentClient";
 
-// Remplace chat.py (Streamlit sur Railway) -- voir MIGRATION_CHAT_VERS_NEXTJS.md,
-// section 0 et phase 2. Tout reste dans la même app Next.js/Vercel : plus de
+// Remplace chat.py (Streamlit sur Railway). Tout reste dans la même app Next.js/Vercel : plus de
 // saut entre domaines, donc plus du tout le bug remonté par Bourama
 // (plein écran / retour qui ouvraient une "nouvelle page" à chaque fois).
 //

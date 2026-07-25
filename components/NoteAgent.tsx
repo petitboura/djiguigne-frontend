@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 
-// Étape D.3 (pivot social) : note 1-5, PAS un like (voir PIVOT_SOCIAL.md,
-// clarification explicite de Bourama sur ce point). Contrat backend
+// Étape D.3 (pivot social) : note 1-5, PAS un like (clarification
+// explicite de Bourama sur ce point). Contrat backend
 // (api/agents.py) : GET .../rating est public (moyenne + total), POST
 // .../rating exige un token et fait un upsert (une note par user, jamais
 // cumulée) — donc pas besoin de gérer un état "déjà noté" séparément, un
