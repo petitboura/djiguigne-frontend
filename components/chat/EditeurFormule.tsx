@@ -55,6 +55,7 @@ export function EditeurFormule({
   onInserer: (texteLatex: string) => void;
   onFermer: () => void;
 }) {
+  const conteneurRef = useRef<HTMLDivElement>(null);
   const [onglet, setOnglet] = useState<"maths" | "chimie">("maths");
   const mathfieldRef = useRef<MathfieldElement | null>(null);
   const [valeurChimie, setValeurChimie] = useState("");
@@ -112,7 +113,41 @@ export function EditeurFormule({
     });
   }
 
+  // Le clavier virtuel de MathLive ne se referme pas tout seul quand
+  // cette bulle se ferme (X/Annuler/Insérer) -- fermeture explicite via
+  // l'API globale, sinon il reste ouvert à l'écran sans plus aucun moyen
+  // de le fermer une fois la bulle elle-même disparue.
+  useEffect(() => {
+    return () => {
+      window.mathVirtualKeyboard?.hide();
+    };
+  }, []);
+
+  function fermer() {
+    window.mathVirtualKeyboard?.hide();
+    onFermer();
+  }
+
+  // Clic en dehors de la bulle -- ET en dehors du clavier virtuel de
+  // MathLive, qui n'est PAS un enfant DOM de cette bulle (il est injecté
+  // directement dans <body> par MathLive) -- ferme l'éditeur. Sans
+  // l'exclusion du clavier, cliquer sur un symbole de SON clavier à lui
+  // fermerait notre bulle par erreur.
+  useEffect(() => {
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as HTMLElement;
+      if (conteneurRef.current?.contains(cible)) return;
+      if (cible.closest("math-virtual-keyboard")) return;
+      if (cible.closest("[data-editeur-formule-trigger]")) return;
+      fermer();
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function valider() {
+    window.mathVirtualKeyboard?.hide();
     if (onglet === "maths") {
       const latex = mathfieldRef.current?.value?.trim();
       if (latex) onInserer(`$${latex}$`);
@@ -122,7 +157,7 @@ export function EditeurFormule({
   }
 
   return (
-    <div className="absolute bottom-full left-0 z-40 mb-2 w-full max-w-xl rounded-2xl border border-dj-bordure bg-dj-surface-haute p-4 shadow-2xl">
+    <div ref={conteneurRef} className="absolute bottom-full left-0 z-40 mb-2 w-full max-w-xl rounded-2xl border border-dj-bordure bg-dj-surface-haute p-4 shadow-2xl">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1 rounded-lg bg-dj-surface p-1">
           <button
@@ -142,7 +177,7 @@ export function EditeurFormule({
             <FlaskConical size={14} /> Chimie
           </button>
         </div>
-        <button onClick={onFermer} aria-label="Fermer" className="text-dj-texte-muet hover:text-dj-texte">
+        <button onClick={fermer} aria-label="Fermer" className="text-dj-texte-muet hover:text-dj-texte">
           <X size={16} />
         </button>
       </div>
@@ -201,7 +236,7 @@ export function EditeurFormule({
 
       <div className="mt-3 flex justify-end gap-2">
         <button
-          onClick={onFermer}
+          onClick={fermer}
           className="rounded-lg border border-dj-bordure px-3 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
         >
           Annuler

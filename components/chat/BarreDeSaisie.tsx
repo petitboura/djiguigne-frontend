@@ -652,6 +652,7 @@ export function BarreDeSaisie({
                 EditeurFormule.tsx. */}
             <button
               onClick={() => setEditeurFormuleOuvert((v) => !v)}
+              data-editeur-formule-trigger
               aria-label="Insérer une formule ou une réaction chimique"
               title="Insérer une formule (maths) ou une réaction (chimie)"
               className={editeurFormuleOuvert ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte"}
