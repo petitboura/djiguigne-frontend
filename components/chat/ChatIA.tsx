@@ -8,6 +8,7 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
+import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Page de chat qui remplace chat.py (Streamlit) -- voir
 // MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et phase 2. Consomme la
