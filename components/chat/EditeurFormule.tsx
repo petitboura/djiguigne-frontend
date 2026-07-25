@@ -25,7 +25,10 @@ import type { MathfieldElement } from "mathlive";
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      "math-field": React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement>;
+      "math-field": React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement> & {
+        theme?: string;
+        "math-virtual-keyboard-policy"?: string;
+      };
     }
   }
 }
@@ -147,6 +150,7 @@ export function EditeurFormule({
           <math-field
             ref={mathfieldRef}
             math-virtual-keyboard-policy="manual"
+            theme="dark"
             className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
           />
           {!mathliveInstalle && (
