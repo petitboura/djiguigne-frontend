@@ -1,12 +1,68 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
+import { BlocCode } from "./BlocCode";
+import hljs from "highlight.js";
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
 export type LocalisationJointe = { latitude: number; longitude: number } | null;
+
+// Détection de langage pour un collage de code (2026-07-25, demande de
+// Bourama : coller du code aujourd'hui atterrit comme texte brut, sans
+// aucun traitement). Testé manuellement le 25/07 : s'appuyer uniquement
+// sur `hljs.highlightAuto(...).relevance` pour décider "est-ce du code ?"
+// ne fonctionne PAS -- un énoncé de maths en français obtient un score
+// PLUS élevé (8) qu'un vrai extrait JavaScript (5), et hljs se trompe
+// aussi de langage sur des extraits courts (JS détecté "ada", Java
+// détecté "csharp"). Approche retenue à la place : des motifs de syntaxe
+// propres à chaque langage (accolades+mots-clés, pas de simple score de
+// probabilité), hljs.highlightAuto seulement en dernier recours si rien
+// de spécifique n'a matché mais que ça ressemble quand même à du code.
+const REGEX_LATEX = /\\(begin|end)\{|\\frac|\\int|\\sum|\\sqrt|\\alpha|\\beta|\$\$/;
+const PATTERNS_LANGAGE: [string, RegExp][] = [
+  ["python", /\bdef\s+\w+\s*\(.*\)\s*:/],
+  ["python", /^\s*import\s+\w+(\s+as\s+\w+)?\s*$/m],
+  ["javascript", /\bconsole\.log\s*\(/],
+  ["javascript", /=>\s*\{/],
+  ["javascript", /\b(const|let|var)\s+\w+\s*=/],
+  ["java", /\bpublic\s+static\s+void\s+main\b/],
+  ["java", /\bpublic\s+(static\s+)?class\b/],
+  ["cpp", /^\s*#include\s*</m],
+  ["php", /<\?php/],
+];
+// Signal générique "ressemble à du code" mais sans langage identifiable
+// directement -- hljs sert alors juste à deviner un nom, en dernier recours.
+const PATTERNS_CODE_GENERIQUE = [/;\s*$/m, /^\s*\}\s*;?\s*$/m];
+const SEUIL_RELEVANCE_CODE = 6;
+const NOMS_LANGAGE: Record<string, string> = {
+  python: "Python", javascript: "JavaScript", typescript: "TypeScript",
+  java: "Java", cpp: "C++", php: "PHP", latex: "LaTeX",
+};
+
+function detecterLangageCode(texte: string): string | null {
+  // Un extrait de code fait rarement une seule ligne -- évite de
+  // convertir "x = 5" ou une simple formule collée en pièce jointe.
+  if (texte.trim().split("\n").length < 3) return null;
+  if (REGEX_LATEX.test(texte)) return "latex";
+  for (const [langage, motif] of PATTERNS_LANGAGE) {
+    if (motif.test(texte)) return langage;
+  }
+  if (PATTERNS_CODE_GENERIQUE.some((p) => p.test(texte))) {
+    try {
+      const resultat = hljs.highlightAuto(texte);
+      if (resultat.language && resultat.relevance >= SEUIL_RELEVANCE_CODE) {
+        return resultat.language;
+      }
+    } catch {
+      // Détection auto peut échouer sur du texte inhabituel -- traité
+      // comme "pas du code" plutôt que de faire planter le collage.
+    }
+  }
+  return null;
+}
 
 const REGEX_URL = /(https?:\/\/[^\s]+)/g;
 
@@ -85,6 +141,10 @@ export function BarreDeSaisie({
   const SEUIL_COLLAGE_LONG = 800;
   const [texteColle, setTexteColle] = useState<string | null>(null);
   const [texteColleOuvert, setTexteColleOuvert] = useState(false);
+  // Langage détecté si le collage est du code (2026-07-25) -- null pour
+  // un collage de texte normal (>800 caractères, comportement existant
+  // inchangé), une valeur hljs (ex. "python") sinon.
+  const [langageDetecte, setLangageDetecte] = useState<string | null>(null);
   // Plein écran de la saisie (2026-07-23, demande de Bourama : l'agrandissement
   // auto restait trop limité pour écrire un long message confortablement).
   const [pleinEcranSaisie, setPleinEcranSaisie] = useState(false);
@@ -230,9 +290,11 @@ export function BarreDeSaisie({
 
   function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const texteColleBrut = e.clipboardData.getData("text/plain");
-    if (texteColleBrut.length > SEUIL_COLLAGE_LONG) {
+    const langage = detecterLangageCode(texteColleBrut);
+    if (texteColleBrut.length > SEUIL_COLLAGE_LONG || langage) {
       e.preventDefault();
       setTexteColle(texteColleBrut);
+      setLangageDetecte(langage);
     }
   }
 
@@ -243,6 +305,7 @@ export function BarreDeSaisie({
     choisirFichier(null);
     setLocalisation(null);
     setTexteColle(null);
+    setLangageDetecte(null);
     setRechercheForcee(false);
     requestAnimationFrame(ajusterHauteurTexte);
   }
@@ -385,14 +448,19 @@ export function BarreDeSaisie({
               onClick={() => setTexteColleOuvert(true)}
               className="flex w-fit items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-xs text-dj-texte-muet hover:text-dj-texte"
             >
-              <FileText size={14} />
-              <span>Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères</span>
+              {langageDetecte ? <Code size={14} /> : <FileText size={14} />}
+              <span>
+                {langageDetecte
+                  ? `Code collé -- ${NOMS_LANGAGE[langageDetecte] || langageDetecte}`
+                  : `Texte collé -- ${texteColle.length.toLocaleString("fr-FR")} caractères`}
+              </span>
               <span
                 role="button"
                 aria-label="Retirer le texte collé"
                 onClick={(e) => {
                   e.stopPropagation();
                   setTexteColle(null);
+                  setLangageDetecte(null);
                 }}
                 className="hover:text-dj-texte"
               >
@@ -638,7 +706,9 @@ export function BarreDeSaisie({
         >
           <div className="flex items-center justify-between pb-4">
             <span className="text-sm text-dj-texte-muet">
-              Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères
+              {langageDetecte
+                ? `Code collé -- ${NOMS_LANGAGE[langageDetecte] || langageDetecte}`
+                : `Texte collé -- ${texteColle.length.toLocaleString("fr-FR")} caractères`}
             </span>
             <button
               onClick={() => setTexteColleOuvert(false)}
@@ -648,12 +718,18 @@ export function BarreDeSaisie({
               <X size={14} /> Fermer
             </button>
           </div>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-dj-texte"
-          >
-            {texteColle}
-          </div>
+          {langageDetecte ? (
+            <div onClick={(e) => e.stopPropagation()} className="min-h-0 flex-1 overflow-auto">
+              <BlocCode langage={langageDetecte} code={texteColle} />
+            </div>
+          ) : (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-dj-texte"
+            >
+              {texteColle}
+            </div>
+          )}
         </div>
       )}
 
