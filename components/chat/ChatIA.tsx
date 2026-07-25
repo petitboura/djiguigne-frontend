@@ -8,6 +8,7 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
+import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Page de chat qui remplace chat.py (Streamlit) -- voir
 // MIGRATION_CHAT_VERS_NEXTJS.md, section 0 et phase 2. Consomme la
@@ -40,6 +41,11 @@ export function ChatIA({
   const { activer: activerNotificationsPush } = useNotificationsPush();
   const [genEnCours, setGenEnCours] = useState(false);
   const [statuts, setStatuts] = useState<{ texte: string; etat: EtatStatut }[]>([]);
+  // Raisonnement interne du modèle (24/07, voir RaisonnementBulle.tsx) --
+  // accumulé au fil des événements {"type": "raisonnement"}, puis figé
+  // (raisonnementEnCours=false) dès que la réponse elle-même commence.
+  const [raisonnement, setRaisonnement] = useState("");
+  const [raisonnementEnCours, setRaisonnementEnCours] = useState(false);
   const [confirmation, setConfirmation] = useState<{
     nomLisible: string;
     agentNom?: string | null;
@@ -68,14 +74,20 @@ export function ChatIA({
     if (evenement.type === "reponse") {
       // Le texte de la réponse arrive : la phase "outils" est terminée,
       // on efface les indicateurs de statut plutôt que de les laisser
-      // traîner sous la réponse qui commence à s'afficher.
+      // traîner sous la réponse qui commence à s'afficher. Le raisonnement
+      // (s'il y en a eu) se fige/replie ici plutôt que d'être effacé --
+      // voir RaisonnementBulle.tsx.
       setStatuts([]);
+      setRaisonnementEnCours(false);
       majMessages((prec) => {
         const copie = [...prec];
         const dernier = copie[copie.length - 1];
         copie[copie.length - 1] = { ...dernier, content: dernier.content + evenement.texte };
         return copie;
       });
+    } else if (evenement.type === "raisonnement") {
+      setRaisonnementEnCours(true);
+      setRaisonnement((prec) => prec + evenement.texte);
     } else if (evenement.type === "meta") {
       majMessages((prec) => {
         const copie = [...prec];
@@ -113,19 +125,6 @@ export function ChatIA({
         arguments: evenement.arguments || {},
         etatReprise: evenement.etat_reprise,
       });
-    } else if (evenement.type === "sources") {
-      // Peut arriver plusieurs fois dans le même échange (plusieurs
-      // recherches Tavily) -- accumule sur le message assistant en
-      // cours plutôt que de remplacer.
-      majMessages((prec) => {
-        const copie = [...prec];
-        const dernier = copie[copie.length - 1];
-        copie[copie.length - 1] = {
-          ...dernier,
-          sources: [...(dernier.sources || []), ...evenement.sources],
-        };
-        return copie;
-      });
     }
   }
 
@@ -134,8 +133,7 @@ export function ChatIA({
     longueur: LongueurReponse,
     fichier: File | null,
     localisation: LocalisationJointe = null,
-    texteColle: string | null = null,
-    rechercheForcee: boolean = false
+    texteColle: string | null = null
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -172,6 +170,8 @@ export function ChatIA({
     majMessages((prec) => [...prec, messageUtilisateur, { id: null, role: "assistant", content: "" }]);
     setGenEnCours(true);
     setStatuts([]);
+    setRaisonnement("");
+    setRaisonnementEnCours(false);
     setConfirmation(null);
 
     // Upload/traitement du fichier AVANT le message texte :
@@ -258,7 +258,6 @@ export function ChatIA({
           // Fuseau du navigateur, pas une valeur figée côté code -- voir
           // core/main.py:chat(), paramètre fuseau_horaire.
           fuseau_horaire: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          recherche_forcee: rechercheForcee,
         },
         (evenement) => traiterEvenement(evenement)
       );
@@ -362,6 +361,30 @@ export function ChatIA({
             onExpliquerSelection={message.role === "assistant" ? expliquerSelection : undefined}
           />
         ))}
+
+        {genEnCours &&
+          statuts.length === 0 &&
+          !raisonnement &&
+          messages[messages.length - 1]?.role === "assistant" &&
+          messages[messages.length - 1]?.content === "" && (
+            // Demande Bourama (24/07) : entre l'envoi du message et le
+            // premier événement reçu (statut, raisonnement ou réponse), il
+            // ne se passait rien à l'écran -- silence total pendant tout
+            // l'aller-retour réseau + traitement backend. Cet indicateur ne
+            // dépend d'aucun événement SSE (juste genEnCours, posé
+            // immédiatement dans envoyerMessage), donc il apparaît à
+            // l'instant même de l'envoi.
+            <div className="my-1.5 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
+              <span>{nomAgent} réfléchit</span>
+              <span className="flex gap-0.5">
+                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
+                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
+                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
+              </span>
+            </div>
+          )}
+
+        <RaisonnementBulle nomAgent={nomAgent} texte={raisonnement} enCours={raisonnementEnCours} />
 
         {statuts.length > 0 && (
           <div className="max-w-[80%]">
