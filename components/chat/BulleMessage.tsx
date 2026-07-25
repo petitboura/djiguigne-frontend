@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, isValidElement, ReactNode } from "react";
+import { useEffect, useRef, useState, isValidElement, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -20,6 +20,7 @@ import { FichierChip, extensionFichier } from "./FichierChip";
 import { FichierCode, extensionCode } from "./FichierCode";
 import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
+import { RaisonnementBulle } from "./RaisonnementBulle";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown
@@ -29,6 +30,27 @@ function texteBrut(node: ReactNode): string {
   if (Array.isArray(node)) return node.map(texteBrut).join("");
   if (isValidElement(node)) return texteBrut((node.props as { children?: ReactNode }).children);
   return "";
+}
+
+// Nettoie le markdown avant lecture à voix haute (Web Speech API, voir
+// lireAVoixHaute() dans le composant) -- sans ça, la synthèse vocale lit
+// les symboles bruts tels quels (dièses, astérisques, syntaxe de lien),
+// ce qui donne une lecture pénible à l'oreille. Volontairement simple
+// (regex, pas un vrai parseur) : le but est une lecture agréable, pas
+// une reconstruction fidèle -- les blocs de code sont carrément sautés
+// (lire du code à voix haute n'a pas de sens).
+function nettoyerMarkdownPourLecture(source: string): string {
+  return source
+    .replace(/```[\s\S]*?```/g, " ") // blocs de code entiers
+    .replace(/`([^`]+)`/g, "$1") // code inline -> juste le texte
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // liens -> juste le libellé
+    .replace(/^#{1,6}\s+/gm, "") // titres
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // gras
+    .replace(/\*([^*]+)\*/g, "$1") // italique
+    .replace(/^[-*+]\s+/gm, "") // puces de liste
+    .replace(/^\d+\.\s+/gm, "") // listes numérotées
+    .trim();
 }
 
 // Le modèle mélange parfois du HTML brut dans son Markdown (le plus
@@ -100,6 +122,14 @@ export function nettoyerMessageHistorique(content: string): {
   texte: string;
   pieceJointe: MessageAffiche["pieceJointe"];
 } {
+  // Texte collé (2026-07-23) : pas un "fichier" comme les 4 marqueurs
+  // ci-dessous (pas d'URL, pas de pieceJointe type -- juste un pavé de
+  // texte à ne pas réafficher en entier au rechargement, même bug que
+  // celui corrigé plus haut pour audio/vidéo/image/document). Repli
+  // simple : on le retire du texte affiché, sans reconstruire de puce.
+  const collageMotif = /\n\n\[Texte collé joint\]\n[\s\S]*$/;
+  content = content.replace(collageMotif, "");
+
   for (const { motif, type } of MARQUEURS_PIECE_JOINTE) {
     const correspondance = motif.exec(content);
     if (!correspondance) continue;
@@ -146,6 +176,10 @@ export function BulleMessage({
   onLike,
   onDislike,
   onExpliquerSelection,
+  nomAgent,
+  enAttente,
+  raisonnement,
+  raisonnementEnCours,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -153,11 +187,21 @@ export function BulleMessage({
   onLike?: () => void;
   onDislike?: () => void;
   onExpliquerSelection?: (texteSelectionne: string) => void;
+  // Ajouté 24/07 (retour Bourama : la bulle "réfléchit"/le raisonnement
+  // apparaissaient trop loin du message, comme un bloc séparé en bas de
+  // la liste au lieu d'être rattachés à CE message assistant précis) --
+  // uniquement fournis par ChatIA.tsx pour le dernier message pendant sa
+  // génération, voir ChatIA.tsx.
+  nomAgent?: string;
+  enAttente?: boolean;
+  raisonnement?: string;
+  raisonnementEnCours?: boolean;
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState(false);
   const [texteEdition, setTexteEdition] = useState(message.content);
+  const [enLecture, setEnLecture] = useState(false);
   const estUtilisateur = message.role === "user";
 
   // Sélection de texte -> "expliquer ce passage" (2026-07-20). Signal
@@ -185,11 +229,41 @@ export function BulleMessage({
     });
   }
 
-  // Boutons pas encore branchés (voir section 4 du récap) : comportement
-  // placeholder, jamais silencieux -- l'utilisateur sait que ça arrive.
-  function pasDisponible() {
-    alert("Pas disponible pour le moment.");
+  // Lecture à voix haute (2026-07-23, bouton jusqu'ici un placeholder) --
+  // Web Speech API native du navigateur, pas de clé/coût/backend. Toggle :
+  // cliquer pendant la lecture l'arrête (speechSynthesis.cancel()) plutôt
+  // que de relancer une deuxième lecture par-dessus.
+  function lireAVoixHaute() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      alert("La lecture à voix haute n'est pas prise en charge par ce navigateur.");
+      return;
+    }
+    if (enLecture) {
+      window.speechSynthesis.cancel();
+      setEnLecture(false);
+      return;
+    }
+    // Un seul message lu à la fois sur toute la page -- annule toute
+    // lecture en cours (y compris d'un autre message) avant de démarrer.
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(nettoyerMarkdownPourLecture(message.content));
+    utterance.lang = "fr-FR";
+    utterance.onend = () => setEnLecture(false);
+    utterance.onerror = () => setEnLecture(false);
+    setEnLecture(true);
+    window.speechSynthesis.speak(utterance);
   }
+
+  // Coupe la lecture si la bulle disparaît pendant qu'elle parle (ex:
+  // régénération de la réponse, changement de conversation).
+  useEffect(() => {
+    return () => {
+      if (enLecture && typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (enEdition) {
     return (
@@ -383,6 +457,23 @@ export function BulleMessage({
         )}
       </div>
 
+      {/* Rattachés à CE message précis (juste sous son contenu, avant les
+          boutons d'action) plutôt qu'en bloc séparé plus bas dans la liste
+          -- voir props enAttente/raisonnement ci-dessus. */}
+      {!estUtilisateur && enAttente && (
+        <div className="my-1 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
+          <span>{nomAgent} réfléchit</span>
+          <span className="flex gap-0.5">
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
+          </span>
+        </div>
+      )}
+      {!estUtilisateur && raisonnement && (
+        <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
+      )}
+
       {/* Heure : uniquement sous le message utilisateur (correction du
           2026-07-15 -- pas sous l'assistant, voir section 3.1). */}
       {estUtilisateur && message.created_at && (
@@ -409,7 +500,11 @@ export function BulleMessage({
           </>
         ) : (
           <>
-            <button onClick={pasDisponible} aria-label="Lire à voix haute" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+            <button
+              onClick={lireAVoixHaute}
+              aria-label={enLecture ? "Arrêter la lecture" : "Lire à voix haute"}
+              className={`rounded-md p-1.5 hover:text-dj-texte ${enLecture ? "text-dj-accent-1" : "text-dj-texte-muet"}`}
+            >
               <Volume2 size={14} />
             </button>
             <button onClick={onLike} aria-label="Retour positif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">

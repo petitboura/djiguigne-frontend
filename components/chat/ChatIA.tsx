@@ -40,6 +40,11 @@ export function ChatIA({
   const { activer: activerNotificationsPush } = useNotificationsPush();
   const [genEnCours, setGenEnCours] = useState(false);
   const [statuts, setStatuts] = useState<{ texte: string; etat: EtatStatut }[]>([]);
+  // Raisonnement interne du modèle (24/07, voir RaisonnementBulle.tsx) --
+  // accumulé au fil des événements {"type": "raisonnement"}, puis figé
+  // (raisonnementEnCours=false) dès que la réponse elle-même commence.
+  const [raisonnement, setRaisonnement] = useState("");
+  const [raisonnementEnCours, setRaisonnementEnCours] = useState(false);
   const [confirmation, setConfirmation] = useState<{
     nomLisible: string;
     agentNom?: string | null;
@@ -68,14 +73,20 @@ export function ChatIA({
     if (evenement.type === "reponse") {
       // Le texte de la réponse arrive : la phase "outils" est terminée,
       // on efface les indicateurs de statut plutôt que de les laisser
-      // traîner sous la réponse qui commence à s'afficher.
+      // traîner sous la réponse qui commence à s'afficher. Le raisonnement
+      // (s'il y en a eu) se fige/replie ici plutôt que d'être effacé --
+      // voir RaisonnementBulle.tsx.
       setStatuts([]);
+      setRaisonnementEnCours(false);
       majMessages((prec) => {
         const copie = [...prec];
         const dernier = copie[copie.length - 1];
         copie[copie.length - 1] = { ...dernier, content: dernier.content + evenement.texte };
         return copie;
       });
+    } else if (evenement.type === "raisonnement") {
+      setRaisonnementEnCours(true);
+      setRaisonnement((prec) => prec + evenement.texte);
     } else if (evenement.type === "meta") {
       majMessages((prec) => {
         const copie = [...prec];
@@ -120,7 +131,8 @@ export function ChatIA({
     texte: string,
     longueur: LongueurReponse,
     fichier: File | null,
-    localisation: LocalisationJointe = null
+    localisation: LocalisationJointe = null,
+    texteColle: string | null = null
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -157,6 +169,8 @@ export function ChatIA({
     majMessages((prec) => [...prec, messageUtilisateur, { id: null, role: "assistant", content: "" }]);
     setGenEnCours(true);
     setStatuts([]);
+    setRaisonnement("");
+    setRaisonnementEnCours(false);
     setConfirmation(null);
 
     // Upload/traitement du fichier AVANT le message texte :
@@ -174,7 +188,7 @@ export function ChatIA({
     //   paramètre images_base64.
     let imageUrl: string | null = null;
     let imagesBase64: string[] | null = null;
-    let texteEnrichi = texte;
+    let texteEnrichi = texteColle ? `${texte}\n\n[Texte collé joint]\n${texteColle}` : texte;
     const typeFichier = typePieceJointe;
     if (fichier) {
       try {
@@ -323,29 +337,49 @@ export function ChatIA({
             <p className="mt-10 text-center text-sm text-dj-texte-muet">Pose ta question à {nomAgent}...</p>
           )
         )}
-        {messages.map((message, index) => (
-          <BulleMessage
-            key={index}
-            message={message}
-            onRegenerer={
-              message.role === "assistant"
-                ? () => regenererDepuis(index)
-                : () => envoyerMessage(message.content, "moyenne", null)
-            }
-            onEditer={message.role === "user" ? (texte) => editerMessage(index, texte) : undefined}
-            onLike={
-              message.role === "assistant" && message.id
-                ? () => setPopupFeedback({ type: "positif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
-                : undefined
-            }
-            onDislike={
-              message.role === "assistant" && message.id
-                ? () => setPopupFeedback({ type: "negatif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
-                : undefined
-            }
-            onExpliquerSelection={message.role === "assistant" ? expliquerSelection : undefined}
-          />
-        ))}
+        {messages.map((message, index) => {
+          const estDernier = index === messages.length - 1;
+          return (
+            <BulleMessage
+              key={index}
+              message={message}
+              nomAgent={nomAgent}
+              // Rattachés à CE message précis plutôt qu'en bloc séparé plus
+              // bas dans la liste (retour Bourama 24/07 : trop loin du
+              // message, le raisonnement semblait "disparaître" une fois
+              // replié en bas). enAttente : rien reçu encore (ni statut, ni
+              // raisonnement, ni texte) -- disparaît dès le premier des
+              // trois.
+              enAttente={
+                estDernier &&
+                genEnCours &&
+                message.role === "assistant" &&
+                message.content === "" &&
+                statuts.length === 0 &&
+                !raisonnement
+              }
+              raisonnement={estDernier ? raisonnement : undefined}
+              raisonnementEnCours={estDernier ? raisonnementEnCours : undefined}
+              onRegenerer={
+                message.role === "assistant"
+                  ? () => regenererDepuis(index)
+                  : () => envoyerMessage(message.content, "moyenne", null)
+              }
+              onEditer={message.role === "user" ? (texte) => editerMessage(index, texte) : undefined}
+              onLike={
+                message.role === "assistant" && message.id
+                  ? () => setPopupFeedback({ type: "positif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
+                  : undefined
+              }
+              onDislike={
+                message.role === "assistant" && message.id
+                  ? () => setPopupFeedback({ type: "negatif", messageId: message.id!, questionMessageId: messages[index - 1]?.id ?? null })
+                  : undefined
+              }
+              onExpliquerSelection={message.role === "assistant" ? expliquerSelection : undefined}
+            />
+          );
+        })}
 
         {statuts.length > 0 && (
           <div className="max-w-[80%]">

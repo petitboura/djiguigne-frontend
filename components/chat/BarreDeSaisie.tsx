@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2 } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 
@@ -57,7 +57,9 @@ export function BarreDeSaisie({
     texte: string,
     longueur: LongueurReponse,
     fichier: File | null,
-    localisation: LocalisationJointe
+    localisation: LocalisationJointe,
+    texteColle: string | null,
+    rechercheForcee: boolean
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -67,6 +69,22 @@ export function BarreDeSaisie({
   const [fichier, setFichier] = useState<File | null>(null);
   const [apercuFichier, setApercuFichier] = useState<string | null>(null);
   const [imageOuverte, setImageOuverte] = useState(false);
+  // Icône de recherche web (2026-07-23, demande de Bourama : "une icône
+  // dans la barre de saisie mais peut s'activer automatiquement") --
+  // forçage manuel EN PLUS de l'activation automatique déjà possible
+  // (le modèle décide seul d'utiliser Tavily via le tool-calling normal,
+  // dès lors que le serveur est activé pour l'agent, voir
+  // core/registre_outils.py). Un clic garantit la recherche pour LE
+  // PROCHAIN message envoyé, puis se désactive (pas un mode permanent).
+  const [rechercheForcee, setRechercheForcee] = useState(false);
+  // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
+  // comportement Claude -- coller un gros pavé de texte ne l'insère pas
+  // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
+  // peut retirer/relire, comme un fichier joint mais sans upload : le
+  // texte est déjà là côté client, pas besoin d'aller-retour serveur).
+  const SEUIL_COLLAGE_LONG = 800;
+  const [texteColle, setTexteColle] = useState<string | null>(null);
+  const [texteColleOuvert, setTexteColleOuvert] = useState(false);
   // Plein écran de la saisie (2026-07-23, demande de Bourama : l'agrandissement
   // auto restait trop limité pour écrire un long message confortablement).
   const [pleinEcranSaisie, setPleinEcranSaisie] = useState(false);
@@ -210,12 +228,22 @@ export function BarreDeSaisie({
     alert("Pas disponible pour le moment.");
   }
 
+  function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const texteColleBrut = e.clipboardData.getData("text/plain");
+    if (texteColleBrut.length > SEUIL_COLLAGE_LONG) {
+      e.preventDefault();
+      setTexteColle(texteColleBrut);
+    }
+  }
+
   function envoyer() {
-    if (!texte.trim() || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation);
+    if ((!texte.trim() && !texteColle) || desactive) return;
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
+    setTexteColle(null);
+    setRechercheForcee(false);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -287,7 +315,7 @@ export function BarreDeSaisie({
   return (
     <div className="w-full">
       {/* Vignettes d'aperçu (fichier joint / position jointe), avant envoi. */}
-      {(fichier || localisation) && (
+      {(fichier || localisation || texteColle) && (
         <div className="mb-2 flex flex-wrap items-center gap-2">
           {fichier && (
             apercuFichier ? (
@@ -352,6 +380,26 @@ export function BarreDeSaisie({
               </button>
             </div>
           )}
+          {texteColle && (
+            <button
+              onClick={() => setTexteColleOuvert(true)}
+              className="flex w-fit items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-xs text-dj-texte-muet hover:text-dj-texte"
+            >
+              <FileText size={14} />
+              <span>Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères</span>
+              <span
+                role="button"
+                aria-label="Retirer le texte collé"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTexteColle(null);
+                }}
+                className="hover:text-dj-texte"
+              >
+                <X size={14} />
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -394,6 +442,7 @@ export function BarreDeSaisie({
               setTexte(e.target.value);
               ajusterHauteurTexte();
             }}
+            onPaste={gererCollage}
             onScroll={(e) => {
               if (calqueRef.current) calqueRef.current.scrollTop = e.currentTarget.scrollTop;
             }}
@@ -500,6 +549,24 @@ export function BarreDeSaisie({
               <MapPin size={18} />
             </button>
 
+            {/* Recherche web (2026-07-23) -- forçage manuel pour le
+                prochain message ; se désactive après envoi (pas un mode
+                permanent, voir état rechercheForcee). Le modèle peut de
+                toute façon décider seul d'utiliser Tavily sans ce bouton
+                (activation automatique via le tool-calling normal). */}
+            <button
+              onClick={() => setRechercheForcee((v) => !v)}
+              aria-label={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
+              title={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
+              className={
+                rechercheForcee
+                  ? "text-dj-accent-1 transition-colors"
+                  : "text-dj-texte-muet transition-colors hover:text-dj-texte"
+              }
+            >
+              <Search size={18} />
+            </button>
+
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
                 modifiable à chaque message -- section 3.3. */}
             <select
@@ -531,7 +598,7 @@ export function BarreDeSaisie({
               >
                 <Square size={14} />
               </button>
-            ) : texte.trim() ? (
+            ) : texte.trim() || texteColle ? (
               <button
                 onClick={envoyer}
                 disabled={desactive}
@@ -563,6 +630,32 @@ export function BarreDeSaisie({
           </div>
         </div>
       </div>
+
+      {texteColleOuvert && texteColle && (
+        <div
+          className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-6"
+          onClick={() => setTexteColleOuvert(false)}
+        >
+          <div className="flex items-center justify-between pb-4">
+            <span className="text-sm text-dj-texte-muet">
+              Texte collé -- {texteColle.length.toLocaleString("fr-FR")} caractères
+            </span>
+            <button
+              onClick={() => setTexteColleOuvert(false)}
+              aria-label="Fermer"
+              className="flex items-center gap-1.5 rounded-lg border border-dj-bordure px-2.5 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
+            >
+              <X size={14} /> Fermer
+            </button>
+          </div>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-dj-texte"
+          >
+            {texteColle}
+          </div>
+        </div>
+      )}
 
       {imageOuverte && apercuFichier && (
         <div
@@ -624,6 +717,7 @@ export function BarreDeSaisie({
               autoFocus
               value={texte}
               onChange={(e) => setTexte(e.target.value)}
+              onPaste={gererCollage}
               onScroll={(e) => {
                 if (calquePleinEcranRef.current) calquePleinEcranRef.current.scrollTop = e.currentTarget.scrollTop;
               }}
@@ -644,7 +738,7 @@ export function BarreDeSaisie({
                 envoyer();
                 setPleinEcranSaisie(false);
               }}
-              disabled={!texte.trim() || desactive}
+              disabled={(!texte.trim() && !texteColle) || desactive}
               aria-label="Envoyer"
               className="flex items-center gap-2 rounded-full bg-dj-gradient px-5 py-2.5 text-sm font-medium text-[#1A0D02] disabled:opacity-60"
             >
