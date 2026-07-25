@@ -29,6 +29,17 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
+  // Test EN LIVE (25/07, demande Bourama : "faut tester") -- appelle
+  // directement la décision de l'agent sur une vraie conversation, sans
+  // attendre les 6h du planificateur ni les jours d'inactivité
+  // configurés, et sans RIEN envoyer réellement (voir POST
+  // /{agent_id}/proactivite/tester côté backend).
+  const [test, setTest] = useState(false);
+  const [resultatTest, setResultatTest] = useState<{ relance: string | null; aucune_conversation: boolean } | null>(
+    null
+  );
+  const [erreurTest, setErreurTest] = useState<string | null>(null);
+
   useEffect(() => {
     appelerApi(`/api/agents/${agentId}/edition`)
       .then((r: ConfigProactivite) =>
@@ -62,6 +73,24 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
       setErreur(e instanceof Error ? e.message : "Impossible d'enregistrer pour le moment.");
     } finally {
       setEnregistrement(false);
+    }
+  }
+
+  async function tester() {
+    if (!config) return;
+    setTest(true);
+    setResultatTest(null);
+    setErreurTest(null);
+    try {
+      const r = await appelerApi(`/api/agents/${agentId}/proactivite/tester`, {
+        method: "POST",
+        body: JSON.stringify({ proactivite_instructions: config.proactivite_instructions }),
+      });
+      setResultatTest(r as { relance: string | null; aucune_conversation: boolean });
+    } catch (e) {
+      setErreurTest(e instanceof Error ? e.message : "Impossible de tester pour le moment.");
+    } finally {
+      setTest(false);
     }
   }
 
@@ -153,6 +182,44 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
         {message && <span className="text-sm text-dj-texte-muet">{message}</span>}
       </div>
       {erreur && <p className="text-sm text-[#F87171]">{erreur}</p>}
+
+      <div className="rounded-xl border border-dj-bordure bg-dj-surface p-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={tester}
+            disabled={test}
+            className="self-start rounded-full border border-dj-bordure-forte px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-accent-1 disabled:opacity-50"
+          >
+            {test ? "Test en cours…" : "Tester maintenant"}
+          </button>
+          <span className="text-xs text-dj-texte-muet">
+            Teste la décision sur ta propre conversation avec cette IA, tout de suite, sans rien envoyer réellement
+            à personne.
+          </span>
+        </div>
+
+        {erreurTest && <p className="mt-3 text-sm text-[#F87171]">{erreurTest}</p>}
+
+        {resultatTest?.aucune_conversation && (
+          <p className="mt-3 text-sm text-dj-texte-muet">
+            Pas encore de conversation entre toi et cette IA -- discute avec elle une fois, puis reteste.
+          </p>
+        )}
+
+        {resultatTest && !resultatTest.aucune_conversation && resultatTest.relance && (
+          <div className="mt-3 rounded-lg border border-dj-accent-1/40 bg-dj-fond p-3 text-sm text-dj-texte">
+            <p className="mb-1 text-xs font-medium text-dj-accent-1">L&apos;IA relancerait avec :</p>
+            {resultatTest.relance}
+          </div>
+        )}
+
+        {resultatTest && !resultatTest.aucune_conversation && !resultatTest.relance && (
+          <p className="mt-3 text-sm text-dj-texte-muet">
+            L&apos;IA ne relancerait pas -- aucune raison concrète trouvée selon tes critères actuels.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
