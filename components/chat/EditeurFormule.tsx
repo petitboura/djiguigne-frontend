@@ -146,6 +146,7 @@ export function EditeurFormule({
           </div>
           <math-field
             ref={mathfieldRef}
+            math-virtual-keyboard-policy="manual"
             className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
           />
           {!mathliveInstalle && (

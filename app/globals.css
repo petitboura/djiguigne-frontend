@@ -9,6 +9,21 @@
 @import "katex/dist/katex.min.css";
 @import "mathlive/fonts.css";
 
+/* Éditeur de formule (2026-07-25, EditeurFormule.tsx) -- MathLive apporte
+   son propre clavier virtuel + menu (icônes ⌨/≡) dans des couleurs/styles
+   qui lui sont propres, incohérents avec le thème sombre de l'app (retour
+   Bourama : "pas du tout mon style ni mes couleurs"). On fournit déjà
+   notre propre rangée de symboles cliquables au-dessus du champ, donc ces
+   deux éléments intégrés sont redondants -- masqués plutôt que retheming
+   leur panneau interne (shadow DOM complexe à recolorer proprement). */
+math-field::part(virtual-keyboard-toggle),
+math-field::part(menu-toggle) {
+  display: none;
+}
+math-field {
+  --hue: 30; /* aligné sur dj-accent-1 (#E8934A, orange) pour le curseur/la sélection */
+}
+
 /* Thème highlight.js sur-mesure (voir components/chat/BlocCode.tsx) --
    volontairement pas un thème importé (github-dark, atom-one...) : les
    couleurs suivent la palette dj-* pour rester cohérentes avec le reste
