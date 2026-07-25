@@ -113,6 +113,19 @@ export function ChatIA({
         arguments: evenement.arguments || {},
         etatReprise: evenement.etat_reprise,
       });
+    } else if (evenement.type === "sources") {
+      // Peut arriver plusieurs fois dans le même échange (plusieurs
+      // recherches Tavily) -- accumule sur le message assistant en
+      // cours plutôt que de remplacer.
+      majMessages((prec) => {
+        const copie = [...prec];
+        const dernier = copie[copie.length - 1];
+        copie[copie.length - 1] = {
+          ...dernier,
+          sources: [...(dernier.sources || []), ...evenement.sources],
+        };
+        return copie;
+      });
     }
   }
 
@@ -121,7 +134,8 @@ export function ChatIA({
     longueur: LongueurReponse,
     fichier: File | null,
     localisation: LocalisationJointe = null,
-    texteColle: string | null = null
+    texteColle: string | null = null,
+    rechercheForcee: boolean = false
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -244,6 +258,7 @@ export function ChatIA({
           // Fuseau du navigateur, pas une valeur figée côté code -- voir
           // core/main.py:chat(), paramètre fuseau_horaire.
           fuseau_horaire: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          recherche_forcee: rechercheForcee,
         },
         (evenement) => traiterEvenement(evenement)
       );

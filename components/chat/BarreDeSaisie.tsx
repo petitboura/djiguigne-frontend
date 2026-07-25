@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2 } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 
@@ -58,7 +58,8 @@ export function BarreDeSaisie({
     longueur: LongueurReponse,
     fichier: File | null,
     localisation: LocalisationJointe,
-    texteColle: string | null
+    texteColle: string | null,
+    rechercheForcee: boolean
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -68,6 +69,14 @@ export function BarreDeSaisie({
   const [fichier, setFichier] = useState<File | null>(null);
   const [apercuFichier, setApercuFichier] = useState<string | null>(null);
   const [imageOuverte, setImageOuverte] = useState(false);
+  // Icône de recherche web (2026-07-23, demande de Bourama : "une icône
+  // dans la barre de saisie mais peut s'activer automatiquement") --
+  // forçage manuel EN PLUS de l'activation automatique déjà possible
+  // (le modèle décide seul d'utiliser Tavily via le tool-calling normal,
+  // dès lors que le serveur est activé pour l'agent, voir
+  // core/registre_outils.py). Un clic garantit la recherche pour LE
+  // PROCHAIN message envoyé, puis se désactive (pas un mode permanent).
+  const [rechercheForcee, setRechercheForcee] = useState(false);
   // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
   // comportement Claude -- coller un gros pavé de texte ne l'insère pas
   // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
@@ -229,11 +238,12 @@ export function BarreDeSaisie({
 
   function envoyer() {
     if ((!texte.trim() && !texteColle) || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation, texteColle);
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
     setTexteColle(null);
+    setRechercheForcee(false);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -537,6 +547,24 @@ export function BarreDeSaisie({
               }
             >
               <MapPin size={18} />
+            </button>
+
+            {/* Recherche web (2026-07-23) -- forçage manuel pour le
+                prochain message ; se désactive après envoi (pas un mode
+                permanent, voir état rechercheForcee). Le modèle peut de
+                toute façon décider seul d'utiliser Tavily sans ce bouton
+                (activation automatique via le tool-calling normal). */}
+            <button
+              onClick={() => setRechercheForcee((v) => !v)}
+              aria-label={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
+              title={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
+              className={
+                rechercheForcee
+                  ? "text-dj-accent-1 transition-colors"
+                  : "text-dj-texte-muet transition-colors hover:text-dj-texte"
+              }
+            >
+              <Search size={18} />
             </button>
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),

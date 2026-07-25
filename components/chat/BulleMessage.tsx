@@ -91,6 +91,9 @@ export interface MessageAffiche {
   // survivre à un rechargement de page, juste de montrer ce qui a été
   // envoyé dans le fil de la conversation en cours.
   pieceJointe?: { nom: string; type: "image" | "document" | "video" | "audio"; previewUrl?: string } | null;
+  // Résultats de recherche web (Tavily) utilisés pour cette réponse --
+  // voir l'événement SSE "sources" dans core/main.py:chat() (2026-07-23).
+  sources?: { titre: string; url: string }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -423,6 +426,34 @@ export function BulleMessage({
             {normaliserLatex(message.content)}
           </ReactMarkdown>
         </div>
+
+        {message.sources && message.sources.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {message.sources.map((s, i) => (
+              <a
+                key={i}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={s.titre}
+                className="flex items-center gap-1 rounded-full border border-dj-bordure bg-dj-surface px-2 py-1 text-[11px] text-dj-texte-muet no-underline transition-colors hover:border-dj-bordure-forte hover:text-dj-texte"
+              >
+                <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-dj-surface-haute text-[9px] text-dj-accent-1">
+                  {i + 1}
+                </span>
+                <span className="max-w-[160px] truncate">
+                  {(() => {
+                    try {
+                      return new URL(s.url).hostname.replace(/^www\./, "");
+                    } catch {
+                      return s.titre;
+                    }
+                  })()}
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Bulle flottante "Expliquer" -- apparaît uniquement sur une
             sélection de texte dans une réponse assistant. position:fixed,
