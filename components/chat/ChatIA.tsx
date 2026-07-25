@@ -387,28 +387,6 @@ export function ChatIA({
           );
         })}
 
-        {genEnCours &&
-          statuts.length === 0 &&
-          !raisonnement &&
-          messages[messages.length - 1]?.role === "assistant" &&
-          messages[messages.length - 1]?.content === "" && (
-            // Demande Bourama (24/07) : entre l'envoi du message et le
-            // premier événement reçu (statut, raisonnement ou réponse), il
-            // ne se passait rien à l'écran -- silence total pendant tout
-            // l'aller-retour réseau + traitement backend. Cet indicateur ne
-            // dépend d'aucun événement SSE (juste genEnCours, posé
-            // immédiatement dans envoyerMessage), donc il apparaît à
-            // l'instant même de l'envoi.
-            <div className="my-1.5 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
-              <span>{nomAgent} réfléchit</span>
-              <span className="flex gap-0.5">
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
-                <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
-              </span>
-            </div>
-          )}
-
         {statuts.length > 0 && (
           <div className="max-w-[80%]">
             {statuts.map((s, i) => (
