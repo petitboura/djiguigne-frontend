@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { appelerApi } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
 import { PleinEcran } from "@/components/PleinEcran";
 
 // Ajouté le 2026-07-13 (Bourama : "conversation récente par membre de la
@@ -29,10 +29,12 @@ import { PleinEcran } from "@/components/PleinEcran";
 // reste courte, le plein écran affiche la liste en grand sans changer qui
 // déclenche quoi.
 //
-// Le chat lui-même reste en Streamlit (voir PIVOT_SOCIAL.md, "ce qui ne
-// change pas") : ce composant ne fait qu'afficher la LISTE des
-// conversations et ouvrir la bonne, pas le contenu message par message
-// (ça, c'est le rôle de faces/vues/chat.py une fois qu'on y arrive).
+// Mis a jour le 25/07/2026 (suite au retrait complet de Streamlit) :
+// ouvrirConversation naviguait vers une URL Streamlit (?agent=...) avec
+// un pont de session par token dans l'URL. Le chat vit maintenant dans
+// cette meme app Next.js (voir BoutonUtiliser.tsx, migration du
+// 2026-07-15) : plus besoin de pont, un simple push interne suffit, la
+// session Supabase deja active cote client s'applique directement.
 
 type Conversation = {
   agent_id: string;
@@ -89,6 +91,7 @@ function LigneConversation({
 }
 
 export function HistoriqueConversations() {
+  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [pleinEcran, setPleinEcran] = useState(false);
 
@@ -98,25 +101,8 @@ export function HistoriqueConversations() {
       .catch(() => setConversations([]));
   }, []);
 
-  async function ouvrirConversation(agentId: string) {
-    const streamlitUrl = process.env.NEXT_PUBLIC_STREAMLIT_URL;
-    if (!streamlitUrl) return;
-
-    let lien = `${streamlitUrl.replace(/\/$/, "")}/?agent=${agentId}`;
-
-    // Même pont de session que BoutonUtiliser.tsx : rouvrir une
-    // conversation doit reconnecter automatiquement, sans redemander de
-    // se connecter (Bourama, message précédent : "sans exception").
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session) {
-      lien +=
-        `&access_token=${encodeURIComponent(session.access_token)}` +
-        `&refresh_token=${encodeURIComponent(session.refresh_token)}`;
-    }
-
-    window.open(lien, "_blank", "noopener,noreferrer");
+  function ouvrirConversation(agentId: string) {
+    router.push(`/agent/${agentId}/chat`);
   }
 
   if (conversations === null) {
