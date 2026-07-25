@@ -70,6 +70,19 @@ export function EditeurFormule({
     import("mathlive").then(() => setMathliveInstalle(true));
   }, []);
 
+  // Le panneau du clavier virtuel de MathLive est injecté au niveau de
+  // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
+  // donc là, pas sur le champ lui-même. Retiré à la fermeture pour ne pas
+  // laisser un attribut global qui ne concerne que cet éditeur.
+  useEffect(() => {
+    const valeurPrecedente = document.body.getAttribute("theme");
+    document.body.setAttribute("theme", "dark");
+    return () => {
+      if (valeurPrecedente === null) document.body.removeAttribute("theme");
+      else document.body.setAttribute("theme", valeurPrecedente);
+    };
+  }, []);
+
   // Rendu direct de la formule chimie pendant la construction (même
   // principe que MathLive côté maths, mais fait main puisqu'il n'y a pas
   // de composant équivalent pour mhchem).

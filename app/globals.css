@@ -9,14 +9,15 @@
 @import "katex/dist/katex.min.css";
 @import "mathlive/fonts.css";
 
-/* Éditeur de formule (2026-07-25, EditeurFormule.tsx) -- MathLive apporte
-   son propre clavier virtuel + menu (icônes ⌨/≡) dans des couleurs/styles
-   qui lui sont propres, incohérents avec le thème sombre de l'app (retour
-   Bourama : "pas du tout mon style ni mes couleurs"). On fournit déjà
-   notre propre rangée de symboles cliquables au-dessus du champ, donc ces
-   deux éléments intégrés sont redondants -- masqués plutôt que retheming
-   leur panneau interne (shadow DOM complexe à recolorer proprement). */
-math-field::part(virtual-keyboard-toggle),
+/* Éditeur de formule (2026-07-25, EditeurFormule.tsx) -- le clavier
+   virtuel de MathLive est réactivé (Bourama veut une couverture complète
+   de symboles, notre palette maison ne suffit pas pour ça) ; seul le
+   bouton menu (⋮, raccourcis/aide, sans rapport avec les symboles) reste
+   masqué. Le panneau du clavier est thémé en sombre via l'attribut
+   `theme="dark"` posé sur <body> pendant que l'éditeur est ouvert (voir
+   EditeurFormule.tsx) -- le panneau du clavier virtuel est injecté par
+   MathLive au niveau de <body>, pas dans le shadow DOM du <math-field>
+   lui-même, donc son thème se règle à cet endroit-là. */
 math-field::part(menu-toggle) {
   display: none;
 }
