@@ -51,9 +51,16 @@ const SYMBOLES_CHIMIE: [string, string][] = [
 export function EditeurFormule({
   onInserer,
   onFermer,
+  valeurInitiale,
 }: {
   onInserer: (texteLatex: string) => void;
   onFermer: () => void;
+  /** Pré-remplit le champ maths -- utilisé par l'OCR formule (image ->
+   * LaTeX via Gemini, voir BarreDeSaisie.tsx:extraireFormuleDeImage) pour
+   * une relecture/correction avant insertion, plutôt qu'une insertion
+   * directe sans passage par l'éditeur (une transcription OCR peut se
+   * tromper). */
+  valeurInitiale?: string;
 }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
   const clavierConteneurRef = useRef<HTMLDivElement>(null);
@@ -71,6 +78,16 @@ export function EditeurFormule({
   useEffect(() => {
     import("mathlive").then(() => setMathliveInstalle(true));
   }, []);
+
+  // Pré-remplissage (OCR formule) : ne peut se faire qu'une fois le
+  // custom element <math-field> réellement enregistré par le navigateur
+  // (mathliveInstalle) -- avant ça, `.value = ...` sur un élément non
+  // encore upgradé n'aurait aucun effet.
+  useEffect(() => {
+    if (!mathliveInstalle || !valeurInitiale || !mathfieldRef.current) return;
+    mathfieldRef.current.value = valeurInitiale;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mathliveInstalle]);
 
   // Par défaut, MathLive ajoute le panneau du clavier virtuel comme enfant
   // direct de <body> (position fixe, pleine largeur, collé en bas de

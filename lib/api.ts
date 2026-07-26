@@ -227,6 +227,19 @@ export async function uploaderVideoChat(fichier: File) {
 }
 
 /**
+ * OCR ciblé formule (2026-07-26, priorité maths de Bourama) -- voir
+ * api/uploads.py:extraire_formule. Contrairement à uploaderImageChat,
+ * cette image ne rejoint jamais la conversation : elle sert uniquement
+ * à extraire le LaTeX, ouvert ensuite dans EditeurFormule.tsx (éditable
+ * avant insertion). Lève une erreur si aucune formule n'est détectée
+ * (422 côté backend).
+ */
+export async function extraireFormuleImage(fichier: File) {
+  const resultat = await appelerApiFichier("/api/uploads/extraire-formule", fichier);
+  return resultat.latex as string;
+}
+
+/**
  * Statut de connexion OAuth à un service externe (ex. "github") via le
  * moteur générique -- voir connexions/oauth_generique.py côté backend.
  */

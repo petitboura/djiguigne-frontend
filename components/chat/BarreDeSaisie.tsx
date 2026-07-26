@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check } from "lucide-react";
-import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
+import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurFormule } from "./EditeurFormule";
@@ -223,6 +223,26 @@ export function BarreDeSaisie({
   const [canvasOuvert, setCanvasOuvert] = useState(false);
   // Éditeur de formule maths/chimie (2026-07-25) -- voir EditeurFormule.tsx.
   const [editeurFormuleOuvert, setEditeurFormuleOuvert] = useState(false);
+  // OCR ciblé formule (2026-07-26, priorité maths de Bourama) -- image
+  // jointe -> LaTeX extrait par Gemini -> ouvert dans EditeurFormule pour
+  // relecture/correction avant insertion (jamais inséré tel quel sans
+  // passage par l'éditeur, une transcription OCR peut se tromper).
+  const [extractionFormuleEnCours, setExtractionFormuleEnCours] = useState(false);
+  const [formuleInitiale, setFormuleInitiale] = useState<string | undefined>(undefined);
+
+  async function extraireFormuleDeImage() {
+    if (!fichier || extractionFormuleEnCours) return;
+    setExtractionFormuleEnCours(true);
+    try {
+      const latex = await extraireFormuleImage(fichier);
+      setFormuleInitiale(latex);
+      setEditeurFormuleOuvert(true);
+    } catch (e) {
+      alert(e instanceof Error && e.message.includes("Aucune formule") ? "Aucune formule détectée dans cette image." : "Échec de l'extraction, réessaie.");
+    } finally {
+      setExtractionFormuleEnCours(false);
+    }
+  }
   const inputFichierRef = useRef<HTMLInputElement>(null);
   const zoneTexteRef = useRef<HTMLTextAreaElement>(null);
   const calqueRef = useRef<HTMLDivElement>(null);
@@ -374,6 +394,7 @@ export function BarreDeSaisie({
     const nouveauTexte = texte.slice(0, debut) + texteLatex + texte.slice(fin);
     setTexte(nouveauTexte);
     setEditeurFormuleOuvert(false);
+    setFormuleInitiale(undefined);
     requestAnimationFrame(() => {
       el?.focus();
       const pos = debut + texteLatex.length;
@@ -492,6 +513,19 @@ export function BarreDeSaisie({
                   className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-dj-fond text-dj-texte-muet hover:text-dj-texte"
                 >
                   <X size={12} />
+                </button>
+                {/* OCR ciblé formule (2026-07-26) -- extrait le LaTeX de
+                    l'image et l'ouvre dans EditeurFormule pour relecture
+                    avant insertion, plutôt que d'envoyer l'image telle
+                    quelle et espérer que Nucleos la lise correctement. */}
+                <button
+                  onClick={extraireFormuleDeImage}
+                  disabled={extractionFormuleEnCours}
+                  aria-label="Extraire la formule de cette image"
+                  title="Extraire la formule"
+                  className="absolute -bottom-1.5 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-dj-accent-1 text-white disabled:opacity-60"
+                >
+                  <Sigma size={11} className={extractionFormuleEnCours ? "animate-pulse" : ""} />
                 </button>
               </div>
             ) : fichier.type.startsWith("video/") || fichier.type.startsWith("audio/") ? (
@@ -883,7 +917,16 @@ export function BarreDeSaisie({
           </div>
         </div>
 
-        {editeurFormuleOuvert && <EditeurFormule onInserer={insererFormule} onFermer={() => setEditeurFormuleOuvert(false)} />}
+        {editeurFormuleOuvert && (
+          <EditeurFormule
+            onInserer={insererFormule}
+            onFermer={() => {
+              setEditeurFormuleOuvert(false);
+              setFormuleInitiale(undefined);
+            }}
+            valeurInitiale={formuleInitiale}
+          />
+        )}
       </div>
 
       {texteColleOuvert && texteColle && (
