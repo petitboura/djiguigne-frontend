@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -153,7 +153,7 @@ export function BarreDeSaisie({
     localisation: LocalisationJointe,
     texteColle: string | null,
     rechercheForcee: boolean,
-    outilForce: string | null
+    outilsForces: string[]
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -171,16 +171,16 @@ export function BarreDeSaisie({
   // core/registre_outils.py). Un clic garantit la recherche pour LE
   // PROCHAIN message envoyé, puis se désactive (pas un mode permanent).
   const [rechercheForcee, setRechercheForcee] = useState(false);
-  // Bouton "Outils" (2026-07-25, TEST agent nucleos uniquement -- voir
-  // core/mcp_tools.py:lister_tous_les_outils). Sur cet agent précis,
-  // AUCUN outil n'est envoyé au modèle par défaut (contrairement à tous
-  // les autres agents, comportement inchangé) : il faut en sélectionner
-  // un manuellement ici pour qu'il soit disponible pour le prochain
-  // message. Un seul à la fois (pas de sélection multiple pour l'instant,
-  // voir échange avec Bourama du 25/07). Envoyé tel quel pour tous les
-  // agents (le backend ignore ce champ hors nucleos), pas besoin de
-  // conditionner l'affichage du bouton ici.
-  const [outilForce, setOutilForce] = useState<string | null>(null);
+  // Bouton "Outils" (2026-07-25, étendu à la MULTI-sélection le 26/07 --
+  // voir core/mcp_tools.py:lister_tous_les_outils). AUCUN outil n'est
+  // envoyé au modèle par défaut, sur aucun agent : il faut en
+  // sélectionner un ou plusieurs manuellement ici pour qu'ils soient
+  // disponibles pour le prochain message. Sélection cumulative (clic sur
+  // un outil déjà actif le retire, clic sur un autre l'ajoute à la liste
+  // sans désélectionner le reste) -- demande explicite de Bourama, la
+  // sélection unique précédente ne permettait pas de combiner par ex.
+  // recherche web + GitHub sur un même message.
+  const [outilsForces, setOutilsForces] = useState<string[]>([]);
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
@@ -394,14 +394,14 @@ export function BarreDeSaisie({
 
   function envoyer() {
     if ((!texte.trim() && !texteColle) || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee, outilForce);
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee, outilsForces);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
     setTexteColle(null);
     setLangageDetecte(null);
     setRechercheForcee(false);
-    setOutilForce(null);
+    setOutilsForces([]);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -749,24 +749,37 @@ export function BarreDeSaisie({
               <Search size={18} />
             </button>
 
-            {/* Bouton Outils (2026-07-25, TEST agent nucleos) -- sélection
-                manuelle d'UN SEUL outil pour le prochain message, voir
-                OUTILS_DISPONIBLES en haut du fichier et
+            {/* Bouton Outils (2026-07-25, multi-sélection depuis le 26/07) --
+                sélection cumulative de PLUSIEURS outils pour le prochain
+                message, voir OUTILS_DISPONIBLES en haut du fichier et
                 core/mcp_tools.py:lister_tous_les_outils côté backend. */}
             <div className="relative">
               <button
                 ref={boutonOutilsRef}
                 onClick={() => setMenuOutilsOuvert((v) => !v)}
-                aria-label={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
-                title={outilForce ? `Outil sélectionné : ${outilForce}` : "Choisir un outil"}
+                aria-label={
+                  outilsForces.length
+                    ? `${outilsForces.length} outil(s) sélectionné(s) : ${outilsForces.join(", ")}`
+                    : "Choisir un ou plusieurs outils"
+                }
+                title={
+                  outilsForces.length
+                    ? `${outilsForces.length} outil(s) sélectionné(s) : ${outilsForces.join(", ")}`
+                    : "Choisir un ou plusieurs outils"
+                }
                 className={
-                  "rounded-full p-1 transition-colors " +
-                  (outilForce || menuOutilsOuvert
+                  "relative rounded-full p-1 transition-colors " +
+                  (outilsForces.length || menuOutilsOuvert
                     ? "bg-dj-accent-1/10 text-dj-accent-1"
                     : "text-dj-texte-muet hover:text-dj-texte")
                 }
               >
                 <Wrench size={18} />
+                {outilsForces.length > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-dj-accent-1 px-0.5 text-[9px] font-semibold leading-none text-white">
+                    {outilsForces.length}
+                  </span>
+                )}
               </button>
               <div
                 ref={menuOutilsRef}
@@ -777,24 +790,33 @@ export function BarreDeSaisie({
                     : "pointer-events-none translate-y-1 scale-95 opacity-0")
                 }
               >
-                {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => (
-                  <button
-                    key={nom}
-                    onClick={() => {
-                      setOutilForce(outilForce === nom ? null : nom);
-                      setMenuOutilsOuvert(false);
-                    }}
-                    className={
-                      "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
-                      (outilForce === nom
-                        ? "bg-dj-accent-1/10 text-dj-accent-1"
-                        : "text-dj-texte hover:bg-dj-surface-haute")
-                    }
-                  >
-                    <Icone size={14} />
-                    {label}
-                  </button>
-                ))}
+                {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => {
+                  const actif = outilsForces.includes(nom);
+                  return (
+                    <button
+                      key={nom}
+                      onClick={() => {
+                        setOutilsForces((prec) =>
+                          actif ? prec.filter((o) => o !== nom) : [...prec, nom]
+                        );
+                        // Menu volontairement laissé ouvert (contrairement à
+                        // l'ancienne sélection unique) : cumuler plusieurs
+                        // outils demande plusieurs clics d'affilée sans
+                        // rouvrir le menu à chaque fois.
+                      }}
+                      className={
+                        "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
+                        (actif
+                          ? "bg-dj-accent-1/10 text-dj-accent-1"
+                          : "text-dj-texte hover:bg-dj-surface-haute")
+                      }
+                    >
+                      <Icone size={14} />
+                      <span className="flex-1">{label}</span>
+                      {actif && <Check size={13} />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

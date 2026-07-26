@@ -145,7 +145,7 @@ export function ChatIA({
     localisation: LocalisationJointe = null,
     texteColle: string | null = null,
     rechercheForcee: boolean = false,
-    outilForce: string | null = null
+    outilsForces: string[] = []
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -279,7 +279,7 @@ export function ChatIA({
           // Bouton Outils (2026-07-25, TEST agent nucleos) -- voir
           // BarreDeSaisie.tsx:OUTILS_DISPONIBLES et
           // core/mcp_tools.py:lister_tous_les_outils côté backend.
-          outil_force: outilForce,
+          outil_force: outilsForces,
         },
         (evenement) => traiterEvenement(evenement)
       );
