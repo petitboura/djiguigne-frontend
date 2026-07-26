@@ -35,9 +35,11 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
   // configurés, et sans RIEN envoyer réellement (voir POST
   // /{agent_id}/proactivite/tester côté backend).
   const [test, setTest] = useState(false);
-  const [resultatTest, setResultatTest] = useState<{ relance: string | null; aucune_conversation: boolean } | null>(
-    null
-  );
+  const [resultatTest, setResultatTest] = useState<{
+    relance: string | null;
+    aucune_conversation: boolean;
+    erreur?: string | null;
+  } | null>(null);
   const [erreurTest, setErreurTest] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
         method: "POST",
         body: JSON.stringify({ proactivite_instructions: config.proactivite_instructions }),
       });
-      setResultatTest(r as { relance: string | null; aucune_conversation: boolean });
+      setResultatTest(r as { relance: string | null; aucune_conversation: boolean; erreur?: string | null });
     } catch (e) {
       setErreurTest(e instanceof Error ? e.message : "Impossible de tester pour le moment.");
     } finally {
@@ -201,20 +203,26 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
 
         {erreurTest && <p className="mt-3 text-sm text-[#F87171]">{erreurTest}</p>}
 
+        {resultatTest?.erreur && (
+          <p className="mt-3 text-sm text-[#F87171]">
+            ⚠️ {resultatTest.erreur} -- pas une vraie décision de l&apos;IA, réessaie dans une minute.
+          </p>
+        )}
+
         {resultatTest?.aucune_conversation && (
           <p className="mt-3 text-sm text-dj-texte-muet">
             Pas encore de conversation entre toi et cette IA -- discute avec elle une fois, puis reteste.
           </p>
         )}
 
-        {resultatTest && !resultatTest.aucune_conversation && resultatTest.relance && (
+        {resultatTest && !resultatTest.erreur && !resultatTest.aucune_conversation && resultatTest.relance && (
           <div className="mt-3 rounded-lg border border-dj-accent-1/40 bg-dj-fond p-3 text-sm text-dj-texte">
             <p className="mb-1 text-xs font-medium text-dj-accent-1">L&apos;IA relancerait avec :</p>
             {resultatTest.relance}
           </div>
         )}
 
-        {resultatTest && !resultatTest.aucune_conversation && !resultatTest.relance && (
+        {resultatTest && !resultatTest.erreur && !resultatTest.aucune_conversation && !resultatTest.relance && (
           <p className="mt-3 text-sm text-dj-texte-muet">
             L&apos;IA ne relancerait pas -- aucune raison concrète trouvée selon tes critères actuels.
           </p>
