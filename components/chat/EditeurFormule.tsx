@@ -89,6 +89,25 @@ export function EditeurFormule({
     };
   }, [mathliveInstalle]);
 
+  // Le panneau du clavier virtuel ("MLK__backdrop") est positionné en
+  // absolu à l'intérieur de `.ML__keyboard`, qui doit donc avoir une
+  // vraie hauteur pour lui servir de repère -- sans ça, rien ne
+  // s'affiche (voir commentaire au-dessus). Dans le cas `document.body`
+  // par défaut, `.ML__keyboard` est en `position: fixed` et prend donc
+  // la hauteur de la fenêtre entière ; notre div n'a pas cet avantage,
+  // donc on lui donne une hauteur explicite -- mais seulement pendant
+  // que le clavier est réellement affiché, sinon il resterait un vide
+  // permanent dans la bulle même quand on ne s'en sert pas.
+  const [clavierVisible, setClavierVisible] = useState(false);
+  useEffect(() => {
+    if (!mathliveInstalle) return;
+    function surChangement() {
+      setClavierVisible(!!window.mathVirtualKeyboard?.visible);
+    }
+    window.mathVirtualKeyboard.addEventListener("geometrychange", surChangement);
+    return () => window.mathVirtualKeyboard.removeEventListener("geometrychange", surChangement);
+  }, [mathliveInstalle]);
+
   // Le panneau du clavier virtuel de MathLive est injecté au niveau de
   // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
   // donc là, pas sur le champ lui-même. Retiré à la fermeture pour ne pas
@@ -225,7 +244,10 @@ export function EditeurFormule({
               className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
             />
             {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
-            <div ref={clavierConteneurRef} className="mt-2 overflow-hidden rounded-lg" />
+            <div
+              ref={clavierConteneurRef}
+              className={clavierVisible ? "relative mt-2 h-[300px] w-full rounded-lg" : "h-0 w-full"}
+            />
           </>
         ) : (
           <>
