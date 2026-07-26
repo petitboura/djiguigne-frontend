@@ -99,8 +99,9 @@ export function ChatIA({
         const iUser = copie.length - 2;
         copie[iAssistant] = {
           ...copie[iAssistant],
-          id: evenement.message_id_assistant,
-          created_at: evenement.created_at_assistant,
+          id: evenement.message_id_assistant ?? copie[iAssistant].id,
+          created_at: evenement.created_at_assistant ?? copie[iAssistant].created_at,
+          qualiteReduite: evenement.modele_qualite_reduite === true,
         };
         if (iUser >= 0) copie[iUser] = { ...copie[iUser], id: evenement.message_id_user };
         return copie;

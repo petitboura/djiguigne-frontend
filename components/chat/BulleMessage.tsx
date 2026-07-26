@@ -7,7 +7,7 @@ import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeKatex from "rehype-katex";
-import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X } from "lucide-react";
+import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle } from "lucide-react";
 import { formaterHeure } from "@/lib/formatageHeure";
 import { BlocCode } from "./BlocCode";
 import { Mermaid } from "./Mermaid";
@@ -93,6 +93,14 @@ export interface MessageAffiche {
   // survivre à un rechargement de page, juste de montrer ce qui a été
   // envoyé dans le fil de la conversation en cours.
   pieceJointe?: { nom: string; type: "image" | "document" | "video" | "audio"; previewUrl?: string } | null;
+  // Ajouté 2026-07-26 (demande Bourama) : true quand cette réponse précise
+  // a été générée par un modèle de secours de qualité nettement réduite
+  // (llama-3.1-8b-instant, tout dernier recours Groq avant Gemini -- voir
+  // MODELES_QUALITE_REDUITE dans core/main.py) plutôt que par le modèle
+  // principal. Affiché comme petit indice discret sous le message pour que
+  // l'utilisateur ne juge pas la qualité habituelle de la plateforme
+  // là-dessus.
+  qualiteReduite?: boolean;
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -479,6 +487,16 @@ export function BulleMessage({
         <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
       )}
       {!estUtilisateur && sources && sources.length > 0 && <SourcesBulle sources={sources} />}
+
+      {!estUtilisateur && message.qualiteReduite && (
+        <div className="my-1.5 flex w-fit items-start gap-2 rounded-lg border border-dj-accent-2/40 bg-dj-accent-2/10 px-3 py-2 text-[13px] text-dj-texte">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-dj-accent-2" />
+          <span>
+            <strong>Réponse générée par un modèle moins intelligent</strong> (forte demande sur le
+            modèle principal). La qualité peut être inférieure à la normale.
+          </span>
+        </div>
+      )}
 
       {/* Heure : uniquement sous le message utilisateur (correction du
           2026-07-15 -- pas sous l'assistant, voir section 3.1). */}
