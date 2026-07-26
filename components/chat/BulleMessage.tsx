@@ -101,6 +101,16 @@ export interface MessageAffiche {
   // l'utilisateur ne juge pas la qualité habituelle de la plateforme
   // là-dessus.
   qualiteReduite?: boolean;
+  // Ajouté 2026-07-26 (bug trouvé par Bourama : le raisonnement et les
+  // sources disparaissaient dès qu'on posait la question suivante --
+  // avant ce fix, ils vivaient uniquement dans un state séparé de
+  // ChatIA.tsx rattaché au "dernier" message, donc plus rien ne les
+  // affichait une fois ce message relégué au second plan. Désormais
+  // attachés DIRECTEMENT au message concerné, comme n'importe quel autre
+  // champ de son contenu -- persistent tant que la conversation reste
+  // affichée (pas encore sauvegardés en base, voir limite plus bas).
+  raisonnement?: string;
+  sources?: { titre: string; url: string }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de

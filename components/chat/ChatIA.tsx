@@ -40,16 +40,14 @@ export function ChatIA({
   const [genEnCours, setGenEnCours] = useState(false);
   const [statuts, setStatuts] = useState<{ texte: string; etat: EtatStatut }[]>([]);
   // Raisonnement interne du modèle (24/07, voir RaisonnementBulle.tsx) --
-  // accumulé au fil des événements {"type": "raisonnement"}, puis figé
-  // (raisonnementEnCours=false) dès que la réponse elle-même commence.
-  const [raisonnement, setRaisonnement] = useState("");
+  // enCours est un flag transitoire (vrai seulement pendant que LE
+  // dernier message est en train de réfléchir) ; le texte lui-même est
+  // stocké directement sur le message concerné (message.raisonnement,
+  // voir MessageAffiche dans BulleMessage.tsx) depuis le 26/07 -- corrige
+  // un bug où raisonnement/sources disparaissaient dès la question
+  // suivante (ils ne vivaient qu'un state séparé rattaché au "dernier"
+  // message, jamais persistés sur le message lui-même).
   const [raisonnementEnCours, setRaisonnementEnCours] = useState(false);
-  // Sources/citations (26/07, voir SourcesBulle.tsx) -- même principe que
-  // raisonnement ci-dessus : rattachées au dernier message le temps du
-  // tour en cours, remises à zéro à chaque nouvel envoi. Plusieurs appels
-  // d'outils dans un même tour peuvent chacun émettre des sources ; on
-  // accumule en dédoublonnant par URL plutôt que d'écraser.
-  const [sources, setSources] = useState<{ titre: string; url: string }[]>([]);
   const [confirmation, setConfirmation] = useState<{
     nomLisible: string;
     agentNom?: string | null;
@@ -91,7 +89,12 @@ export function ChatIA({
       });
     } else if (evenement.type === "raisonnement") {
       setRaisonnementEnCours(true);
-      setRaisonnement((prec) => prec + evenement.texte);
+      majMessages((prec) => {
+        const copie = [...prec];
+        const dernier = copie[copie.length - 1];
+        copie[copie.length - 1] = { ...dernier, raisonnement: (dernier.raisonnement || "") + evenement.texte };
+        return copie;
+      });
     } else if (evenement.type === "meta") {
       majMessages((prec) => {
         const copie = [...prec];
@@ -124,10 +127,15 @@ export function ChatIA({
         return copie;
       });
     } else if (evenement.type === "sources") {
-      setSources((prec) => {
-        const urlsExistantes = new Set(prec.map((s) => s.url));
+      majMessages((prec) => {
+        const copie = [...prec];
+        const dernier = copie[copie.length - 1];
+        const existantes = dernier.sources || [];
+        const urlsExistantes = new Set(existantes.map((s) => s.url));
         const nouvelles = (evenement.sources || []).filter((s: { url: string }) => !urlsExistantes.has(s.url));
-        return nouvelles.length ? [...prec, ...nouvelles] : prec;
+        if (!nouvelles.length) return prec;
+        copie[copie.length - 1] = { ...dernier, sources: [...existantes, ...nouvelles] };
+        return copie;
       });
     } else if (evenement.type === "confirmation_requise") {
       setConfirmation({
@@ -183,9 +191,7 @@ export function ChatIA({
     majMessages((prec) => [...prec, messageUtilisateur, { id: null, role: "assistant", content: "" }]);
     setGenEnCours(true);
     setStatuts([]);
-    setRaisonnement("");
     setRaisonnementEnCours(false);
-    setSources([]);
     setConfirmation(null);
 
     // Upload/traitement du fichier AVANT le message texte :
@@ -380,11 +386,11 @@ export function ChatIA({
                 message.role === "assistant" &&
                 message.content === "" &&
                 statuts.length === 0 &&
-                !raisonnement
+                !message.raisonnement
               }
-              raisonnement={estDernier ? raisonnement : undefined}
-              raisonnementEnCours={estDernier ? raisonnementEnCours : undefined}
-              sources={estDernier ? sources : undefined}
+              raisonnement={message.raisonnement}
+              raisonnementEnCours={estDernier ? raisonnementEnCours : false}
+              sources={message.sources}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)

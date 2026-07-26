@@ -43,9 +43,9 @@ export function RaisonnementBulle({
         onClick={() => setOuvertManuel(!ouvert)}
         className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
       >
-        {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         <BrainCog size={13} className={enCours ? "animate-pulse text-dj-accent-1" : ""} />
         <span>{enCours ? `${nomAgent} réfléchit...` : `Raisonnement de ${nomAgent}`}</span>
+        {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
       </button>
       {ouvert && (
         <div className="mt-1.5 whitespace-pre-wrap border-l-2 border-dj-bordure pl-3 text-[13px] italic leading-relaxed text-dj-texte-muet">

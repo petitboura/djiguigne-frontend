@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Link2 } from "lucide-react";
 
 // Affiche les sources/citations d'une réponse -- consomme les événements
 // SSE {"type": "sources", "sources": [{"titre", "url"}]} émis par
@@ -14,14 +14,15 @@ import { ExternalLink } from "lucide-react";
 // forme de JSON est couvert automatiquement, voir docstring de
 // _extraire_sources) -- ce composant, lui, est volontairement "bête" :
 // une liste de puces cliquables, sans logique par outil. Dédoublonnage
-// par URL fait côté ChatIA.tsx (accumulation au fil du stream, plusieurs
-// appels d'outils pouvant chacun produire des sources).
+// par URL et persistance sur le message (plutôt qu'un state séparé qui
+// disparaissait à la question suivante) faits côté ChatIA.tsx.
 //
-// Favicon + indice en exposant ajoutés le 26/07 (retour Bourama) : une
-// icône générique ExternalLink identique pour toutes les sources ne
-// permettait pas de distinguer les sites d'un coup d'oeil, et le numéro
-// en préfixe prenait trop de place visuelle -- déplacé en indice à la
-// fin du titre, façon note de bas de page.
+// Repliable ajouté le 26/07 (retour Bourama, même principe que
+// RaisonnementBulle.tsx : bouton avec flèche à LA FIN, pas au début).
+// Ouvert par défaut (contrairement au raisonnement, pas de notion "en
+// cours" ici -- les sources sont déjà un résultat final dès qu'elles
+// arrivent) ; l'état manuel de la personne est respecté une fois qu'elle
+// a cliqué.
 
 function Favicon({ url }: { url: string }) {
   const [enErreur, setEnErreur] = useState(false);
@@ -51,25 +52,39 @@ function Favicon({ url }: { url: string }) {
   );
 }
 
-export function SourcesBulle({ sources }: { sources: { titre: string; url: string }[] }) {
-  if (!sources.length) return null;
+export function SourcesBulle({ sources }: { sources?: { titre: string; url: string }[] }) {
+  const [ouvert, setOuvert] = useState(true);
+
+  if (!sources || !sources.length) return null;
 
   return (
-    <div className="my-1.5 flex max-w-[80%] flex-wrap items-center gap-1.5 animate-dj-fade-in">
-      {sources.map((source, index) => (
-        <a
-          key={source.url}
-          href={source.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={source.titre}
-          className="flex max-w-[220px] items-center gap-1 rounded-full border border-dj-bordure px-2.5 py-1 text-[12px] text-dj-texte-muet transition-colors hover:text-dj-texte"
-        >
-          <Favicon url={source.url} />
-          <span className="truncate">{source.titre}</span>
-          <sup className="shrink-0 font-semibold text-dj-accent-1">{index + 1}</sup>
-        </a>
-      ))}
+    <div className="my-1.5 max-w-[80%] animate-dj-fade-in">
+      <button
+        onClick={() => setOuvert((v) => !v)}
+        className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+      >
+        <Link2 size={13} />
+        <span>{sources.length > 1 ? `${sources.length} sources` : "1 source"}</span>
+        {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+      </button>
+      {ouvert && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {sources.map((source, index) => (
+            <a
+              key={source.url}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={source.titre}
+              className="flex max-w-[220px] items-center gap-1 rounded-full border border-dj-bordure px-2.5 py-1 text-[12px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+            >
+              <Favicon url={source.url} />
+              <span className="truncate">{source.titre}</span>
+              <sup className="shrink-0 font-semibold text-dj-accent-1">{index + 1}</sup>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
