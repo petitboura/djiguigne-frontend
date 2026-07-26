@@ -44,6 +44,12 @@ export function ChatIA({
   // (raisonnementEnCours=false) dès que la réponse elle-même commence.
   const [raisonnement, setRaisonnement] = useState("");
   const [raisonnementEnCours, setRaisonnementEnCours] = useState(false);
+  // Sources/citations (26/07, voir SourcesBulle.tsx) -- même principe que
+  // raisonnement ci-dessus : rattachées au dernier message le temps du
+  // tour en cours, remises à zéro à chaque nouvel envoi. Plusieurs appels
+  // d'outils dans un même tour peuvent chacun émettre des sources ; on
+  // accumule en dédoublonnant par URL plutôt que d'écraser.
+  const [sources, setSources] = useState<{ titre: string; url: string }[]>([]);
   const [confirmation, setConfirmation] = useState<{
     nomLisible: string;
     agentNom?: string | null;
@@ -116,6 +122,12 @@ export function ChatIA({
         }
         return copie;
       });
+    } else if (evenement.type === "sources") {
+      setSources((prec) => {
+        const urlsExistantes = new Set(prec.map((s) => s.url));
+        const nouvelles = (evenement.sources || []).filter((s: { url: string }) => !urlsExistantes.has(s.url));
+        return nouvelles.length ? [...prec, ...nouvelles] : prec;
+      });
     } else if (evenement.type === "confirmation_requise") {
       setConfirmation({
         nomLisible: evenement.nom_lisible,
@@ -172,6 +184,7 @@ export function ChatIA({
     setStatuts([]);
     setRaisonnement("");
     setRaisonnementEnCours(false);
+    setSources([]);
     setConfirmation(null);
 
     // Upload/traitement du fichier AVANT le message texte :
@@ -370,6 +383,7 @@ export function ChatIA({
               }
               raisonnement={estDernier ? raisonnement : undefined}
               raisonnementEnCours={estDernier ? raisonnementEnCours : undefined}
+              sources={estDernier ? sources : undefined}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)

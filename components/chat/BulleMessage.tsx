@@ -21,6 +21,7 @@ import { FichierCode, extensionCode } from "./FichierCode";
 import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
+import { SourcesBulle } from "./SourcesBulle";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown
@@ -179,6 +180,7 @@ export function BulleMessage({
   enAttente,
   raisonnement,
   raisonnementEnCours,
+  sources,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -195,6 +197,10 @@ export function BulleMessage({
   enAttente?: boolean;
   raisonnement?: string;
   raisonnementEnCours?: boolean;
+  // Citations (26/07, voir SourcesBulle.tsx) -- même principe que
+  // raisonnement ci-dessus : uniquement fourni par ChatIA.tsx pour le
+  // dernier message, le temps du tour en cours.
+  sources?: { titre: string; url: string }[];
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
@@ -472,6 +478,7 @@ export function BulleMessage({
       {!estUtilisateur && raisonnement && (
         <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
       )}
+      {!estUtilisateur && sources && sources.length > 0 && <SourcesBulle sources={sources} />}
 
       {/* Heure : uniquement sous le message utilisateur (correction du
           2026-07-15 -- pas sous l'assistant, voir section 3.1). */}
