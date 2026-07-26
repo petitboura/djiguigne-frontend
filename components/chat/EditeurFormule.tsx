@@ -139,7 +139,7 @@ export function EditeurFormule({
     function gererClicExterieur(e: MouseEvent) {
       const cible = e.target as HTMLElement;
       if (conteneurRef.current?.contains(cible)) return;
-      if (cible.closest("math-virtual-keyboard")) return;
+      if (cible.closest(".ML__keyboard")) return;
       if (cible.closest("[data-editeur-formule-trigger]")) return;
       const aDuContenu = onglet === "maths" ? !!mathfieldRef.current?.value?.trim() : !!valeurChimie.trim();
       if (aDuContenu) valider();
