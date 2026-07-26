@@ -56,6 +56,7 @@ export function EditeurFormule({
   onFermer: () => void;
 }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
+  const clavierConteneurRef = useRef<HTMLDivElement>(null);
   const [onglet, setOnglet] = useState<"maths" | "chimie">("maths");
   const mathfieldRef = useRef<MathfieldElement | null>(null);
   const [valeurChimie, setValeurChimie] = useState("");
@@ -70,6 +71,23 @@ export function EditeurFormule({
   useEffect(() => {
     import("mathlive").then(() => setMathliveInstalle(true));
   }, []);
+
+  // Par défaut, MathLive ajoute le panneau du clavier virtuel comme enfant
+  // direct de <body> (position fixe, pleine largeur, collé en bas de
+  // l'écran) -- c'est ce qui le fait apparaître complètement détaché du
+  // popup. La lib expose `mathVirtualKeyboard.container` pour rediriger ce
+  // panneau vers un élément précis (prévu à l'origine pour les éléments
+  // plein écran) -- on le pointe vers une div dédiée à l'intérieur de la
+  // bulle, pour qu'il s'affiche comme une section normale du popup plutôt
+  // qu'ancré à la fenêtre. Restauré au démontage pour ne pas affecter un
+  // futur mathfield ailleurs dans l'app.
+  useEffect(() => {
+    if (!mathliveInstalle || !clavierConteneurRef.current) return;
+    window.mathVirtualKeyboard.container = clavierConteneurRef.current;
+    return () => {
+      window.mathVirtualKeyboard.container = null;
+    };
+  }, [mathliveInstalle]);
 
   // Le panneau du clavier virtuel de MathLive est injecté au niveau de
   // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
@@ -207,6 +225,7 @@ export function EditeurFormule({
               className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
             />
             {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
+            <div ref={clavierConteneurRef} className="mt-2 overflow-hidden rounded-lg" />
           </>
         ) : (
           <>
