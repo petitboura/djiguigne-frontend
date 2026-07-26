@@ -12,6 +12,14 @@ import { appelerApiPublicOuNull } from "@/lib/api-serveur";
 // app/agent/[id]/chat/page.tsx) mais moins prévisible sur Android/Chrome
 // -- certaines versions installeront quand même l'app "Djiguignè AI"
 // racine plutôt que cette IA en particulier.
+//
+// `id` ajouté le 26/07/2026 : sans ce champ, un seul "id" d'appli
+// implicite par site (déduit du scope) faisait qu'installer un agent
+// après avoir déjà installé la plateforme racine (ou l'inverse)
+// remplaçait l'un par l'autre au lieu de coexister. Un `id` distinct par
+// agent, différent de celui de app/manifest.ts, donne à Chrome de quoi
+// les distinguer. Toujours pas garanti à 100% sur toutes les versions
+// Android/Chrome (limite du navigateur, pas du code).
 
 type AgentPublic = { id: string; nom: string };
 
@@ -28,6 +36,7 @@ export async function GET(
   const origine = new URL(request.url).origin;
 
   const manifest = {
+    id: `/agent/${agent.id}/`,
     name: agent.nom,
     short_name: agent.nom,
     start_url: `/agent/${agent.id}/chat`,
