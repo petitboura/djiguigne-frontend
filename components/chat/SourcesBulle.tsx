@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 
 // Affiche les sources/citations d'une réponse -- consomme les événements
@@ -12,9 +13,44 @@ import { ExternalLink } from "lucide-react";
 // Backend générique (n'importe quel outil futur qui renvoie la même
 // forme de JSON est couvert automatiquement, voir docstring de
 // _extraire_sources) -- ce composant, lui, est volontairement "bête" :
-// une liste de puces numérotées cliquables, sans logique par outil.
-// Dédoublonnage par URL fait côté ChatIA.tsx (accumulation au fil du
-// stream, plusieurs appels d'outils pouvant chacun produire des sources).
+// une liste de puces cliquables, sans logique par outil. Dédoublonnage
+// par URL fait côté ChatIA.tsx (accumulation au fil du stream, plusieurs
+// appels d'outils pouvant chacun produire des sources).
+//
+// Favicon + indice en exposant ajoutés le 26/07 (retour Bourama) : une
+// icône générique ExternalLink identique pour toutes les sources ne
+// permettait pas de distinguer les sites d'un coup d'oeil, et le numéro
+// en préfixe prenait trop de place visuelle -- déplacé en indice à la
+// fin du titre, façon note de bas de page.
+
+function Favicon({ url }: { url: string }) {
+  const [enErreur, setEnErreur] = useState(false);
+
+  if (enErreur) return <ExternalLink size={12} className="shrink-0 text-dj-texte-muet" />;
+
+  let domaine: string;
+  try {
+    domaine = new URL(url).hostname;
+  } catch {
+    return <ExternalLink size={12} className="shrink-0 text-dj-texte-muet" />;
+  }
+
+  return (
+    // Service favicon public de Google -- pas d'appel supplémentaire côté
+    // notre backend, déduit uniquement du domaine de l'URL déjà connue.
+    // onError couvre les domaines sans favicon indexé (repli sur
+    // l'icône générique plutôt qu'une image cassée).
+    <img
+      src={`https://www.google.com/s2/favicons?sz=32&domain=${domaine}`}
+      alt=""
+      width={12}
+      height={12}
+      className="shrink-0 rounded-[2px]"
+      onError={() => setEnErreur(true)}
+    />
+  );
+}
+
 export function SourcesBulle({ sources }: { sources: { titre: string; url: string }[] }) {
   if (!sources.length) return null;
 
@@ -29,9 +65,9 @@ export function SourcesBulle({ sources }: { sources: { titre: string; url: strin
           title={source.titre}
           className="flex max-w-[220px] items-center gap-1 rounded-full border border-dj-bordure px-2.5 py-1 text-[12px] text-dj-texte-muet transition-colors hover:text-dj-texte"
         >
-          <span className="shrink-0 font-semibold text-dj-accent-1">{index + 1}</span>
+          <Favicon url={source.url} />
           <span className="truncate">{source.titre}</span>
-          <ExternalLink size={11} className="shrink-0" />
+          <sup className="shrink-0 font-semibold text-dj-accent-1">{index + 1}</sup>
         </a>
       ))}
     </div>
