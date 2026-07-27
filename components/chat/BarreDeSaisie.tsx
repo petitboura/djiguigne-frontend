@@ -491,6 +491,32 @@ export function BarreDeSaisie({
   function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const texteColleBrut = e.clipboardData.getData("text/plain");
     const langage = detecterLangageCode(texteColleBrut);
+
+    // LaTeX (2026-07-27, corrige un conflit signalé par Bourama) : ne
+    // part plus vers la pièce jointe "Formule collée" -- ça empêchait
+    // l'aperçu en direct au-dessus du champ (segmenterTexteAvecFormules)
+    // de jamais voir cette formule, puisqu'elle n'atteignait jamais
+    // `texte`, les deux mécanismes se marchant dessus. Un collage LaTeX
+    // s'insère maintenant normalement dans le champ, entouré de $$...$$
+    // s'il ne l'était pas déjà, pour que l'aperçu le rende tout de suite.
+    if (langage === "latex") {
+      e.preventDefault();
+      const contenuDelimite = /\$/.test(texteColleBrut) ? texteColleBrut : `$$${texteColleBrut.trim()}$$`;
+      const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
+      const el = ref.current;
+      const debut = el?.selectionStart ?? texte.length;
+      const fin = el?.selectionEnd ?? texte.length;
+      const nouveauTexte = texte.slice(0, debut) + contenuDelimite + texte.slice(fin);
+      setTexte(nouveauTexte);
+      requestAnimationFrame(() => {
+        el?.focus();
+        const pos = debut + contenuDelimite.length;
+        el?.setSelectionRange(pos, pos);
+        ajusterHauteurTexte();
+      });
+      return;
+    }
+
     if (texteColleBrut.length > SEUIL_COLLAGE_LONG || langage) {
       e.preventDefault();
       setTexteColle(texteColleBrut);
