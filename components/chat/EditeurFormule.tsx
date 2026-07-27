@@ -10,15 +10,22 @@ import type { MathfieldElement } from "mathlive";
 // mode de saisie où on CLIQUE des symboles au lieu de taper du LaTeX à la
 // main, avec un rendu qui se construit en direct -- pas juste du texte
 // brut qui ne devient une vraie formule qu'une fois le message envoyé.
-// Le résultat s'insère comme texte source ($...$) à l'endroit du curseur,
-// et la personne continue de taper sa phrase normalement après.
 //
 // 2026-07-27 : n'est plus un popup flottant (retour Bourama : "plus de
 // popup") -- rendu directement en ligne sous le champ de saisie
 // (BarreDeSaisie.tsx), toujours visible/masqué via un seul bouton dans
 // la barre d'outils plutôt qu'une bulle qui s'ouvre par-dessus tout.
-// Reste ouvert après "Insérer" (le champ se vide juste pour la formule
-// suivante) puisqu'il n'y a plus de fermeture automatique à la Option A.
+//
+// 2026-07-27 (suite) : "les symboles s'insèrent automatiquement, pas de
+// bouton insérer/effacer" -- chaque frappe (champ MathLive, palette,
+// champ chimie) notifie immédiatement le parent via `onChangeLive`, qui
+// remplace en direct la portion du texte de la barre de saisie
+// correspondant à cette formule -- plus de bouton "Insérer" à cliquer une
+// fois la formule terminée. `onChangerOnglet` prévient le parent quand on
+// bascule Maths<->Chimie, pour qu'il arrête de suivre l'ancienne portion
+// (elle reste telle quelle dans le texte, mais la frappe suivante dans
+// l'autre onglet doit démarrer une formule NEUVE, pas continuer à
+// réécrire par-dessus la précédente).
 //
 // Maths : MathLive (<math-field>), web component fait pour ça --
 // rendu live pendant la construction, insertion de symboles au clic via
@@ -53,11 +60,18 @@ const SYMBOLES_CHIMIE: [string, string][] = [
 ];
 
 export function EditeurFormule({
-  onInserer,
+  onChangeLive,
+  onChangerOnglet,
   onFermer,
   valeurInitiale,
 }: {
-  onInserer: (texteLatex: string) => void;
+  /** Appelé à chaque frappe avec le texte final ($...$ ou $\ce{...}$),
+   * ou "" si le champ est vide -- le parent remplace/insère en direct
+   * dans la barre de saisie, sans étape "Insérer" séparée. */
+  onChangeLive: (texteAffiche: string) => void;
+  /** Prévient le parent qu'on change d'onglet (Maths<->Chimie) -- il doit
+   * arrêter de suivre la portion précédente comme "en cours d'édition". */
+  onChangerOnglet: () => void;
   onFermer: () => void;
   /** Pré-remplit le champ maths -- utilisé par l'OCR formule (image ->
    * LaTeX via Gemini, voir BarreDeSaisie.tsx:extraireFormuleDeImage) pour
@@ -83,25 +97,39 @@ export function EditeurFormule({
     import("mathlive").then(() => setMathliveInstalle(true));
   }, []);
 
+  function notifierMaths() {
+    const latex = mathfieldRef.current?.value?.trim();
+    onChangeLive(latex ? `$${latex}$` : "");
+  }
+
+  function notifierChimie(valeur: string) {
+    const v = valeur.trim();
+    onChangeLive(v ? `$\\ce{${v}}$` : "");
+  }
+
   // Pré-remplissage (OCR formule) : ne peut se faire qu'une fois le
   // custom element <math-field> réellement enregistré par le navigateur
   // (mathliveInstalle) -- avant ça, `.value = ...` sur un élément non
-  // encore upgradé n'aurait aucun effet.
+  // encore upgradé n'aurait aucun effet. `.value = ...` par API ne
+  // déclenche pas d'événement input -- notification manuelle nécessaire
+  // pour que le parent insère bien ce pré-remplissage tout de suite (plus
+  // de bouton "Insérer" pour le faire après coup).
   useEffect(() => {
     if (!mathliveInstalle || !valeurInitiale || !mathfieldRef.current) return;
     mathfieldRef.current.value = valeurInitiale;
+    notifierMaths();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mathliveInstalle]);
 
   // Par défaut, MathLive ajoute le panneau du clavier virtuel comme enfant
   // direct de <body> (position fixe, pleine largeur, collé en bas de
   // l'écran) -- c'est ce qui le fait apparaître complètement détaché du
-  // popup. La lib expose `mathVirtualKeyboard.container` pour rediriger ce
-  // panneau vers un élément précis (prévu à l'origine pour les éléments
-  // plein écran) -- on le pointe vers une div dédiée à l'intérieur de la
-  // bulle, pour qu'il s'affiche comme une section normale du popup plutôt
-  // qu'ancré à la fenêtre. Restauré au démontage pour ne pas affecter un
-  // futur mathfield ailleurs dans l'app.
+  // panneau. La lib expose `mathVirtualKeyboard.container` pour rediriger
+  // ce panneau vers un élément précis (prévu à l'origine pour les
+  // éléments plein écran) -- on le pointe vers une div dédiée à
+  // l'intérieur du panneau, pour qu'il s'affiche comme une section
+  // normale plutôt qu'ancré à la fenêtre. Restauré au démontage pour ne
+  // pas affecter un futur mathfield ailleurs dans l'app.
   useEffect(() => {
     if (!mathliveInstalle || !clavierConteneurRef.current) return;
     window.mathVirtualKeyboard.container = clavierConteneurRef.current;
@@ -118,7 +146,7 @@ export function EditeurFormule({
   // la hauteur de la fenêtre entière ; notre div n'a pas cet avantage,
   // donc on lui donne une hauteur explicite -- mais seulement pendant
   // que le clavier est réellement affiché, sinon il resterait un vide
-  // permanent dans la bulle même quand on ne s'en sert pas.
+  // permanent dans le panneau même quand on ne s'en sert pas.
   const [clavierVisible, setClavierVisible] = useState(false);
   useEffect(() => {
     if (!mathliveInstalle) return;
@@ -131,7 +159,7 @@ export function EditeurFormule({
 
   // Le panneau du clavier virtuel de MathLive est injecté au niveau de
   // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
-  // donc là, pas sur le champ lui-même. Retiré à la fermeture pour ne pas
+  // donc là, pas sur le champ lui-même. Retiré au démontage pour ne pas
   // laisser un attribut global qui ne concerne que cet éditeur.
   useEffect(() => {
     const valeurPrecedente = document.body.getAttribute("theme");
@@ -164,6 +192,7 @@ export function EditeurFormule({
     const fin = el?.selectionEnd ?? valeurChimie.length;
     const nouvelleValeur = valeurChimie.slice(0, debut) + snippet + valeurChimie.slice(fin);
     setValeurChimie(nouvelleValeur);
+    notifierChimie(nouvelleValeur);
     requestAnimationFrame(() => {
       el?.focus();
       const pos = debut + snippet.length;
@@ -171,10 +200,10 @@ export function EditeurFormule({
     });
   }
 
-  // Le clavier virtuel de MathLive ne se referme pas tout seul quand
-  // cette bulle se ferme (X/Annuler/Insérer) -- fermeture explicite via
-  // l'API globale, sinon il reste ouvert à l'écran sans plus aucun moyen
-  // de le fermer une fois la bulle elle-même disparue.
+  // Le clavier virtuel de MathLive ne se referme pas tout seul quand ce
+  // panneau se ferme (X) -- fermeture explicite via l'API globale, sinon
+  // il reste ouvert à l'écran sans plus aucun moyen de le fermer une fois
+  // le panneau lui-même disparu.
   useEffect(() => {
     return () => {
       window.mathVirtualKeyboard?.hide();
@@ -186,19 +215,10 @@ export function EditeurFormule({
     onFermer();
   }
 
-  function valider() {
-    if (onglet === "maths") {
-      const latex = mathfieldRef.current?.value?.trim();
-      if (latex) {
-        onInserer(`$${latex}$`);
-        if (mathfieldRef.current) mathfieldRef.current.value = "";
-      }
-    } else {
-      if (valeurChimie.trim()) {
-        onInserer(`$\\ce{${valeurChimie.trim()}}$`);
-        setValeurChimie("");
-      }
-    }
+  function changerOnglet(nouvel: "maths" | "chimie") {
+    if (nouvel === onglet) return;
+    onChangerOnglet();
+    setOnglet(nouvel);
   }
 
   return (
@@ -206,7 +226,7 @@ export function EditeurFormule({
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1 rounded-lg bg-dj-surface p-1">
           <button
-            onClick={() => setOnglet("maths")}
+            onClick={() => changerOnglet("maths")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
               onglet === "maths" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
             }`}
@@ -214,7 +234,7 @@ export function EditeurFormule({
             <Sigma size={14} /> Maths
           </button>
           <button
-            onClick={() => setOnglet("chimie")}
+            onClick={() => changerOnglet("chimie")}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
               onglet === "chimie" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
             }`}
@@ -233,7 +253,10 @@ export function EditeurFormule({
             {SYMBOLES_MATHS.map(([label, snippet]) => (
               <button
                 key={label}
-                onClick={() => mathfieldRef.current?.insert(snippet, { selectionMode: "placeholder" })}
+                onClick={() => {
+                  mathfieldRef.current?.insert(snippet, { selectionMode: "placeholder" });
+                  notifierMaths();
+                }}
                 className="rounded-md border border-dj-bordure px-2 py-1 text-sm text-dj-texte hover:bg-dj-surface"
               >
                 {label}
@@ -244,6 +267,7 @@ export function EditeurFormule({
             ref={mathfieldRef}
             math-virtual-keyboard-policy="manual"
             theme="dark"
+            onInput={notifierMaths}
             className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
           />
           {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
@@ -268,7 +292,10 @@ export function EditeurFormule({
           <input
             ref={inputChimieRef}
             value={valeurChimie}
-            onChange={(e) => setValeurChimie(e.target.value)}
+            onChange={(e) => {
+              setValeurChimie(e.target.value);
+              notifierChimie(e.target.value);
+            }}
             placeholder="Ex: 2H2 + O2 -> 2H2O"
             className="mb-2 w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none"
           />
@@ -280,24 +307,6 @@ export function EditeurFormule({
           )}
         </>
       )}
-
-      <div className="mt-3 flex justify-end gap-2">
-        <button
-          onClick={() => {
-            if (onglet === "maths") {
-              if (mathfieldRef.current) mathfieldRef.current.value = "";
-            } else {
-              setValeurChimie("");
-            }
-          }}
-          className="rounded-lg border border-dj-bordure px-3 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
-        >
-          Effacer
-        </button>
-        <button onClick={valider} className="rounded-lg bg-dj-accent-1 px-4 py-1.5 text-xs font-medium text-white">
-          Insérer
-        </button>
-      </div>
     </div>
   );
 }

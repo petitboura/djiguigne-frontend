@@ -257,6 +257,15 @@ export function BarreDeSaisie({
   const [canvasOuvert, setCanvasOuvert] = useState(false);
   // Éditeur de formule maths/chimie (2026-07-25) -- voir EditeurFormule.tsx.
   const [editeurFormuleOuvert, setEditeurFormuleOuvert] = useState(false);
+  // Insertion live (2026-07-27, demande Bourama : "les symboles s'insèrent
+  // automatiquement, pas de bouton insérer/effacer") -- plutôt qu'un clic
+  // "Insérer" qui pousse le résultat final d'un coup, on garde la trace de
+  // la portion de `texte` qui correspond à la formule en cours de
+  // construction (`plageFormuleLive`), et on la remplace en entier à
+  // chaque frappe dans le champ maths/chimie. `null` = rien en cours de
+  // construction -- la prochaine frappe insère une nouvelle formule à la
+  // position actuelle du curseur plutôt que d'en remplacer une existante.
+  const [plageFormuleLive, setPlageFormuleLive] = useState<{ debut: number; fin: number } | null>(null);
   // OCR ciblé formule (2026-07-26, priorité maths de Bourama) -- image
   // jointe -> LaTeX extrait par Gemini -> ouvert dans EditeurFormule pour
   // relecture/correction avant insertion (jamais inséré tel quel sans
@@ -429,25 +438,39 @@ export function BarreDeSaisie({
     alert("Pas disponible pour le moment.");
   }
 
-  // Insertion du résultat de EditeurFormule.tsx à l'endroit exact du
-  // curseur (pas juste à la fin du texte) -- continue de taper la phrase
-  // juste après, sans manipulation manuelle de sa part. Ne referme plus
-  // le panneau (2026-07-27, "plus de popup") -- il reste ouvert, contrôlé
-  // uniquement par le bouton Σ de la barre d'outils.
-  function insererFormule(texteLatex: string) {
-    const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
-    const el = ref.current;
-    const debut = el?.selectionStart ?? texte.length;
-    const fin = el?.selectionEnd ?? texte.length;
-    const nouveauTexte = texte.slice(0, debut) + texteLatex + texte.slice(fin);
-    setTexte(nouveauTexte);
+  // Mise à jour live de la formule en construction (2026-07-27, "les
+  // symboles s'insèrent automatiquement, pas de bouton insérer/effacer").
+  // `contenuAffiche` est déjà le texte final ($...$) à placer -- si une
+  // portion est déjà en cours de construction (plageFormuleLive), on la
+  // remplace entièrement ; sinon on insère à la position actuelle du
+  // curseur et on commence à la suivre. Ne touche jamais le focus/la
+  // sélection du textarea -- le focus reste dans le champ MathLive/chimie
+  // pendant que la personne tape, sans quoi chaque frappe lui volerait le
+  // clavier.
+  function mettreAJourFormuleLive(contenuAffiche: string) {
+    if (plageFormuleLive) {
+      const nouveauTexte = texte.slice(0, plageFormuleLive.debut) + contenuAffiche + texte.slice(plageFormuleLive.fin);
+      setTexte(nouveauTexte);
+      setPlageFormuleLive(contenuAffiche ? { debut: plageFormuleLive.debut, fin: plageFormuleLive.debut + contenuAffiche.length } : null);
+    } else if (contenuAffiche) {
+      const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
+      const el = ref.current;
+      const debut = el?.selectionStart ?? texte.length;
+      const fin = el?.selectionEnd ?? texte.length;
+      const nouveauTexte = texte.slice(0, debut) + contenuAffiche + texte.slice(fin);
+      setTexte(nouveauTexte);
+      setPlageFormuleLive({ debut, fin: debut + contenuAffiche.length });
+    }
     setFormuleInitiale(undefined);
-    requestAnimationFrame(() => {
-      el?.focus();
-      const pos = debut + texteLatex.length;
-      el?.setSelectionRange(pos, pos);
-      ajusterHauteurTexte();
-    });
+    requestAnimationFrame(ajusterHauteurTexte);
+  }
+
+  // Arrête de suivre la portion en cours (changement d'onglet Maths<->
+  // Chimie, ou fermeture du panneau) -- le texte déjà inséré reste tel
+  // quel, mais une frappe suivante commencera une NOUVELLE formule
+  // ailleurs plutôt que de continuer à réécrire par-dessus celle-ci.
+  function finaliserFormuleLive() {
+    setPlageFormuleLive(null);
   }
 
   function gererCollage(e: React.ClipboardEvent<HTMLTextAreaElement>) {
@@ -752,10 +775,12 @@ export function BarreDeSaisie({
             clavier virtuel complet, palette chimie). */}
         {editeurFormuleOuvert && (
           <EditeurFormule
-            onInserer={insererFormule}
+            onChangeLive={mettreAJourFormuleLive}
+            onChangerOnglet={finaliserFormuleLive}
             onFermer={() => {
               setEditeurFormuleOuvert(false);
               setFormuleInitiale(undefined);
+              finaliserFormuleLive();
             }}
             valeurInitiale={formuleInitiale}
           />
