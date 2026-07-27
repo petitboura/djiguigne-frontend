@@ -50,15 +50,23 @@ export function telechargerImage(
   nomFichier: string,
   onSucces: () => void
 ) {
-  // Bug corrigé le 27/07 (repéré par Bourama en test réel : PNG exporté
-  // de 24x24, invisible) -- `querySelector("svg")` remontait le PREMIER
-  // <svg> du conteneur dans l'ordre du DOM, qui est l'icône du bouton
-  // "Télécharger" lui-même (lucide-react rend aussi ses icônes en <svg>,
-  // 24x24 par défaut), pas le graphique/schéma. lucide-react pose
-  // toujours la classe "lucide" sur ses icônes -- on l'exclut donc
-  // explicitement pour ne cibler que le vrai contenu (recharts ou notre
-  // propre <svg> de schéma géométrique, aucun des deux n'a cette classe).
-  const svgEl = conteneur?.querySelector("svg:not(.lucide)");
+  // Deuxième bug corrigé le 27/07 (toujours repéré par Bourama : PNG de
+  // 28x28 cette fois) -- exclure seulement les icônes lucide (".lucide")
+  // ne suffisait pas : recharts donne la MÊME classe "recharts-surface"
+  // aux petites icônes de légende (14x14, une par série) qu'au graphique
+  // principal, donc un filtre par classe reste fragile. Solution plus
+  // robuste : on prend TOUS les <svg> du conteneur, on écarte les icônes
+  // lucide, puis on choisit le plus GRAND par surface -- le vrai
+  // graphique est toujours largement plus grand que n'importe quelle
+  // icône (légende, bouton, tooltip), quelle que soit la lib utilisée.
+  const candidats = Array.from(conteneur?.querySelectorAll("svg") ?? []).filter(
+    (el) => !el.classList.contains("lucide")
+  );
+  const svgEl = candidats.sort((a, b) => {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return rb.width * rb.height - ra.width * ra.height;
+  })[0];
   if (!svgEl) return;
   const { width, height } = svgEl.getBoundingClientRect();
   const clone = svgEl.cloneNode(true) as SVGSVGElement;

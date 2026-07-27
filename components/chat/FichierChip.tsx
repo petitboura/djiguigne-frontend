@@ -28,6 +28,11 @@ const EXTENSIONS_FICHIER: Record<string, { icone: typeof File; libelle: string }
   // typeMedia() dans BulleMessage.tsx) les intercepte avant d'arriver
   // jusqu'ici, un ajout ici serait du code mort.
   glb: { icone: Box, libelle: "Modèle 3D" },
+  // LaTeX (voir core/generation_latex.py) -- sans cette entrée, le lien
+  // retombait dans le cas générique LinkPreview (aperçu de lien web),
+  // qui n'a aucune métadonnée à afficher pour un fichier .tex brut, d'où
+  // le rendu cassé repéré par Bourama en test réel le 27/07.
+  tex: { icone: FileCode, libelle: "LaTeX" },
 };
 
 // Détecte si un lien markdown pointe vers un fichier "document" (PDF,
