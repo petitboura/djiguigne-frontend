@@ -137,6 +137,24 @@ export function ChatIA({
         copie[copie.length - 1] = { ...dernier, sources: [...existantes, ...nouvelles] };
         return copie;
       });
+    } else if (evenement.type === "outil_resultat") {
+      // Généralisation (26/07, demande Bourama) : un élément par appel
+      // d'outil, PAS de dédoublonnage (contrairement à "sources") -- deux
+      // appels au même outil dans le même tour (ex: deux recherches
+      // distinctes) doivent chacun garder leur propre résultat affiché.
+      majMessages((prec) => {
+        const copie = [...prec];
+        const dernier = copie[copie.length - 1];
+        const existants = dernier.outilsResultats || [];
+        copie[copie.length - 1] = {
+          ...dernier,
+          outilsResultats: [
+            ...existants,
+            { nomOutil: evenement.nom_outil, nomLisible: evenement.nom_lisible, resultat: evenement.resultat },
+          ],
+        };
+        return copie;
+      });
     } else if (evenement.type === "confirmation_requise") {
       setConfirmation({
         nomLisible: evenement.nom_lisible,
@@ -391,6 +409,7 @@ export function ChatIA({
               raisonnement={message.raisonnement}
               raisonnementEnCours={estDernier ? raisonnementEnCours : false}
               sources={message.sources}
+              outilsResultats={message.outilsResultats}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)

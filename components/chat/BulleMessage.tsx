@@ -22,6 +22,7 @@ import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
 import { SourcesBulle } from "./SourcesBulle";
+import { OutilResultatBulle } from "./OutilResultatBulle";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown
@@ -111,6 +112,12 @@ export interface MessageAffiche {
   // affichée (pas encore sauvegardés en base, voir limite plus bas).
   raisonnement?: string;
   sources?: { titre: string; url: string }[];
+  // Généralisation (26/07, demande Bourama) : ce que CHAQUE outil utilisé
+  // a concrètement exécuté/retourné, distinct du raisonnement libre du
+  // modèle -- voir OutilResultatBulle.tsx. Un élément par appel d'outil
+  // (pas de dédoublonnage, deux appels au même outil peuvent renvoyer des
+  // résultats différents).
+  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -199,6 +206,7 @@ export function BulleMessage({
   raisonnement,
   raisonnementEnCours,
   sources,
+  outilsResultats,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -208,17 +216,18 @@ export function BulleMessage({
   onExpliquerSelection?: (texteSelectionne: string) => void;
   // Ajouté 24/07 (retour Bourama : la bulle "réfléchit"/le raisonnement
   // apparaissaient trop loin du message, comme un bloc séparé en bas de
-  // la liste au lieu d'être rattachés à CE message assistant précis) --
-  // uniquement fournis par ChatIA.tsx pour le dernier message pendant sa
-  // génération, voir ChatIA.tsx.
+  // la liste au lieu d'être rattachés à CE message assistant précis).
+  // raisonnement/sources/outilsResultats viennent directement du message
+  // concerné (persistent pour tous les messages, pas seulement le
+  // dernier -- voir MessageAffiche) ; raisonnementEnCours reste le seul
+  // flag transitoire, vrai uniquement pour le dernier message en cours
+  // de génération.
   nomAgent?: string;
   enAttente?: boolean;
   raisonnement?: string;
   raisonnementEnCours?: boolean;
-  // Citations (26/07, voir SourcesBulle.tsx) -- même principe que
-  // raisonnement ci-dessus : uniquement fourni par ChatIA.tsx pour le
-  // dernier message, le temps du tour en cours.
   sources?: { titre: string; url: string }[];
+  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string }[];
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
@@ -495,6 +504,9 @@ export function BulleMessage({
       )}
       {!estUtilisateur && raisonnement && (
         <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
+      )}
+      {!estUtilisateur && outilsResultats && outilsResultats.length > 0 && (
+        <OutilResultatBulle resultats={outilsResultats} />
       )}
       {!estUtilisateur && sources && sources.length > 0 && <SourcesBulle sources={sources} />}
 
