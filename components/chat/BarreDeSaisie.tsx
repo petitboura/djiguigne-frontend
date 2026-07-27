@@ -28,6 +28,7 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "generer_document_word", label: "Générer un Word", Icone: FileType },
   { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet },
   { nom: "generer_document_powerpoint", label: "Générer un PowerPoint", Icone: Presentation },
+  { nom: "generer_document_latex", label: "Générer un fichier LaTeX", Icone: Sigma },
   { nom: "generer_code", label: "Générer du code", Icone: Code },
   { nom: "chercher_fichier", label: "Chercher un fichier", Icone: FolderSearch },
   { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package },

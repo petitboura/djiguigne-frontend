@@ -13,6 +13,7 @@ import { BlocCode } from "./BlocCode";
 import { Mermaid } from "./Mermaid";
 import { GraphiqueDonnees } from "./GraphiqueDonnees";
 import { CarteMessage } from "./CarteMessage";
+import { SchemaGeometrique } from "./SchemaGeometrique";
 import { WidgetSandbox } from "./WidgetSandbox";
 import { ImageMessage } from "./ImageMessage";
 import { TableauMessage } from "./TableauMessage";
@@ -407,6 +408,8 @@ export function BulleMessage({
                     return <GraphiqueDonnees code={code} />;
                   case "carte":
                     return <CarteMessage code={code} />;
+                  case "geometrie":
+                    return <SchemaGeometrique code={code} />;
                   case "widget":
                   case "html":
                     return <WidgetSandbox code={code} />;
