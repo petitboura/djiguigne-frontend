@@ -127,14 +127,27 @@ export function ChatIA({
         return copie;
       });
     } else if (evenement.type === "sources") {
+      // Rattachées à l'entrée outilsResultats CONCERNÉE, pas à un champ
+      // séparé du message (26/07, retour Bourama : les sources doivent
+      // apparaître juste après le résultat de LEUR outil, pas dans un
+      // bloc "Sources" à part en bas -- voir OutilResultatBulle.tsx).
+      // Fiable : le backend émet toujours outil_resultat puis sources
+      // pour un même appel, l'un juste après l'autre (voir
+      // core/main.py:_traiter_appels), donc le dernier élément de
+      // outilsResultats à ce moment précis est forcément le bon.
       majMessages((prec) => {
         const copie = [...prec];
         const dernier = copie[copie.length - 1];
-        const existantes = dernier.sources || [];
+        const outils = dernier.outilsResultats || [];
+        if (!outils.length) return prec; // sources sans outil_resultat correspondant -- ne devrait pas arriver
+        const iDernierOutil = outils.length - 1;
+        const existantes = outils[iDernierOutil].sources || [];
         const urlsExistantes = new Set(existantes.map((s) => s.url));
         const nouvelles = (evenement.sources || []).filter((s: { url: string }) => !urlsExistantes.has(s.url));
         if (!nouvelles.length) return prec;
-        copie[copie.length - 1] = { ...dernier, sources: [...existantes, ...nouvelles] };
+        const outilsCopie = [...outils];
+        outilsCopie[iDernierOutil] = { ...outilsCopie[iDernierOutil], sources: [...existantes, ...nouvelles] };
+        copie[copie.length - 1] = { ...dernier, outilsResultats: outilsCopie };
         return copie;
       });
     } else if (evenement.type === "outil_resultat") {
@@ -408,7 +421,6 @@ export function ChatIA({
               }
               raisonnement={message.raisonnement}
               raisonnementEnCours={estDernier ? raisonnementEnCours : false}
-              sources={message.sources}
               outilsResultats={message.outilsResultats}
               onRegenerer={
                 message.role === "assistant"

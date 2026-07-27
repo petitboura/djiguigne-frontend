@@ -21,7 +21,6 @@ import { FichierCode, extensionCode } from "./FichierCode";
 import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
-import { SourcesBulle } from "./SourcesBulle";
 import { OutilResultatBulle } from "./OutilResultatBulle";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
@@ -111,13 +110,14 @@ export interface MessageAffiche {
   // champ de son contenu -- persistent tant que la conversation reste
   // affichée (pas encore sauvegardés en base, voir limite plus bas).
   raisonnement?: string;
-  sources?: { titre: string; url: string }[];
   // Généralisation (26/07, demande Bourama) : ce que CHAQUE outil utilisé
-  // a concrètement exécuté/retourné, distinct du raisonnement libre du
-  // modèle -- voir OutilResultatBulle.tsx. Un élément par appel d'outil
-  // (pas de dédoublonnage, deux appels au même outil peuvent renvoyer des
-  // résultats différents).
-  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string }[];
+  // a concrètement exécuté/retourné, dans l'ordre chronologique réel des
+  // appels -- distinct du raisonnement libre du modèle. Les sources
+  // d'une recherche sont attachées à SON entrée précise (pas à un champ
+  // séparé du message) : elles doivent apparaître juste après le
+  // résultat de leur outil, pas dans un bloc "Sources" à part à la fin
+  // -- voir OutilResultatBulle.tsx.
+  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -205,7 +205,6 @@ export function BulleMessage({
   enAttente,
   raisonnement,
   raisonnementEnCours,
-  sources,
   outilsResultats,
 }: {
   message: MessageAffiche;
@@ -217,17 +216,15 @@ export function BulleMessage({
   // Ajouté 24/07 (retour Bourama : la bulle "réfléchit"/le raisonnement
   // apparaissaient trop loin du message, comme un bloc séparé en bas de
   // la liste au lieu d'être rattachés à CE message assistant précis).
-  // raisonnement/sources/outilsResultats viennent directement du message
-  // concerné (persistent pour tous les messages, pas seulement le
-  // dernier -- voir MessageAffiche) ; raisonnementEnCours reste le seul
-  // flag transitoire, vrai uniquement pour le dernier message en cours
-  // de génération.
+  // raisonnement/outilsResultats viennent directement du message concerné
+  // (persistent pour tous les messages, pas seulement le dernier -- voir
+  // MessageAffiche) ; raisonnementEnCours reste le seul flag transitoire,
+  // vrai uniquement pour le dernier message en cours de génération.
   nomAgent?: string;
   enAttente?: boolean;
   raisonnement?: string;
   raisonnementEnCours?: boolean;
-  sources?: { titre: string; url: string }[];
-  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string }[];
+  outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
@@ -508,7 +505,6 @@ export function BulleMessage({
       {!estUtilisateur && outilsResultats && outilsResultats.length > 0 && (
         <OutilResultatBulle resultats={outilsResultats} />
       )}
-      {!estUtilisateur && sources && sources.length > 0 && <SourcesBulle sources={sources} />}
 
       {!estUtilisateur && message.qualiteReduite && (
         <div className="my-1.5 flex w-fit items-start gap-2 rounded-lg border border-dj-accent-2/40 bg-dj-accent-2/10 px-3 py-2 text-[13px] text-dj-texte">

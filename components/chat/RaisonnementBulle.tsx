@@ -47,11 +47,21 @@ export function RaisonnementBulle({
         <span>{enCours ? `${nomAgent} réfléchit...` : `Raisonnement de ${nomAgent}`}</span>
         {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
       </button>
-      {ouvert && (
-        <div className="mt-1.5 whitespace-pre-wrap border-l-2 border-dj-bordure pl-3 text-[13px] italic leading-relaxed text-dj-texte-muet">
-          {texte}
+      {/* Glissement fluide (26/07, retour Bourama : le repliement était
+          "brut", sans transition) -- astuce grid-template-rows 0fr/1fr :
+          anime la hauteur sans connaître le contenu à l'avance
+          (contrairement à max-height, qui doit deviner une valeur). */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          ouvert ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-1.5 whitespace-pre-wrap border-l-2 border-dj-bordure pl-3 text-[13px] italic leading-relaxed text-dj-texte-muet">
+            {texte}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
