@@ -1028,8 +1028,9 @@ export function BarreDeSaisie({
             )}
           </div>
         </div>
+      </div>
 
-        {texteColleOuvert && texteColle && (
+      {texteColleOuvert && texteColle && (
         <div
           className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-6"
           onClick={() => setTexteColleOuvert(false)}
