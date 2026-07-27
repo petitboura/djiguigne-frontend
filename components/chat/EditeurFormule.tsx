@@ -10,11 +10,15 @@ import type { MathfieldElement } from "mathlive";
 // mode de saisie où on CLIQUE des symboles au lieu de taper du LaTeX à la
 // main, avec un rendu qui se construit en direct -- pas juste du texte
 // brut qui ne devient une vraie formule qu'une fois le message envoyé.
-// Option A retenue (voir échange avec Bourama) : une bulle qui s'ouvre
-// au-dessus du champ de saisie plutôt qu'une refonte du textarea en
-// éditeur riche (Option B, mise de côté pour l'instant) -- le résultat
-// s'insère comme texte source ($...$) à l'endroit du curseur, et la
-// personne continue de taper sa phrase normalement après.
+// Le résultat s'insère comme texte source ($...$) à l'endroit du curseur,
+// et la personne continue de taper sa phrase normalement après.
+//
+// 2026-07-27 : n'est plus un popup flottant (retour Bourama : "plus de
+// popup") -- rendu directement en ligne sous le champ de saisie
+// (BarreDeSaisie.tsx), toujours visible/masqué via un seul bouton dans
+// la barre d'outils plutôt qu'une bulle qui s'ouvre par-dessus tout.
+// Reste ouvert après "Insérer" (le champ se vide juste pour la formule
+// suivante) puisqu'il n'y a plus de fermeture automatique à la Option A.
 //
 // Maths : MathLive (<math-field>), web component fait pour ça --
 // rendu live pendant la construction, insertion de symboles au clic via
@@ -182,130 +186,117 @@ export function EditeurFormule({
     onFermer();
   }
 
-  // Clic en dehors de la bulle -- ET en dehors du clavier virtuel de
-  // MathLive, qui n'est PAS un enfant DOM de cette bulle (il est injecté
-  // directement dans <body> par MathLive) -- ferme l'éditeur. Sans
-  // l'exclusion du clavier, cliquer sur un symbole de SON clavier à lui
-  // fermerait notre bulle par erreur. Retour Bourama (25/07) : un clic
-  // extérieur ne doit PAS jeter ce qui était en cours de construction --
-  // insère si quelque chose a été tapé, ferme sans rien insérer sinon.
-  useEffect(() => {
-    function gererClicExterieur(e: MouseEvent) {
-      const cible = e.target as HTMLElement;
-      if (conteneurRef.current?.contains(cible)) return;
-      if (cible.closest(".ML__keyboard")) return;
-      if (cible.closest("[data-editeur-formule-trigger]")) return;
-      const aDuContenu = onglet === "maths" ? !!mathfieldRef.current?.value?.trim() : !!valeurChimie.trim();
-      if (aDuContenu) valider();
-      else fermer();
-    }
-    document.addEventListener("mousedown", gererClicExterieur);
-    return () => document.removeEventListener("mousedown", gererClicExterieur);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onglet, valeurChimie]);
-
   function valider() {
-    window.mathVirtualKeyboard?.hide();
     if (onglet === "maths") {
       const latex = mathfieldRef.current?.value?.trim();
-      if (latex) onInserer(`$${latex}$`);
+      if (latex) {
+        onInserer(`$${latex}$`);
+        if (mathfieldRef.current) mathfieldRef.current.value = "";
+      }
     } else {
-      if (valeurChimie.trim()) onInserer(`$\\ce{${valeurChimie.trim()}}$`);
+      if (valeurChimie.trim()) {
+        onInserer(`$\\ce{${valeurChimie.trim()}}$`);
+        setValeurChimie("");
+      }
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-dj-fade-in items-center justify-center bg-black/70 p-6">
-      <div ref={conteneurRef} className="w-full max-w-xl rounded-2xl border border-dj-bordure bg-dj-surface-haute p-4 shadow-2xl">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-1 rounded-lg bg-dj-surface p-1">
-            <button
-              onClick={() => setOnglet("maths")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
-                onglet === "maths" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
-              }`}
-            >
-              <Sigma size={14} /> Maths
-            </button>
-            <button
-              onClick={() => setOnglet("chimie")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
-                onglet === "chimie" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
-              }`}
-            >
-              <FlaskConical size={14} /> Chimie
-            </button>
-          </div>
-          <button onClick={fermer} aria-label="Fermer" className="text-dj-texte-muet hover:text-dj-texte">
-            <X size={16} />
-          </button>
-        </div>
-
-        {onglet === "maths" ? (
-          <>
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {SYMBOLES_MATHS.map(([label, snippet]) => (
-                <button
-                  key={label}
-                  onClick={() => mathfieldRef.current?.insert(snippet, { selectionMode: "placeholder" })}
-                  className="rounded-md border border-dj-bordure px-2 py-1 text-sm text-dj-texte hover:bg-dj-surface"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <math-field
-              ref={mathfieldRef}
-              math-virtual-keyboard-policy="manual"
-              theme="dark"
-              className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
-            />
-            {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
-            <div
-              ref={clavierConteneurRef}
-              className={clavierVisible ? "relative mt-2 h-[300px] w-full rounded-lg" : "h-0 w-full"}
-            />
-          </>
-        ) : (
-          <>
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {SYMBOLES_CHIMIE.map(([label, snippet]) => (
-                <button
-                  key={label}
-                  onClick={() => insererSymboleChimie(snippet)}
-                  className="rounded-md border border-dj-bordure px-2 py-1 text-sm text-dj-texte hover:bg-dj-surface"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <input
-              ref={inputChimieRef}
-              value={valeurChimie}
-              onChange={(e) => setValeurChimie(e.target.value)}
-              placeholder="Ex: 2H2 + O2 -> 2H2O"
-              className="mb-2 w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none"
-            />
-            {previsuChimie && (
-              <div
-                className="overflow-x-auto rounded-lg border border-dj-bordure bg-white p-3"
-                dangerouslySetInnerHTML={{ __html: previsuChimie }}
-              />
-            )}
-          </>
-        )}
-
-        <div className="mt-3 flex justify-end gap-2">
+    <div ref={conteneurRef} className="mt-2 w-full rounded-2xl border border-dj-bordure bg-dj-surface-haute p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-1 rounded-lg bg-dj-surface p-1">
           <button
-            onClick={fermer}
-            className="rounded-lg border border-dj-bordure px-3 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
+            onClick={() => setOnglet("maths")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
+              onglet === "maths" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
+            }`}
           >
-            Annuler
+            <Sigma size={14} /> Maths
           </button>
-          <button onClick={valider} className="rounded-lg bg-dj-accent-1 px-4 py-1.5 text-xs font-medium text-white">
-            Insérer
+          <button
+            onClick={() => setOnglet("chimie")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs ${
+              onglet === "chimie" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
+            }`}
+          >
+            <FlaskConical size={14} /> Chimie
           </button>
         </div>
+        <button onClick={fermer} aria-label="Fermer" className="text-dj-texte-muet hover:text-dj-texte">
+          <X size={16} />
+        </button>
+      </div>
+
+      {onglet === "maths" ? (
+        <>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {SYMBOLES_MATHS.map(([label, snippet]) => (
+              <button
+                key={label}
+                onClick={() => mathfieldRef.current?.insert(snippet, { selectionMode: "placeholder" })}
+                className="rounded-md border border-dj-bordure px-2 py-1 text-sm text-dj-texte hover:bg-dj-surface"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <math-field
+            ref={mathfieldRef}
+            math-virtual-keyboard-policy="manual"
+            theme="dark"
+            className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
+          />
+          {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
+          <div
+            ref={clavierConteneurRef}
+            className={clavierVisible ? "relative mt-2 h-[300px] w-full rounded-lg" : "h-0 w-full"}
+          />
+        </>
+      ) : (
+        <>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {SYMBOLES_CHIMIE.map(([label, snippet]) => (
+              <button
+                key={label}
+                onClick={() => insererSymboleChimie(snippet)}
+                className="rounded-md border border-dj-bordure px-2 py-1 text-sm text-dj-texte hover:bg-dj-surface"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <input
+            ref={inputChimieRef}
+            value={valeurChimie}
+            onChange={(e) => setValeurChimie(e.target.value)}
+            placeholder="Ex: 2H2 + O2 -> 2H2O"
+            className="mb-2 w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none"
+          />
+          {previsuChimie && (
+            <div
+              className="overflow-x-auto rounded-lg border border-dj-bordure bg-white p-3"
+              dangerouslySetInnerHTML={{ __html: previsuChimie }}
+            />
+          )}
+        </>
+      )}
+
+      <div className="mt-3 flex justify-end gap-2">
+        <button
+          onClick={() => {
+            if (onglet === "maths") {
+              if (mathfieldRef.current) mathfieldRef.current.value = "";
+            } else {
+              setValeurChimie("");
+            }
+          }}
+          className="rounded-lg border border-dj-bordure px-3 py-1.5 text-xs text-dj-texte-muet hover:text-dj-texte"
+        >
+          Effacer
+        </button>
+        <button onClick={valider} className="rounded-lg bg-dj-accent-1 px-4 py-1.5 text-xs font-medium text-white">
+          Insérer
+        </button>
       </div>
     </div>
   );

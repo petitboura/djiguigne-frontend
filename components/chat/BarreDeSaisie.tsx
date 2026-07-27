@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, Superscript } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -28,7 +28,6 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "generer_document_word", label: "Générer un Word", Icone: FileType },
   { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet },
   { nom: "generer_document_powerpoint", label: "Générer un PowerPoint", Icone: Presentation },
-  { nom: "generer_document_latex", label: "Générer un fichier LaTeX", Icone: Sigma },
   { nom: "generer_code", label: "Générer du code", Icone: Code },
   { nom: "chercher_fichier", label: "Chercher un fichier", Icone: FolderSearch },
   { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package },
@@ -281,6 +280,18 @@ export function BarreDeSaisie({
   const inputFichierRef = useRef<HTMLInputElement>(null);
   const zoneTexteRef = useRef<HTMLTextAreaElement>(null);
   const calqueRef = useRef<HTMLDivElement>(null);
+  // Aperçu formules (2026-07-27, retour Bourama : l'aperçu restait figé
+  // à son ancienne position de défilement -- en ajoutant des lignes, ce
+  // qu'on venait de taper se retrouvait hors de la zone visible, donnant
+  // l'impression que rien ne s'écrivait. Fait défiler automatiquement
+  // vers le bas à chaque changement du texte, pour toujours montrer la
+  // dernière ligne tapée.
+  const apercuFormulesRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (apercuFormulesRef.current) {
+      apercuFormulesRef.current.scrollTop = apercuFormulesRef.current.scrollHeight;
+    }
+  }, [texte]);
   // Calque/textarea séparés pour le plein écran -- reste monté en même
   // temps que le composer compact (juste recouvert par l'overlay), donc
   // impossible de partager les mêmes refs entre les deux.
@@ -420,7 +431,9 @@ export function BarreDeSaisie({
 
   // Insertion du résultat de EditeurFormule.tsx à l'endroit exact du
   // curseur (pas juste à la fin du texte) -- continue de taper la phrase
-  // juste après, sans manipulation manuelle de sa part.
+  // juste après, sans manipulation manuelle de sa part. Ne referme plus
+  // le panneau (2026-07-27, "plus de popup") -- il reste ouvert, contrôlé
+  // uniquement par le bouton Σ de la barre d'outils.
   function insererFormule(texteLatex: string) {
     const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
     const el = ref.current;
@@ -428,62 +441,10 @@ export function BarreDeSaisie({
     const fin = el?.selectionEnd ?? texte.length;
     const nouveauTexte = texte.slice(0, debut) + texteLatex + texte.slice(fin);
     setTexte(nouveauTexte);
-    setEditeurFormuleOuvert(false);
     setFormuleInitiale(undefined);
     requestAnimationFrame(() => {
       el?.focus();
       const pos = debut + texteLatex.length;
-      el?.setSelectionRange(pos, pos);
-      ajusterHauteurTexte();
-    });
-  }
-
-  // Panneau de symboles rapides (2026-07-27, demande de Bourama :
-  // insertion "en live" sans passer par le popup EditeurFormule pour un
-  // symbole isolé -- ex. π, ≤, √ tout seuls). Chaque bouton insère un
-  // snippet $...$ autonome à la position du curseur -- c'est un plus
-  // (isolé du popup existant), pas un remplacement : pour une formule
-  // composée (fraction dans une racine, système d'équations...), le
-  // popup MathLive reste l'outil adapté, ce panneau ne gère pas
-  // l'imbrication entre clics successifs. Le rendu "en vrai" (pas de
-  // LaTeX brut visible) vient de l'aperçu juste au-dessus du champ, pas
-  // de ce panneau lui-même -- voir segmenterTexteAvecFormules plus haut.
-  const SYMBOLES_RAPIDES: { label: string; snippet: string }[] = [
-    { label: "√", snippet: "$\\sqrt{}$" },
-    { label: "a/b", snippet: "$\\frac{}{}$" },
-    { label: "xⁿ", snippet: "$^{}$" },
-    { label: "x₂", snippet: "$_{}$" },
-    { label: "∫", snippet: "$\\int_{}^{}$" },
-    { label: "Σ", snippet: "$\\sum_{}^{}$" },
-    { label: "π", snippet: "$\\pi$" },
-    { label: "∞", snippet: "$\\infty$" },
-    { label: "θ", snippet: "$\\theta$" },
-    { label: "Δ", snippet: "$\\Delta$" },
-    { label: "±", snippet: "$\\pm$" },
-    { label: "≤", snippet: "$\\leq$" },
-    { label: "≥", snippet: "$\\geq$" },
-    { label: "≠", snippet: "$\\neq$" },
-    { label: "≈", snippet: "$\\approx$" },
-    { label: "→", snippet: "$\\to$" },
-    { label: "∈", snippet: "$\\in$" },
-    { label: "∉", snippet: "$\\notin$" },
-    { label: "⊂", snippet: "$\\subset$" },
-    { label: "∅", snippet: "$\\emptyset$" },
-  ];
-
-  const [panneauSymbolesOuvert, setPanneauSymbolesOuvert] = useState(false);
-
-  function insererSymboleRapide(snippet: string) {
-    const ref = pleinEcranSaisie ? zoneTextePleinEcranRef : zoneTexteRef;
-    const el = ref.current;
-    const debut = el?.selectionStart ?? texte.length;
-    const fin = el?.selectionEnd ?? texte.length;
-    const nouveauTexte = texte.slice(0, debut) + snippet + texte.slice(fin);
-    setTexte(nouveauTexte);
-    requestAnimationFrame(() => {
-      el?.focus();
-      const indexAccolades = snippet.indexOf("{}");
-      const pos = debut + (indexAccolades !== -1 ? indexAccolades + 1 : snippet.length);
       el?.setSelectionRange(pos, pos);
       ajusterHauteurTexte();
     });
@@ -718,7 +679,10 @@ export function BarreDeSaisie({
             seule, pas de curseur/sélection ici -- seulement pour
             visualiser le rendu final avant envoi. */}
         {texte.includes("$") && (
-          <div className="mb-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-dj-bordure bg-dj-surface px-3 py-2 text-[15px] leading-relaxed text-dj-texte">
+          <div
+            ref={apercuFormulesRef}
+            className="mb-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-dj-bordure bg-dj-surface px-3 py-2 text-[15px] leading-relaxed text-dj-texte"
+          >
             {segmenterTexteAvecFormules(texte).map((s, i) =>
               s.formule ? (
                 <span key={i} dangerouslySetInnerHTML={{ __html: rendreFormuleKatex(s.texte, !!s.bloc) }} />
@@ -780,22 +744,21 @@ export function BarreDeSaisie({
           />
         </div>
 
-        {/* Panneau de symboles rapides (2026-07-27) -- s'ouvre SOUS le
-            champ de texte, qui lui reste toujours en haut, fixe (demande
-            explicite de Bourama). Grille de boutons assez nombreux
-            plutôt qu'une seule rangée serrée -- même demande. */}
-        {panneauSymbolesOuvert && (
-          <div className="mt-2 grid grid-cols-5 gap-2 rounded-xl border border-dj-bordure bg-dj-surface p-2 sm:grid-cols-8">
-            {SYMBOLES_RAPIDES.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => insererSymboleRapide(s.snippet)}
-                className="flex h-11 items-center justify-center rounded-lg text-lg text-dj-texte transition-colors hover:bg-dj-surface-haute"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+        {/* Éditeur maths/chimie fusionné (2026-07-27, demande Bourama :
+            "plus de popup") -- s'ouvre SOUS le champ de texte, qui lui
+            reste toujours en haut, fixe. Contrôlé par le seul bouton Σ
+            de la barre d'outils ci-dessous (voir EditeurFormule.tsx pour
+            le détail : onglets Maths/Chimie, champ MathLive + son
+            clavier virtuel complet, palette chimie). */}
+        {editeurFormuleOuvert && (
+          <EditeurFormule
+            onInserer={insererFormule}
+            onFermer={() => {
+              setEditeurFormuleOuvert(false);
+              setFormuleInitiale(undefined);
+            }}
+            valeurInitiale={formuleInitiale}
+          />
         )}
 
         <div className="mt-2 flex items-center justify-between">
@@ -829,8 +792,10 @@ export function BarreDeSaisie({
               <PenLine size={18} />
             </button>
 
-            {/* Éditeur de formule maths/chimie (2026-07-25) -- voir
-                EditeurFormule.tsx. */}
+            {/* Éditeur maths/chimie fusionné (2026-07-25, revu 27/07 --
+                "plus de popup" -- voir EditeurFormule.tsx). Seul bouton
+                pour ouvrir/fermer le panneau, plus de bouton séparé pour
+                un panneau de symboles à part. */}
             <button
               onClick={() => setEditeurFormuleOuvert((v) => !v)}
               data-editeur-formule-trigger
@@ -839,19 +804,6 @@ export function BarreDeSaisie({
               className={editeurFormuleOuvert ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte"}
             >
               <Sigma size={18} />
-            </button>
-
-            {/* Panneau de symboles rapides (2026-07-27) -- distinct du
-                bouton Σ ci-dessus : celui-ci ouvre le popup complet
-                (MathLive + chimie), celui-là déplie une grille de
-                symboles isolés directement sous le champ. */}
-            <button
-              onClick={() => setPanneauSymbolesOuvert((v) => !v)}
-              aria-label="Symboles rapides"
-              title="Symboles rapides (insertion directe)"
-              className={panneauSymbolesOuvert ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte"}
-            >
-              <Superscript size={18} />
             </button>
 
             {/* Connexion GitHub (2026-07-22) : icône de marque, couleurs et
@@ -1077,19 +1029,7 @@ export function BarreDeSaisie({
           </div>
         </div>
 
-        {editeurFormuleOuvert && (
-          <EditeurFormule
-            onInserer={insererFormule}
-            onFermer={() => {
-              setEditeurFormuleOuvert(false);
-              setFormuleInitiale(undefined);
-            }}
-            valeurInitiale={formuleInitiale}
-          />
-        )}
-      </div>
-
-      {texteColleOuvert && texteColle && (
+        {texteColleOuvert && texteColle && (
         <div
           className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-6"
           onClick={() => setTexteColleOuvert(false)}
