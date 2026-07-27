@@ -125,6 +125,40 @@ function segmenterTexteAvecLiens(texte: string): { texte: string; lien: boolean 
   return segments;
 }
 
+// Aperçu formules (2026-07-27, demande de Bourama : le champ de saisie
+// reste un <textarea> brut -- LaTeX visible tel quel ($...$) pendant la
+// frappe -- mais un aperçu séparé au-dessus affiche le même texte avec
+// les formules rendues via KaTeX, mis à jour en direct à chaque frappe.
+// Alternative volontairement plus légère qu'un vrai éditeur riche
+// (contenteditable) : celui-ci demanderait de refaire toute la gestion
+// du curseur/de la sélection déjà en place (insertion à la position du
+// curseur, sélection -> "Expliquer", détection de collage, etc.) --
+// voir échange avec Bourama à ce sujet. `$$...$$` est traité avant
+// `$...$` pour ne pas couper un bloc display au milieu.
+const REGEX_FORMULE = /\$\$([^$]+)\$\$|\$([^$\n]+)\$/g;
+
+function segmenterTexteAvecFormules(texte: string): { texte: string; formule: boolean; bloc?: boolean }[] {
+  const segments: { texte: string; formule: boolean; bloc?: boolean }[] = [];
+  let dernierIndex = 0;
+  for (const trouve of texte.matchAll(REGEX_FORMULE)) {
+    const index = trouve.index ?? 0;
+    if (index > dernierIndex) segments.push({ texte: texte.slice(dernierIndex, index), formule: false });
+    const estBloc = trouve[1] !== undefined;
+    segments.push({ texte: estBloc ? trouve[1] : trouve[2], formule: true, bloc: estBloc });
+    dernierIndex = index + trouve[0].length;
+  }
+  if (dernierIndex < texte.length) segments.push({ texte: texte.slice(dernierIndex), formule: false });
+  return segments;
+}
+
+function rendreFormuleKatex(latex: string, bloc: boolean): string {
+  try {
+    return katex.renderToString(latex, { throwOnError: false, displayMode: bloc });
+  } catch {
+    return latex;
+  }
+}
+
 // Types acceptés par le sélecteur de fichier -- élargi le 2026-07-20 pour
 // couvrir images (Gemini vision), documents PDF/Word/Excel (extraction
 // texte) ET vidéo (audio transcrit + frames analysées par Gemini), voir
@@ -599,6 +633,23 @@ export function BarreDeSaisie({
       {/* Rectangle à coins arrondis (plus une pilule ovale complète), tous
           les éléments alignés en bas -- voir section 3.3. */}
       <div className="relative rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-3 focus-within:border-dj-bordure-forte">
+        {/* Aperçu formules (2026-07-27) -- affiché seulement si le
+            brouillon contient au moins un "$", pour ne pas dupliquer
+            inutilement un simple message texte sans maths. Placé
+            au-dessus du textarea (demande explicite de Bourama), lecture
+            seule, pas de curseur/sélection ici -- seulement pour
+            visualiser le rendu final avant envoi. */}
+        {texte.includes("$") && (
+          <div className="mb-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-dj-bordure bg-dj-surface px-3 py-2 text-[15px] leading-relaxed text-dj-texte">
+            {segmenterTexteAvecFormules(texte).map((s, i) =>
+              s.formule ? (
+                <span key={i} dangerouslySetInnerHTML={{ __html: rendreFormuleKatex(s.texte, !!s.bloc) }} />
+              ) : (
+                <span key={i}>{s.texte}</span>
+              )
+            )}
+          </div>
+        )}
         <div className="relative">
           {/* Calque de couleur -- lecture seule, non interactif
               (pointer-events-none), affiche EXACTEMENT le même texte que
