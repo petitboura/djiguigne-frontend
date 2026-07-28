@@ -51,6 +51,15 @@ const config: Config = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        // Fondu rapide (2026-07-28, demande Bourama : "rien ne doit
+        // s'afficher brut") -- distinct de dj-fade-in (0.8s, pensé pour un
+        // chargement de page) : utilisé pour les micro-interactions d'UI
+        // (changement d'onglet, apparition d'une icône dans un slot
+        // variable) où 0.8s serait perçu comme lent.
+        "dj-fade-in-rapide": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
         "dj-orbit": {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
@@ -63,6 +72,7 @@ const config: Config = {
       animation: {
         "dj-fade-up": "dj-fade-up 0.5s ease both",
         "dj-fade-in": "dj-fade-in 0.8s ease both",
+        "dj-fade-in-rapide": "dj-fade-in-rapide 0.18s ease both",
         "dj-orbit": "dj-orbit 18s linear infinite",
         "dj-glow": "dj-glow 3.2s ease-in-out infinite",
       },

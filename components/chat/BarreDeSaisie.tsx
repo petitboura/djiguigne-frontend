@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown, ChevronRight } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -974,6 +974,7 @@ export function BarreDeSaisie({
                   aria-label={entree.label}
                   title={entree.label}
                   className={
+                    "animate-dj-fade-in-rapide " +
                     (actif ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte") +
                     " disabled:opacity-60"
                   }
@@ -1103,7 +1104,17 @@ export function BarreDeSaisie({
                   ))}
                 </div>
 
-                <div className="max-h-64 overflow-y-auto p-1">
+                {/* Hauteur FIXE (2026-07-28, demande Bourama : "la fenêtre
+                    d'outils garde sa taille, pas en fonction de combien
+                    d'outils à l'onglet") -- h-64, pas max-h-64 : ne rétrécit
+                    plus pour un onglet avec peu d'entrées (ex. "Action dans
+                    l'app" replié). Défilement interne si un onglet dépasse. */}
+                <div className="h-64 overflow-y-auto p-1">
+                  {/* Fondu à chaque changement d'onglet (2026-07-28, demande
+                      Bourama : "rien ne doit s'afficher brut") -- `key`
+                      force un remount du contenu à chaque clic d'onglet,
+                      ce qui relance l'animation dj-fade-in-rapide. */}
+                  <div key={ongletOutilActif} className="animate-dj-fade-in-rapide">
                   {ongletOutilActif === "action_app" ? (
                     // Onglet "Action dans l'app" (2026-07-28) -- groupé par
                     // appli (icône + nom, trié A→Z) plutôt qu'en liste plate ;
@@ -1125,10 +1136,24 @@ export function BarreDeSaisie({
                             >
                               <IconeAppli size={14} />
                               <span className="flex-1 font-medium">{labelAppli}</span>
-                              {deplie ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                              <ChevronDown
+                                size={13}
+                                className={"transition-transform duration-200 ease-out " + (deplie ? "rotate-0" : "-rotate-90")}
+                              />
                             </button>
-                            {deplie && (
-                              <div className="ml-3 border-l border-dj-bordure pl-2">
+                            {/* Glissement ouvert/fermé (2026-07-28, demande
+                                Bourama) -- toujours monté (pas de retrait/
+                                remontage conditionnel qui saccaderait), le
+                                triplet grid-rows/opacity anime la hauteur en
+                                douceur via la technique CSS grid-rows-[0fr →
+                                1fr] (pas besoin de mesurer la hauteur en JS). */}
+                            <div
+                              className={
+                                "grid transition-all duration-200 ease-out " +
+                                (deplie ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")
+                              }
+                            >
+                              <div className="ml-3 overflow-hidden border-l border-dj-bordure pl-2">
                                 {actionsAppli.map(({ nom, label, Icone }) => {
                                   const actif = estOutilActif(nom);
                                   return (
@@ -1147,7 +1172,7 @@ export function BarreDeSaisie({
                                   );
                                 })}
                               </div>
-                            )}
+                            </div>
                           </div>
                         );
                       })
@@ -1183,6 +1208,7 @@ export function BarreDeSaisie({
                         );
                       })
                   )}
+                  </div>
                 </div>
               </div>
             </div>
