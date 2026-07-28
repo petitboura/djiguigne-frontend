@@ -175,6 +175,17 @@ export function ChatIA({
         arguments: evenement.arguments || {},
         etatReprise: evenement.etat_reprise,
       });
+    } else if (evenement.type === "outils_suggeres") {
+      // Routeur d'outils (28/07) : le backend n'a PAS généré de réponse
+      // ce tour-ci (voir core/main.py) -- le message assistant reste
+      // vide, seuls les boutons s'affichent (voir BulleMessage.tsx).
+      setStatuts([]);
+      setRaisonnementEnCours(false);
+      majMessages((prec) => {
+        const copie = [...prec];
+        copie[copie.length - 1] = { ...copie[copie.length - 1], outilsSuggeres: evenement.outils };
+        return copie;
+      });
     }
   }
 
@@ -345,6 +356,18 @@ export function ChatIA({
     envoyerMessage(messageUtilisateur.content, "moyenne", null);
   }
 
+  function relancerAvecOutil(index: number, nomOutil: string) {
+    // Clic sur un bouton suggéré par le routeur d'outils (28/07) --
+    // même mécanique que regenererDepuis (on retire la paire et on
+    // renvoie la question d'origine), sauf qu'on force cet outil précis
+    // au lieu de laisser le routeur redécider -- exactement comme une
+    // sélection manuelle via le menu Outils (voir BarreDeSaisie.tsx).
+    const messageUtilisateur = messages[index - 1];
+    if (!messageUtilisateur) return;
+    majMessages((prec) => prec.slice(0, index - 1));
+    envoyerMessage(messageUtilisateur.content, "moyenne", null, null, null, false, [nomOutil]);
+  }
+
   function editerMessage(index: number, nouveauTexte: string) {
     // Tronque tout ce qui suit (y compris la réponse assistant concernée)
     // et relance avec le message modifié -- section 3.1.
@@ -422,6 +445,8 @@ export function ChatIA({
               raisonnement={message.raisonnement}
               raisonnementEnCours={estDernier ? raisonnementEnCours : false}
               outilsResultats={message.outilsResultats}
+              outilsSuggeres={message.outilsSuggeres}
+              onOutilChoisi={(nom) => relancerAvecOutil(index, nom)}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)

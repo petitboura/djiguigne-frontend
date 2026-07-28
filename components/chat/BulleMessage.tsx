@@ -23,6 +23,7 @@ import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
 import { OutilResultatBulle } from "./OutilResultatBulle";
+import { OUTILS_DISPONIBLES } from "./BarreDeSaisie";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown
@@ -119,6 +120,11 @@ export interface MessageAffiche {
   // résultat de leur outil, pas dans un bloc "Sources" à part à la fin
   // -- voir OutilResultatBulle.tsx.
   outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
+  // Routeur d'outils (28/07) : présent quand le backend a court-circuité
+  // la réponse normale pour proposer des boutons à la place (voir
+  // core/main.py, événement SSE "outils_suggeres"). Noms bruts (mêmes
+  // clés que OUTILS_DISPONIBLES dans BarreDeSaisie.tsx).
+  outilsSuggeres?: string[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -207,6 +213,8 @@ export function BulleMessage({
   raisonnement,
   raisonnementEnCours,
   outilsResultats,
+  outilsSuggeres,
+  onOutilChoisi,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -226,6 +234,8 @@ export function BulleMessage({
   raisonnement?: string;
   raisonnementEnCours?: boolean;
   outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
+  outilsSuggeres?: string[];
+  onOutilChoisi?: (nomOutil: string) => void;
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
@@ -507,6 +517,30 @@ export function BulleMessage({
       )}
       {!estUtilisateur && outilsResultats && outilsResultats.length > 0 && (
         <OutilResultatBulle resultats={outilsResultats} />
+      )}
+      {/* Routeur d'outils (28/07) : le backend a court-circuité sa réponse
+          pour proposer ces outils à la place (voir core/main.py,
+          événement "outils_suggeres"). Un clic relance EXACTEMENT la même
+          question, avec ce nom dans outil_force -- comme une sélection
+          manuelle via le menu Outils (BarreDeSaisie.tsx), voir
+          relancerAvecOutil dans ChatIA.tsx. */}
+      {!estUtilisateur && outilsSuggeres && outilsSuggeres.length > 0 && (
+        <div className="my-1.5 flex flex-wrap gap-2">
+          {outilsSuggeres.map((nom) => {
+            const outil = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
+            const Icone = outil?.Icone;
+            return (
+              <button
+                key={nom}
+                onClick={() => onOutilChoisi?.(nom)}
+                className="flex items-center gap-1.5 rounded-full border border-dj-bordure bg-dj-surface px-3 py-1.5 text-[13px] font-medium text-dj-texte transition-colors hover:border-dj-accent-1 hover:text-dj-accent-1"
+              >
+                {Icone && <Icone size={14} />}
+                {outil?.label ?? nom}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {!estUtilisateur && message.qualiteReduite && (
