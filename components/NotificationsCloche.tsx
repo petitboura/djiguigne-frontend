@@ -276,7 +276,7 @@ export function NotificationsCloche() {
       {ouverte && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOuverte(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl">
+          <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl">
             <div className="flex items-center justify-between border-b border-dj-bordure px-3 py-2">
               <span className="text-sm font-bold text-dj-texte">Notifications</span>
               {nonLues > 0 && (

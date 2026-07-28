@@ -37,7 +37,7 @@ export function TopBar() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="Djiguignè AI" width={30} height={30} priority />
-          <span className="font-display text-base font-bold tracking-tight text-dj-texte">
+          <span className="hidden font-display text-base font-bold tracking-tight text-dj-texte sm:inline">
             Djiguignè <span className="text-dj-accent-1">AI</span>
           </span>
         </Link>
@@ -46,7 +46,7 @@ export function TopBar() {
             plutôt qu'un état qui clignote (connecté -> déconnecté) le
             temps que Supabase réponde. */}
         {email === undefined ? null : email ? (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <BoutonInstaller />
             <NotificationsCloche />
             <NotificationsPushCloche />
@@ -62,7 +62,7 @@ export function TopBar() {
             </Link>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <BoutonInstaller />
             <Link
               href="/inscription"

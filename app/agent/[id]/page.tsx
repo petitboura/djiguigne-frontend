@@ -89,7 +89,7 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
               <p className="text-dj-texte-muet">{agent.description}</p>
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <BoutonUtiliser agentId={agent.id} />
               <BoutonProfilCreateur ownerId={agent.owner_id} />
               <BoutonPartager chemin={`/agent/${agent.id}`} titre={agent.nom} />

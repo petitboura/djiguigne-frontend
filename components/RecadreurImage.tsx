@@ -22,8 +22,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // sur le fait que le décalage/zoom affichés correspondent directement à
 // une zone en pixels réels de l'image d'origine (voir calculerRectangleSource).
 
-const LARGEUR_APERCU = 320;
-
 export function RecadreurImage({
   source,
   aspect,
@@ -43,7 +41,22 @@ export function RecadreurImage({
   const glisseRef = useRef<{ x: number; y: number } | null>(null);
   const conteneurRef = useRef<HTMLDivElement>(null);
 
-  const hauteurApercu = LARGEUR_APERCU / aspect;
+  // Largeur de la fenêtre d'aperçu, responsive (audit mobile, 27/07 :
+  // 320px fixe débordait sur petit écran une fois les paddings du modal
+  // (p-4) et de la carte (p-4) comptés -- 320 + 64 = 384px, plus large
+  // que la plupart des téléphones). 320 reste la valeur desktop/tablette.
+  const [largeurApercu, setLargeurApercu] = useState(320);
+
+  useEffect(() => {
+    function recalculer() {
+      setLargeurApercu(Math.min(320, window.innerWidth - 64));
+    }
+    recalculer();
+    window.addEventListener("resize", recalculer);
+    return () => window.removeEventListener("resize", recalculer);
+  }, []);
+
+  const hauteurApercu = largeurApercu / aspect;
 
   // Charge la source (fichier local OU URL distante déjà uploadée) dans
   // une vraie balise <img> (nécessaire pour connaître ses dimensions
@@ -84,7 +97,7 @@ export function RecadreurImage({
   // même principe que CSS object-cover, mais qu'on peut ensuite dépasser
   // avec le zoom.
   const echelleBase = image
-    ? Math.max(LARGEUR_APERCU / image.naturalWidth, hauteurApercu / image.naturalHeight)
+    ? Math.max(largeurApercu / image.naturalWidth, hauteurApercu / image.naturalHeight)
     : 1;
   const echelle = echelleBase * zoom;
 
@@ -93,14 +106,14 @@ export function RecadreurImage({
       if (!image) return { x: 0, y: 0 };
       const largeurAffichee = image.naturalWidth * ech;
       const hauteurAffichee = image.naturalHeight * ech;
-      const minX = LARGEUR_APERCU - largeurAffichee;
+      const minX = largeurApercu - largeurAffichee;
       const minY = hauteurApercu - hauteurAffichee;
       return {
         x: Math.min(0, Math.max(minX, dx)),
         y: Math.min(0, Math.max(minY, dy)),
       };
     },
-    [image, hauteurApercu]
+    [image, largeurApercu, hauteurApercu]
   );
 
   useEffect(() => {
@@ -130,10 +143,10 @@ export function RecadreurImage({
       // Rectangle source dans l'image ORIGINALE : le point (0,0) de la
       // fenêtre d'aperçu correspond au pixel (-decalage.x/echelle,
       // -decalage.y/echelle) de l'image, et la fenêtre entière fait
-      // (LARGEUR_APERCU/echelle) x (hauteurApercu/echelle) pixels réels.
+      // (largeurApercu/echelle) x (hauteurApercu/echelle) pixels réels.
       const sx = -decalage.x / echelle;
       const sy = -decalage.y / echelle;
-      const sw = LARGEUR_APERCU / echelle;
+      const sw = largeurApercu / echelle;
       const sh = hauteurApercu / echelle;
 
       // Résolution de sortie : on garde une taille raisonnable plutôt que
@@ -185,7 +198,7 @@ export function RecadreurImage({
         <div
           ref={conteneurRef}
           className="relative mx-auto touch-none select-none overflow-hidden rounded-lg border border-dj-bordure-forte bg-dj-surface-haute"
-          style={{ width: LARGEUR_APERCU, height: hauteurApercu, cursor: "grab" }}
+          style={{ width: largeurApercu, height: hauteurApercu, cursor: "grab" }}
           onMouseDown={(e) => debutGlisse(e.clientX, e.clientY)}
           onMouseMove={(e) => pendantGlisse(e.clientX, e.clientY)}
           onMouseUp={finGlisse}

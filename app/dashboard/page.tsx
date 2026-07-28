@@ -136,8 +136,7 @@ export default function PageDashboard() {
           {profil?.bio && <p className="max-w-md text-dj-texte-muet">{profil.bio}</p>}
 
           {profil && (
-            <div className="flex items-center gap-3">
-              <BoutonFollow creatorId={profil.user_id} />
+            <div className="flex flex-wrap items-center gap-3">
               <BoutonPartager
                 chemin={`/u/${profil.user_id}`}
                 titre={profil.nom_affiche || "Mon portfolio"}
@@ -180,7 +179,7 @@ export default function PageDashboard() {
               )}
               <div
                 className={
-                  "absolute left-1/2 top-full z-50 mt-2 w-80 origin-top -translate-x-1/2 overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl transition-all duration-150 ease-out " +
+                  "absolute left-1/2 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top -translate-x-1/2 overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl transition-all duration-150 ease-out " +
                   (bulleHistoriqueOuverte
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none -translate-y-1 scale-95 opacity-0")
@@ -243,11 +242,11 @@ export default function PageDashboard() {
         )}
 
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-display text-lg font-bold text-dj-texte">
               IA créées ({profil?.agents.length ?? 0})
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <button
                   type="button"
@@ -283,7 +282,7 @@ export default function PageDashboard() {
                       className="fixed inset-0 z-40"
                       onClick={() => setBulleAgentsOuverte(false)}
                     />
-                    <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-dj-bordure bg-dj-surface p-2 shadow-xl">
+                    <div className="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-dj-bordure bg-dj-surface p-2 shadow-xl">
                       {!profil || profil.agents.length === 0 ? (
                         <p className="px-3 py-2 text-sm text-dj-texte-muet">
                           Aucune IA créée pour l&apos;instant.
@@ -322,7 +321,7 @@ export default function PageDashboard() {
                 {bulleMajOuverte && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setBulleMajOuverte(false)} />
-                    <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-dj-bordure bg-dj-surface p-2 shadow-xl">
+                    <div className="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-dj-bordure bg-dj-surface p-2 shadow-xl">
                       {!profil || profil.agents.length === 0 ? (
                         <p className="px-3 py-2 text-sm text-dj-texte-muet">
                           Aucune IA créée pour l&apos;instant.

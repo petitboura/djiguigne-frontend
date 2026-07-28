@@ -78,7 +78,7 @@ export default async function PagePortfolio({ params }: { params: { id: string }
 
           {profil.bio && <p className="max-w-md text-dj-texte-muet">{profil.bio}</p>}
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <BoutonFollow creatorId={profil.user_id} />
             <BoutonPartager
               chemin={`/u/${profil.user_id}`}

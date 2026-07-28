@@ -52,7 +52,7 @@ export function SidebarChat({
   onNouvelleConversation: () => void;
   onSelectionnerConversation: (fil: FilConversation) => void;
 }) {
-  const [ouverte, setOuverte] = useState(true);
+  const [ouverte, setOuverte] = useState(false);
   const [connecte, setConnecte] = useState<boolean | undefined>(undefined);
   const [fils, setFils] = useState<FilConversation[] | null>(null);
   const [historiqueDeplie, setHistoriqueDeplie] = useState(false);
@@ -80,6 +80,10 @@ export function SidebarChat({
     document.addEventListener("mousedown", gererClicExterieur);
     return () => document.removeEventListener("mousedown", gererClicExterieur);
   }, [ouverte]);
+
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 768px)").matches) setOuverte(true);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -120,13 +124,26 @@ export function SidebarChat({
 
   return (
     <>
+      {/* Fond assombri : seulement sur mobile (< md), seulement quand le
+          panneau est ouvert -- sur desktop il pousse le contenu comme
+          avant, pas de fond nécessaire. Cliquer dessus ferme le panneau
+          (redondant avec le clic-extérieur ci-dessus, gardé explicite
+          pour l'accessibilité tactile). */}
+      {ouverte && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setOuverte(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Bouton replier/déplier, fixé en haut à gauche -- même position
           que le contrôle natif de la sidebar Streamlit. */}
       <button
         ref={boutonBasculeRef}
         onClick={() => setOuverte((v) => !v)}
         aria-label={ouverte ? "Replier le panneau" : "Déplier le panneau"}
-        className="fixed left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white hover:bg-black/50"
+        className="fixed left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white hover:bg-black/50"
       >
         {ouverte ? <ChevronsLeft size={16} /> : <ChevronsRight size={16} />}
       </button>
@@ -145,8 +162,14 @@ export function SidebarChat({
           maintenant EN PLUS, dans le même sens et la même durée que le
           rétrécissement de largeur -- effet "tout le bloc part vers la
           gauche" plutôt qu'un simple dévoilement. */}
+      {/* MOBILE (27/07/2026, audit responsive Bourama) : "fixed" +
+          "md:relative" -- sur mobile ce conteneur sort du flux normal et
+          flotte par-dessus le chat (overlay, avec le fond assombri
+          ci-dessus) au lieu de pousser le contenu et écraser la zone de
+          chat sur un petit écran ; sur desktop (md+), retour au
+          comportement d'origine (in-flow, pousse le contenu). */}
       <div
-        className={`shrink-0 overflow-hidden transition-[width] duration-300 ease-out ${
+        className={`fixed inset-y-0 left-0 z-40 shrink-0 overflow-hidden transition-[width] duration-300 ease-out md:relative md:inset-auto md:z-auto ${
           ouverte ? "w-72" : "w-0"
         }`}
       >

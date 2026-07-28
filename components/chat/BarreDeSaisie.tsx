@@ -1010,7 +1010,7 @@ export function BarreDeSaisie({
                 </button>
 
                 {selecteurOuvert && (
-                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
                     {depots === null && (
                       <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes dépôts...</p>
                     )}
@@ -1079,7 +1079,7 @@ export function BarreDeSaisie({
               <div
                 ref={menuOutilsRef}
                 className={
-                  "absolute bottom-full left-0 z-20 mb-2 w-72 origin-bottom-left overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-lg transition-all duration-150 ease-out " +
+                  "absolute bottom-full left-0 z-20 mb-2 w-72 max-w-[calc(100vw-2rem)] origin-bottom-left overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-lg transition-all duration-150 ease-out " +
                   (menuOutilsOuvert
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none translate-y-1 scale-95 opacity-0")

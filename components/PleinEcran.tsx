@@ -35,9 +35,9 @@ export function PleinEcran({
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col bg-dj-fond p-5">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
-        <div className="flex items-center justify-between pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
           <h2 className="font-display text-lg font-bold text-dj-texte">{titre}</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {actions}
             <button
               type="button"
