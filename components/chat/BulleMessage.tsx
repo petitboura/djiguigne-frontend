@@ -262,6 +262,24 @@ export function BulleMessage({
   const [outilsSuggeresCoches, setOutilsSuggeresCoches] = useState<string[]>([]);
   const estUtilisateur = message.role === "user";
 
+  // Touche Entrée valide aussi la sélection (28/07, demande Bourama) --
+  // seulement pour le cas multi-outils (le cas "un seul outil" ci-dessous
+  // se relance déjà au simple clic, pas besoin d'Entrée). On ignore la
+  // frappe si elle vient d'un champ de saisie (textarea/input/contenteditable)
+  // pour ne jamais voler l'Entrée qui sert normalement à envoyer un message.
+  useEffect(() => {
+    if (!outilsSuggeres || outilsSuggeres.length <= 1) return;
+    function gererEntreeValidation(e: KeyboardEvent) {
+      if (e.key !== "Enter") return;
+      if (outilsSuggeresCoches.length === 0) return;
+      const cible = e.target as HTMLElement | null;
+      if (cible && (cible.tagName === "TEXTAREA" || cible.tagName === "INPUT" || cible.isContentEditable)) return;
+      onOutilsChoisis?.(outilsSuggeresCoches);
+    }
+    document.addEventListener("keydown", gererEntreeValidation);
+    return () => document.removeEventListener("keydown", gererEntreeValidation);
+  }, [outilsSuggeres, outilsSuggeresCoches, onOutilsChoisis]);
+
   // Sélection de texte -> "expliquer ce passage" (2026-07-20). Signal
   // utilisateur non textuel : on capte la sélection native du navigateur
   // dans la bulle assistant, pas un nouveau composant de sélection custom.
@@ -552,43 +570,68 @@ export function BulleMessage({
 
       {/* Routeur d'outils (28/07) : le backend a court-circuité sa réponse
           pour proposer ces outils à la place (voir core/main.py,
-          événement "outils_suggeres"). Multi-sélection (comme le menu
-          manuel Outils, BarreDeSaisie.tsx) : cocher un ou plusieurs boutons
-          coche/décoche seulement, puis "Valider" relance EXACTEMENT la
-          même question avec la liste complète dans outil_force -- voir
-          relancerAvecOutils dans ChatIA.tsx. */}
+          événement "outils_suggeres"). Deux comportements (28/07, demande
+          Bourama) : un SEUL outil suggéré -> clic direct, relance
+          immédiate (pas de coche/validation à part) ; PLUSIEURS outils ->
+          coche un ou plusieurs boutons, "Valider" (ou touche Entrée, voir
+          l'effet ci-dessus) relance avec la liste complète dans
+          outil_force -- voir relancerAvecOutils dans ChatIA.tsx. */}
       {!estUtilisateur && outilsSuggeres && outilsSuggeres.length > 0 && (
         <div className="my-1.5 flex flex-wrap items-center gap-2">
-          {outilsSuggeres.map((nom) => {
-            const outil = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
-            const Icone = outil?.Icone;
-            const coche = outilsSuggeresCoches.includes(nom);
-            return (
-              <button
-                key={nom}
-                onClick={() =>
-                  setOutilsSuggeresCoches((prec) =>
-                    coche ? prec.filter((n) => n !== nom) : [...prec, nom]
-                  )
-                }
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                  coche
-                    ? "border-dj-accent-1 bg-dj-accent-1/10 text-dj-accent-1"
-                    : "border-dj-bordure bg-dj-surface text-dj-texte hover:border-dj-accent-1 hover:text-dj-accent-1"
-                }`}
-              >
-                {Icone && <Icone size={14} />}
-                {outil?.label ?? nom}
-              </button>
-            );
-          })}
-          {outilsSuggeresCoches.length > 0 && (
-            <button
-              onClick={() => onOutilsChoisis?.(outilsSuggeresCoches)}
-              className="flex items-center gap-1.5 rounded-full bg-dj-gradient px-3 py-1.5 text-[13px] font-semibold text-[#1A0D02] transition-opacity hover:opacity-90"
-            >
-              Valider ({outilsSuggeresCoches.length})
-            </button>
+          {outilsSuggeres.length === 1 ? (
+            (() => {
+              const nom = outilsSuggeres[0];
+              const outil = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
+              const Icone = outil?.Icone;
+              return (
+                <button
+                  onClick={() => onOutilsChoisis?.([nom])}
+                  className="flex items-center gap-1.5 rounded-full border border-dj-bordure bg-dj-surface px-3 py-1.5 text-[13px] font-medium text-dj-texte transition-colors hover:border-dj-accent-1 hover:text-dj-accent-1"
+                >
+                  {Icone && <Icone size={14} />}
+                  {outil?.label ?? nom}
+                </button>
+              );
+            })()
+          ) : (
+            <>
+              {outilsSuggeres.map((nom) => {
+                const outil = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
+                const Icone = outil?.Icone;
+                const coche = outilsSuggeresCoches.includes(nom);
+                return (
+                  <button
+                    key={nom}
+                    onClick={() =>
+                      setOutilsSuggeresCoches((prec) =>
+                        coche ? prec.filter((n) => n !== nom) : [...prec, nom]
+                      )
+                    }
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                      coche
+                        ? "border-dj-accent-1 bg-dj-accent-1/10 text-dj-accent-1"
+                        : "border-dj-bordure bg-dj-surface text-dj-texte hover:border-dj-accent-1 hover:text-dj-accent-1"
+                    }`}
+                  >
+                    {Icone && <Icone size={14} />}
+                    {outil?.label ?? nom}
+                  </button>
+                );
+              })}
+              {outilsSuggeresCoches.length > 0 && (
+                <button
+                  onClick={() => onOutilsChoisis?.(outilsSuggeresCoches)}
+                  className="flex items-center gap-1.5 rounded-full bg-dj-gradient px-3 py-1.5 text-[13px] font-semibold text-[#1A0D02] transition-opacity hover:opacity-90"
+                >
+                  Valider ({outilsSuggeresCoches.length})
+                  {/* Indice clavier (28/07, demande Bourama) -- desktop
+                      uniquement (masqué sur mobile, pas de clavier
+                      physique). Voir l'effet ci-dessus pour la vraie
+                      gestion de la touche Entrée. */}
+                  <span className="hidden font-normal opacity-70 md:inline">· Entrée ↵</span>
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
