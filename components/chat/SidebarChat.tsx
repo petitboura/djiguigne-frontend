@@ -32,6 +32,16 @@ import { MonProfilAgent } from "@/components/MonProfilAgent";
 //
 // N'affecte jamais BarreDeSaisie.tsx ni l'espacement des bulles de
 // message (BulleMessage.tsx) -- consigne explicite de Bourama.
+//
+// Rail permanent ajouté le 2026-07-27 (Bourama : "les boutons existants
+// qui sont dans le sidebar, et qui apparaissent aussi") -- bande fine
+// d'icônes (w-14) toujours visible à gauche du panneau, accès direct aux
+// mêmes actions sans ouvrir le panneau entier. Desktop uniquement
+// (hidden md:flex) : sur mobile l'audit responsive du 27/07 a
+// spécifiquement retiré tout ce qui poussait le contenu du chat, donc le
+// petit bouton bascule flottant existant reste seul sur petit écran
+// (md:hidden) plutôt que d'ajouter une bande permanente supplémentaire
+// qui grignoterait la largeur déjà réduite.
 
 type FilConversation = {
   conversation_id: string | null;
@@ -62,19 +72,22 @@ export function SidebarChat({
   const [copie, setCopie] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const boutonBasculeRef = useRef<HTMLButtonElement>(null);
+  const railRef = useRef<HTMLElement>(null);
 
   // Clic en dehors du panneau -> fermeture (2026-07-20, bug trouvé par
   // Bourama en test réel). mousedown plutôt que click : se déclenche
   // avant le click du bouton bascule lui-même, donc on exclut ce bouton
   // explicitement (via boutonBasculeRef) pour éviter un double-toggle
   // (fermeture par ce handler puis réouverture immédiate par le onClick
-  // du bouton, dans le même geste).
+  // du bouton, dans le même geste). Même raison pour railRef depuis le
+  // 27/07 : le rail permanent contient son propre bouton bascule.
   useEffect(() => {
     if (!ouverte) return;
     function gererClicExterieur(e: MouseEvent) {
       const cible = e.target as Node;
       if (asideRef.current?.contains(cible)) return;
       if (boutonBasculeRef.current?.contains(cible)) return;
+      if (railRef.current?.contains(cible)) return;
       setOuverte(false);
     }
     document.addEventListener("mousedown", gererClicExterieur);
@@ -137,16 +150,115 @@ export function SidebarChat({
         />
       )}
 
-      {/* Bouton replier/déplier, fixé en haut à gauche -- même position
-          que le contrôle natif de la sidebar Streamlit. */}
+      {/* Bouton replier/déplier flottant -- MOBILE UNIQUEMENT depuis le
+          27/07 (md:hidden) : sur desktop le même bouton vit maintenant
+          dans le rail permanent ci-dessous. */}
       <button
         ref={boutonBasculeRef}
         onClick={() => setOuverte((v) => !v)}
         aria-label={ouverte ? "Replier le panneau" : "Déplier le panneau"}
-        className="fixed left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white hover:bg-black/50"
+        className="fixed left-2 top-2 z-40 flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white hover:bg-black/50 md:hidden"
       >
         {ouverte ? <ChevronsLeft size={16} /> : <ChevronsRight size={16} />}
       </button>
+
+      {/* Rail permanent -- desktop uniquement, voir note en tête de
+          fichier. Les actions directes (Retour, Nouvelle conversation,
+          Partager) s'exécutent sans ouvrir le panneau ; les volets
+          repliables (Historique, Avis, Mon profil) ouvrent le panneau ET
+          déplient la section correspondante. */}
+      <nav
+        ref={railRef}
+        aria-label="Actions rapides"
+        className="hidden w-14 flex-shrink-0 flex-col items-center gap-2 border-r border-dj-bordure bg-dj-fond py-3 md:flex"
+      >
+        <button
+          onClick={() => setOuverte((v) => !v)}
+          aria-label={ouverte ? "Replier le panneau" : "Déplier le panneau"}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          {ouverte ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+        </button>
+
+        <div className="my-1 h-px w-8 bg-dj-bordure" />
+
+        <Link
+          href={`/agent/${agentId}`}
+          title="Retour à l'agent"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+        >
+          <ArrowLeft size={18} />
+        </Link>
+
+        {connecte && aDesMessages && (
+          <button
+            onClick={onNouvelleConversation}
+            title="Nouvelle conversation"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+          >
+            <MessageSquarePlus size={18} />
+          </button>
+        )}
+
+        {connecte && fils && fils.length > 0 && (
+          <button
+            onClick={() => {
+              setOuverte(true);
+              setHistoriqueDeplie(true);
+            }}
+            title="Historique"
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              historiqueDeplie
+                ? "bg-dj-surface-haute text-dj-accent-1"
+                : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+            }`}
+          >
+            <History size={18} />
+          </button>
+        )}
+
+        <button
+          onClick={() => {
+            setOuverte(true);
+            setAvisDeplie(true);
+          }}
+          title="Avis sur cet agent"
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+            avisDeplie
+              ? "bg-dj-surface-haute text-dj-accent-1"
+              : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+          }`}
+        >
+          <Star size={18} />
+        </button>
+
+        {connecte && profilADesChamps && (
+          <button
+            onClick={() => {
+              setOuverte(true);
+              setProfilDeplie(true);
+            }}
+            title="Mon profil"
+            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              profilDeplie
+                ? "bg-dj-surface-haute text-dj-accent-1"
+                : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+            }`}
+          >
+            <UserCircle size={18} />
+          </button>
+        )}
+
+        <div className="mt-auto">
+          <button
+            onClick={partager}
+            title={copie ? "Copié !" : "Partager"}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+          >
+            <Share2 size={18} />
+          </button>
+        </div>
+      </nav>
 
       {/* CORRIGÉ le 22/07/2026 (Bourama : "sursaute au lieu de glisser") :
           le panneau était monté/démonté d'un coup ({ouverte && ...}), donc
