@@ -135,6 +135,26 @@ export function SidebarChat({
     setHistoriqueDeplie(false);
   }
 
+  // Bascule exclusive pour les 3 icônes du rail qui pilotent un volet
+  // repliable (Historique/Avis/Mon profil) -- corrige deux bugs remontés
+  // par Bourama le 28/07 : (1) un second clic sur la même icône ne
+  // refermait jamais rien (les anciens onClick forçaient toujours
+  // `true`) ; (2) cliquer une AUTRE icône ne changeait visiblement rien
+  // tant que la section précédente restait ouverte en même temps, plus
+  // bas dans un panneau déjà rempli -- un seul volet ouvert à la fois
+  // rend le changement évident. Les boutons texte du panneau lui-même
+  // (plus bas) gardent leur bascule indépendante d'origine, inchangée.
+  function basculerVoletRail(section: "historique" | "avis" | "profil") {
+    const dejaActif =
+      (section === "historique" && historiqueDeplie) ||
+      (section === "avis" && avisDeplie) ||
+      (section === "profil" && profilDeplie);
+    setHistoriqueDeplie(section === "historique" ? !dejaActif : false);
+    setAvisDeplie(section === "avis" ? !dejaActif : false);
+    setProfilDeplie(section === "profil" ? !dejaActif : false);
+    setOuverte(true);
+  }
+
   return (
     <>
       {/* Fond assombri : seulement sur mobile (< md), seulement quand le
@@ -202,10 +222,7 @@ export function SidebarChat({
 
         {connecte && fils && fils.length > 0 && (
           <button
-            onClick={() => {
-              setOuverte(true);
-              setHistoriqueDeplie(true);
-            }}
+            onClick={() => basculerVoletRail("historique")}
             title="Historique"
             className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               historiqueDeplie
@@ -218,10 +235,7 @@ export function SidebarChat({
         )}
 
         <button
-          onClick={() => {
-            setOuverte(true);
-            setAvisDeplie(true);
-          }}
+          onClick={() => basculerVoletRail("avis")}
           title="Avis sur cet agent"
           className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
             avisDeplie
@@ -234,10 +248,7 @@ export function SidebarChat({
 
         {connecte && profilADesChamps && (
           <button
-            onClick={() => {
-              setOuverte(true);
-              setProfilDeplie(true);
-            }}
+            onClick={() => basculerVoletRail("profil")}
             title="Mon profil"
             className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
               profilDeplie
