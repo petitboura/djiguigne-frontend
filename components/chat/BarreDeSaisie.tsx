@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -39,6 +39,28 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "explorer_depot_github", label: "Explorer un dépôt GitHub", Icone: FolderTree },
   { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode },
   { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3 },
+  // Actions locales (2026-07-28, refonte barre de saisie demandée par
+  // Bourama) -- ces 4 entrées ne sont PAS des outils envoyés au backend
+  // pour le tool-calling du modèle (contrairement à tout ce qui précède
+  // dans cette liste) : ce sont d'anciennes icônes autonomes de la barre
+  // (localisation, éditeur formule, recherche web forcée, dessin) qui
+  // rejoignent désormais la même liste "Outils" pour libérer de la place.
+  // Préfixe "ui_" utilisé comme marqueur de traitement spécial -- voir
+  // estOutilActif/executerActionOutil plus bas, qui interceptent ce
+  // préfixe au lieu de pousser vers `outilsForces` (backend).
+  { nom: "ui_localisation", label: "Joindre ma position", Icone: MapPin },
+  { nom: "ui_formule", label: "Insérer une formule / réaction chimique", Icone: Sigma },
+  { nom: "ui_recherche", label: "Forcer une recherche web", Icone: Search },
+  { nom: "ui_dessin", label: "Dessiner (géométrie, graphe, croquis)", Icone: PenLine },
+];
+
+// Liste "Appli" (2026-07-28) -- pendant symétrique à OUTILS_DISPONIBLES,
+// mais réservée à ce qui nécessite une connexion/authentification
+// utilisateur (OAuth, session tierce...). Une seule entrée pour l'instant
+// (GitHub) -- structure prête à en accueillir d'autres sans retoucher la
+// logique de récence/slot variable ci-dessous.
+export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
+  { nom: "github", label: "GitHub", Icone: Github },
 ];
 
 // Détection de langage pour un collage de code (2026-07-25, demande de
@@ -218,6 +240,93 @@ export function BarreDeSaisie({
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
+
+  // Slots variables (2026-07-28, refonte barre de saisie demandée par
+  // Bourama) -- 3 emplacements "derniers outils utilisés" + 1 emplacement
+  // "dernière appli utilisée", à côté des icônes fixes (pin, ouvrir liste
+  // outils, ouvrir liste appli). Le plus récent en tête de tableau.
+  // Volontairement en mémoire (pas de persistance localStorage) : recommence
+  // à vide à chaque rechargement de page, pas de demande explicite pour
+  // que ça survive à un refresh.
+  const NB_SLOTS_OUTILS_RECENTS = 3;
+  const [outilsRecents, setOutilsRecents] = useState<string[]>([]);
+  // Un seul slot appli -> "github" par défaut puisque c'est la seule appli
+  // disponible pour l'instant (avant cette refonte c'était une icône fixe,
+  // donc on ne veut pas que le slot parte vide au premier chargement).
+  const [appliRecente, setAppliRecente] = useState<string | null>("github");
+  const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
+  const menuAppliRef = useRef<HTMLDivElement>(null);
+  const boutonAppliRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuAppliOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuAppliRef.current?.contains(cible)) return;
+      if (boutonAppliRef.current?.contains(cible)) return;
+      setMenuAppliOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuAppliOuvert]);
+
+  function enregistrerUtilisationOutil(nom: string) {
+    setOutilsRecents((prec) => [nom, ...prec.filter((n) => n !== nom)].slice(0, NB_SLOTS_OUTILS_RECENTS));
+  }
+
+  function enregistrerUtilisationAppli(nom: string) {
+    setAppliRecente(nom);
+  }
+
+  // Certaines entrées de OUTILS_DISPONIBLES (préfixe "ui_") ne sont pas des
+  // outils backend forcés mais d'anciennes icônes autonomes de la barre --
+  // ces deux fonctions font le routage, que l'entrée soit cliquée depuis le
+  // menu "Outils" ou depuis son propre slot variable (même comportement).
+  function estOutilActif(nom: string): boolean {
+    switch (nom) {
+      case "ui_localisation":
+        return !!localisation;
+      case "ui_recherche":
+        return rechercheForcee;
+      case "ui_formule":
+        return editeurFormuleOuvert;
+      case "ui_dessin":
+        return canvasOuvert;
+      default:
+        return outilsForces.includes(nom);
+    }
+  }
+
+  function executerActionOutil(nom: string) {
+    switch (nom) {
+      case "ui_localisation":
+        toggleLocalisation();
+        break;
+      case "ui_recherche":
+        setRechercheForcee((v) => !v);
+        break;
+      case "ui_formule":
+        setEditeurFormuleOuvert((v) => !v);
+        break;
+      case "ui_dessin":
+        setCanvasOuvert(true);
+        break;
+      default:
+        setOutilsForces((prec) => (prec.includes(nom) ? prec.filter((o) => o !== nom) : [...prec, nom]));
+    }
+    enregistrerUtilisationOutil(nom);
+  }
+
+  // Une seule entrée pour l'instant (github) -- switch prêt à en accueillir
+  // d'autres sans retoucher les slots/le menu.
+  function executerActionAppli(nom: string) {
+    switch (nom) {
+      case "github":
+        cliquerGithub();
+        break;
+    }
+    enregistrerUtilisationAppli(nom);
+  }
 
   // Clic en dehors du menu Outils -> fermeture (même pattern que
   // SidebarChat.tsx, demande de Bourama 25/07 : "il ne se ferme que
@@ -806,121 +915,95 @@ export function BarreDeSaisie({
               onChange={(e) => choisirFichier(e.target.files?.[0] ?? null)}
             />
 
-            {/* Canvas de dessin (2026-07-25) -- géométrie/graphe/croquis,
-                voir CanvasDessin.tsx. */}
-            <button
-              onClick={() => setCanvasOuvert(true)}
-              aria-label="Dessiner"
-              title="Dessiner (géométrie, graphe, croquis)"
-              className="text-dj-texte-muet transition-colors hover:text-dj-texte"
-            >
-              <PenLine size={18} />
-            </button>
+            {/* Slots variables "Outils" (2026-07-28, refonte demandée par
+                Bourama) -- jusqu'à 3 raccourcis vers les derniers outils
+                utilisés, qu'il s'agisse d'un outil backend forcé ou d'une
+                des anciennes icônes autonomes (localisation, formule,
+                recherche, dessin) qui vivent maintenant uniquement dans
+                OUTILS_DISPONIBLES. Même comportement qu'un clic dans le
+                menu Outils juste en dessous, sans avoir à l'ouvrir. */}
+            {outilsRecents.map((nom) => {
+              const entree = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
+              if (!entree) return null;
+              const actif = estOutilActif(nom);
+              return (
+                <button
+                  key={nom}
+                  onClick={() => executerActionOutil(nom)}
+                  disabled={nom === "ui_localisation" && localisationEnCours}
+                  aria-label={entree.label}
+                  title={entree.label}
+                  className={
+                    (actif ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte") +
+                    " disabled:opacity-60"
+                  }
+                >
+                  <entree.Icone size={18} />
+                </button>
+              );
+            })}
 
-            {/* Éditeur maths/chimie fusionné (2026-07-25, revu 27/07 --
-                "plus de popup" -- voir EditeurFormule.tsx). Seul bouton
-                pour ouvrir/fermer le panneau, plus de bouton séparé pour
-                un panneau de symboles à part. */}
-            <button
-              onClick={() => setEditeurFormuleOuvert((v) => !v)}
-              data-editeur-formule-trigger
-              aria-label="Insérer une formule ou une réaction chimique"
-              title="Insérer une formule (maths) ou une réaction (chimie)"
-              className={editeurFormuleOuvert ? "text-dj-texte transition-colors" : "text-dj-texte-muet transition-colors hover:text-dj-texte"}
-            >
-              <Sigma size={18} />
-            </button>
-
-            {/* Connexion GitHub (2026-07-22) : icône de marque, couleurs et
-                style de l'app (dj-texte-muet/dj-accent-1), pas les couleurs
-                GitHub -- voir connexions/oauth_generique.py côté backend.
-                Point vert discret quand déjà connecté. Une fois connecté,
-                le clic ouvre un sélecteur de dépôts (au lieu de ne rien
-                faire) -- cliquer un dépôt insère son lien dans le champ. */}
-            <div className="relative" ref={selecteurRef}>
-              <button
-                onClick={cliquerGithub}
-                disabled={githubEnCours}
-                aria-label={githubConnecte ? "Choisir un dépôt GitHub" : "Connecter GitHub"}
-                title={githubConnecte ? "Choisir un dépôt GitHub" : "Connecter GitHub"}
-                className={
-                  githubConnecte
-                    ? "relative text-dj-accent-1 transition-colors"
-                    : "relative text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
-                }
-              >
-                <Github size={18} />
-                {githubConnecte && (
-                  <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-green-500" />
-                )}
-              </button>
-
-              {selecteurOuvert && (
-                <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
-                  {depots === null && (
-                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes dépôts...</p>
+            {/* Slot variable "Appli" (2026-07-28) -- 1 seul emplacement,
+                pour la dernière appli utilisée (une seule existe pour
+                l'instant : GitHub, voir APPLIS_DISPONIBLES). Cas GitHub
+                traité à part pour conserver le sélecteur de dépôts déjà en
+                place -- les futures applis passeront par executerActionAppli
+                seul, sans dropdown dédié, tant qu'elles n'en ont pas besoin. */}
+            {appliRecente === "github" && (
+              <div className="relative" ref={selecteurRef}>
+                <button
+                  onClick={() => executerActionAppli("github")}
+                  disabled={githubEnCours}
+                  aria-label={githubConnecte ? "Choisir un dépôt GitHub" : "Connecter GitHub"}
+                  title={githubConnecte ? "Choisir un dépôt GitHub" : "Connecter GitHub"}
+                  className={
+                    githubConnecte
+                      ? "relative text-dj-accent-1 transition-colors"
+                      : "relative text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
+                  }
+                >
+                  <Github size={18} />
+                  {githubConnecte && (
+                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-green-500" />
                   )}
-                  {depots?.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucun dépôt trouvé.</p>
-                  )}
-                  {depots?.map((d) => (
-                    <button
-                      key={d.nom_complet}
-                      type="button"
-                      onClick={() => choisirDepot(d.nom_complet)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        {d.nom_complet}
-                        {d.prive && (
-                          <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
-                            privé
-                          </span>
+                </button>
+
+                {selecteurOuvert && (
+                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                    {depots === null && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes dépôts...</p>
+                    )}
+                    {depots?.length === 0 && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucun dépôt trouvé.</p>
+                    )}
+                    {depots?.map((d) => (
+                      <button
+                        key={d.nom_complet}
+                        type="button"
+                        onClick={() => choisirDepot(d.nom_complet)}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          {d.nom_complet}
+                          {d.prive && (
+                            <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                              privé
+                            </span>
+                          )}
+                        </span>
+                        {d.description && (
+                          <span className="line-clamp-1 text-xs text-dj-texte-muet">{d.description}</span>
                         )}
-                      </span>
-                      {d.description && (
-                        <span className="line-clamp-1 text-xs text-dj-texte-muet">{d.description}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Position (2026-07-20) : jointe/retirée à chaque message,
-                jamais capturée automatiquement -- clic = permission navigateur. */}
-            <button
-              onClick={toggleLocalisation}
-              disabled={localisationEnCours}
-              aria-label={localisation ? "Retirer la position" : "Joindre ma position"}
-              className={
-                localisation
-                  ? "text-dj-texte transition-colors"
-                  : "text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
-              }
-            >
-              <MapPin size={18} />
-            </button>
-
-            {/* Recherche web (2026-07-23) -- forçage manuel pour le
-                prochain message ; se désactive après envoi (pas un mode
-                permanent, voir état rechercheForcee). Le modèle peut de
-                toute façon décider seul d'utiliser Tavily sans ce bouton
-                (activation automatique via le tool-calling normal). */}
-            <button
-              onClick={() => setRechercheForcee((v) => !v)}
-              aria-label={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
-              title={rechercheForcee ? "Recherche web activée pour le prochain message" : "Forcer une recherche web"}
-              className={
-                rechercheForcee
-                  ? "text-dj-accent-1 transition-colors"
-                  : "text-dj-texte-muet transition-colors hover:text-dj-texte"
-              }
-            >
-              <Search size={18} />
-            </button>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Bouton Outils (2026-07-25, multi-sélection depuis le 26/07) --
+                icône FIXE (ne varie jamais) : ouvre la liste complète des
+                outils, y compris les entrées "ui_" ci-dessus.
                 sélection cumulative de PLUSIEURS outils pour le prochain
                 message, voir OUTILS_DISPONIBLES en haut du fichier et
                 core/mcp_tools.py:lister_tous_les_outils côté backend. */}
@@ -962,18 +1045,19 @@ export function BarreDeSaisie({
                 }
               >
                 {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => {
-                  const actif = outilsForces.includes(nom);
+                  const actif = estOutilActif(nom);
                   return (
                     <button
                       key={nom}
                       onClick={() => {
-                        setOutilsForces((prec) =>
-                          actif ? prec.filter((o) => o !== nom) : [...prec, nom]
-                        );
+                        executerActionOutil(nom);
                         // Menu volontairement laissé ouvert (contrairement à
                         // l'ancienne sélection unique) : cumuler plusieurs
                         // outils demande plusieurs clics d'affilée sans
-                        // rouvrir le menu à chaque fois.
+                        // rouvrir le menu à chaque fois. Les entrées "ui_"
+                        // (localisation, formule, recherche, dessin) ferment
+                        // quand même leur propre panneau/permission au clic,
+                        // donc laisser le menu ouvert ne gêne pas.
                       }}
                       className={
                         "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
@@ -988,6 +1072,50 @@ export function BarreDeSaisie({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Icône Appli (2026-07-28) -- icône FIXE (ne varie jamais),
+                pendante de l'icône Outils juste au-dessus : ouvre la liste
+                complète des applis (nécessitant une connexion utilisateur),
+                voir APPLIS_DISPONIBLES en haut du fichier. Une seule appli
+                pour l'instant (GitHub), le menu est prêt à en accueillir
+                d'autres sans changement. */}
+            <div className="relative">
+              <button
+                ref={boutonAppliRef}
+                onClick={() => setMenuAppliOuvert((v) => !v)}
+                aria-label="Choisir une application"
+                title="Choisir une application"
+                className={
+                  "relative rounded-full p-1 transition-colors " +
+                  (menuAppliOuvert ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte-muet hover:text-dj-texte")
+                }
+              >
+                <AppWindow size={18} />
+              </button>
+              <div
+                ref={menuAppliRef}
+                className={
+                  "absolute bottom-full left-0 z-20 mb-2 max-h-72 w-56 origin-bottom-left overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                  (menuAppliOuvert
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-1 scale-95 opacity-0")
+                }
+              >
+                {APPLIS_DISPONIBLES.map(({ nom, label, Icone }) => (
+                  <button
+                    key={nom}
+                    onClick={() => {
+                      executerActionAppli(nom);
+                      setMenuAppliOuvert(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs text-dj-texte transition-colors hover:bg-dj-surface-haute"
+                  >
+                    <Icone size={14} />
+                    <span className="flex-1">{label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
