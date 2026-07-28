@@ -34,14 +34,15 @@ import { MonProfilAgent } from "@/components/MonProfilAgent";
 // message (BulleMessage.tsx) -- consigne explicite de Bourama.
 //
 // Rail permanent ajouté le 2026-07-27 (Bourama : "les boutons existants
-// qui sont dans le sidebar, et qui apparaissent aussi") -- bande fine
-// d'icônes (w-14) toujours visible à gauche du panneau, accès direct aux
-// mêmes actions sans ouvrir le panneau entier. Desktop uniquement
-// (hidden md:flex) : sur mobile l'audit responsive du 27/07 a
-// spécifiquement retiré tout ce qui poussait le contenu du chat, donc le
-// petit bouton bascule flottant existant reste seul sur petit écran
-// (md:hidden) plutôt que d'ajouter une bande permanente supplémentaire
-// qui grignoterait la largeur déjà réduite.
+// qui sont dans le sidebar, et qui apparaissent aussi"), puis fusionné
+// avec le panneau le 2026-07-28 (Bourama : "le rail qui s'élargit et
+// devien exactement le panneau") -- sur desktop, UN SEUL élément dont la
+// largeur bascule entre 56px (icônes seules) et 288px (icônes +
+// libellés + contenu des volets), pas un rail fixe + un second panneau
+// séparé. Mobile inchangé depuis l'audit responsive du 27/07 : petit
+// bouton flottant + panneau plein-largeur en overlay, séparés du
+// rail/panneau fusionné desktop (md:hidden sur l'un, hidden md:flex sur
+// l'autre).
 
 type FilConversation = {
   conversation_id: string | null;
@@ -72,7 +73,7 @@ export function SidebarChat({
   const [copie, setCopie] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const boutonBasculeRef = useRef<HTMLButtonElement>(null);
-  const railRef = useRef<HTMLElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
 
   // Clic en dehors du panneau -> fermeture (2026-07-20, bug trouvé par
   // Bourama en test réel). mousedown plutôt que click : se déclenche
@@ -182,94 +183,168 @@ export function SidebarChat({
         {ouverte ? <ChevronsLeft size={16} /> : <ChevronsRight size={16} />}
       </button>
 
-      {/* Rail permanent -- desktop uniquement, voir note en tête de
-          fichier. Les actions directes (Retour, Nouvelle conversation,
-          Partager) s'exécutent sans ouvrir le panneau ; les volets
-          repliables (Historique, Avis, Mon profil) ouvrent le panneau ET
-          déplient la section correspondante. */}
-      <nav
+      {/* Rail/panneau fusionnés -- desktop uniquement (Bourama, 28/07 :
+          "le rail qui s'élargit et devient exactement le panneau", au
+          lieu d'un second panneau séparé qui s'ouvrait à côté). UN SEUL
+          élément dont la largeur bascule entre 56px (icônes seules) et
+          288px (icônes + libellés + contenu des volets) -- pas de
+          panneau distinct sur desktop. Le petit bouton flottant +
+          l'ancien panneau plein-largeur plus bas restent utilisés sur
+          MOBILE uniquement (md:hidden dessus), comportement inchangé
+          depuis l'audit responsive du 27/07. */}
+      <div
         ref={railRef}
-        aria-label="Actions rapides"
-        className="hidden w-14 flex-shrink-0 flex-col items-center gap-2 border-r border-dj-bordure bg-dj-fond py-3 md:flex"
+        className={`hidden flex-shrink-0 flex-col overflow-hidden border-r border-dj-bordure bg-dj-fond px-2 py-3 transition-[width] duration-300 ease-out md:flex ${
+          ouverte ? "md:w-72" : "md:w-14"
+        }`}
       >
         <button
           onClick={() => setOuverte((v) => !v)}
           aria-label={ouverte ? "Replier le panneau" : "Déplier le panneau"}
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+          className={`flex items-center gap-2 rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte ${
+            ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"
+          }`}
         >
           {ouverte ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+          {ouverte && "Replier"}
         </button>
 
-        <div className="my-1 h-px w-8 bg-dj-bordure" />
+        <div className={`my-2 h-px bg-dj-bordure ${ouverte ? "w-full" : "w-8 self-center"}`} />
 
         <Link
           href={`/agent/${agentId}`}
-          title="Retour à l'agent"
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+          className={`flex items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 ${
+            ouverte ? "justify-start px-4 py-2.5 text-sm" : "h-10 w-10 justify-center"
+          }`}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={ouverte ? 16 : 18} />
+          {ouverte && "Retour à l'agent"}
         </Link>
 
         {connecte && aDesMessages && (
           <button
             onClick={onNouvelleConversation}
-            title="Nouvelle conversation"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+            className={`mt-2 flex items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte ${
+              ouverte ? "justify-start px-4 py-2.5 text-sm" : "h-10 w-10 justify-center"
+            }`}
           >
-            <MessageSquarePlus size={18} />
+            <MessageSquarePlus size={ouverte ? 16 : 18} />
+            {ouverte && "Nouvelle conversation"}
           </button>
         )}
 
         {connecte && fils && fils.length > 0 && (
+          <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
+            <button
+              onClick={() => basculerVoletRail("historique")}
+              title="Historique"
+              className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+                historiqueDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+              } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
+            >
+              <History size={ouverte ? 16 : 18} />
+              {ouverte && "Historique"}
+            </button>
+            {ouverte && (
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  historiqueDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col px-1 pb-1">
+                    {fils.map((fil) => {
+                      const estActive = fil.conversation_id === conversationActiveId;
+                      return (
+                        <button
+                          key={fil.conversation_id ?? "legacy"}
+                          onClick={() => !estActive && choisirFil(fil)}
+                          disabled={estActive}
+                          className={`border-b border-white/[0.06] px-2 py-2 text-left text-sm last:border-b-0 ${
+                            estActive ? "text-dj-accent-1" : "text-dj-texte hover:text-dj-accent-1"
+                          }`}
+                        >
+                          {estActive ? "● " : ""}
+                          {fil.titre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
           <button
-            onClick={() => basculerVoletRail("historique")}
-            title="Historique"
-            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-              historiqueDeplie
-                ? "bg-dj-surface-haute text-dj-accent-1"
-                : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-            }`}
+            onClick={() => basculerVoletRail("avis")}
+            title="Avis sur cet agent"
+            className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+              avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+            } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
           >
-            <History size={18} />
+            <Star size={ouverte ? 16 : 18} />
+            {ouverte && "Avis sur cet agent"}
           </button>
+          {ouverte && (
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-4 px-3 pb-3">
+                  <NoteAgent agentId={agentId} />
+                  <CommentairesAgent agentId={agentId} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {connecte && profilADesChamps && (
+          <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
+            <button
+              onClick={() => basculerVoletRail("profil")}
+              title="Mon profil"
+              className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+                profilDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+              } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
+            >
+              <UserCircle size={ouverte ? 16 : 18} />
+              {ouverte && "Mon profil"}
+            </button>
+            {ouverte && (
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  profilDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <MonProfilAgent agentId={agentId} onEtat={setProfilADesChamps} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {ouverte && (
+          <div className="mt-auto flex justify-center pt-2">
+            <BoutonInstaller />
+          </div>
         )}
 
         <button
-          onClick={() => basculerVoletRail("avis")}
-          title="Avis sur cet agent"
-          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-            avisDeplie
-              ? "bg-dj-surface-haute text-dj-accent-1"
-              : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+          onClick={partager}
+          className={`flex items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 ${
+            ouverte ? "mt-2 justify-start px-4 py-2.5 text-sm" : "mt-auto h-10 w-10 justify-center"
           }`}
         >
-          <Star size={18} />
+          <Share2 size={ouverte ? 16 : 18} />
+          {ouverte && (copie ? "Copié !" : "Partager")}
         </button>
-
-        {connecte && profilADesChamps && (
-          <button
-            onClick={() => basculerVoletRail("profil")}
-            title="Mon profil"
-            className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-              profilDeplie
-                ? "bg-dj-surface-haute text-dj-accent-1"
-                : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-            }`}
-          >
-            <UserCircle size={18} />
-          </button>
-        )}
-
-        <div className="mt-auto">
-          <button
-            onClick={partager}
-            title={copie ? "Copié !" : "Partager"}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] transition-transform hover:-translate-y-0.5"
-          >
-            <Share2 size={18} />
-          </button>
-        </div>
-      </nav>
+      </div>
 
       {/* CORRIGÉ le 22/07/2026 (Bourama : "sursaute au lieu de glisser") :
           le panneau était monté/démonté d'un coup ({ouverte && ...}), donc
@@ -285,14 +360,12 @@ export function SidebarChat({
           maintenant EN PLUS, dans le même sens et la même durée que le
           rétrécissement de largeur -- effet "tout le bloc part vers la
           gauche" plutôt qu'un simple dévoilement. */}
-      {/* MOBILE (27/07/2026, audit responsive Bourama) : "fixed" +
-          "md:relative" -- sur mobile ce conteneur sort du flux normal et
-          flotte par-dessus le chat (overlay, avec le fond assombri
-          ci-dessus) au lieu de pousser le contenu et écraser la zone de
-          chat sur un petit écran ; sur desktop (md+), retour au
-          comportement d'origine (in-flow, pousse le contenu). */}
+      {/* MOBILE UNIQUEMENT depuis le 28/07 (md:hidden ajouté) : ce
+          panneau plein-largeur (overlay, avec le fond assombri
+          ci-dessus) ne sert plus que sur petit écran -- desktop utilise
+          désormais le rail/panneau fusionné ci-dessus à la place. */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 shrink-0 overflow-hidden transition-[width] duration-300 ease-out md:relative md:inset-auto md:z-auto ${
+        className={`fixed inset-y-0 left-0 z-40 shrink-0 overflow-hidden transition-[width] duration-300 ease-out md:hidden ${
           ouverte ? "w-72" : "w-0"
         }`}
       >
