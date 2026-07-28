@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown, ChevronRight } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -18,27 +18,42 @@ export type LocalisationJointe = { latitude: number; longitude: number } | null;
 // envoyée par core/registre_outils.py + agents_outils_generation (pas de
 // requête dédiée pour l'instant, phase de test). Voir échange avec
 // Bourama du 25/07 pour le détail de chaque groupe.
-export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Search }[] = [
-  { nom: "tavily_search", label: "Recherche web", Icone: Search },
-  { nom: "tavily_extract", label: "Extraire une page", Icone: FileSearch },
-  { nom: "tavily_crawl", label: "Explorer un site", Icone: Globe },
-  { nom: "tavily_map", label: "Cartographier un site", Icone: Map },
-  { nom: "tavily_research", label: "Recherche approfondie", Icone: BookOpen },
-  { nom: "generer_document", label: "Générer un PDF/texte", Icone: FileText },
-  { nom: "generer_document_word", label: "Générer un Word", Icone: FileType },
-  { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet },
-  { nom: "generer_document_powerpoint", label: "Générer un PowerPoint", Icone: Presentation },
-  { nom: "generer_code", label: "Générer du code", Icone: Code },
-  { nom: "chercher_fichier", label: "Chercher un fichier", Icone: FolderSearch },
-  { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package },
-  { nom: "generer_bundle", label: "Générer une archive", Icone: Archive },
-  { nom: "exporter_donnees", label: "Exporter des données", Icone: Download },
-  { nom: "generer_image", label: "Générer une image", Icone: IconImage },
-  { nom: "deployer_site", label: "Déployer un site", Icone: Rocket },
-  { nom: "planifier_rappel", label: "Planifier un rappel", Icone: Bell },
-  { nom: "explorer_depot_github", label: "Explorer un dépôt GitHub", Icone: FolderTree },
-  { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode },
-  { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3 },
+//
+// Classement en onglets (2026-07-28, demande Bourama) :
+// - "generer" -> Générer
+// - "rechercher" -> Rechercher / Explorer
+// - "action_app" -> Action dans l'app -- outils qui passent par un service
+//   tiers CONNECTÉ (GitHub aujourd'hui, Notion demain par ex.) ; le champ
+//   `appli` (nom d'une entrée de APPLIS_DISPONIBLES) les regroupe sous
+//   l'icône+nom de leur appli dans cet onglet, en accordéon.
+// - "utilitaires" -> Utilitaires -- tout le reste, y compris les 4
+//   anciennes icônes autonomes (préfixe "ui_", voir plus bas)
+export type OngletOutil = "generer" | "rechercher" | "action_app" | "utilitaires";
+
+export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Search; onglet: OngletOutil; appli?: string }[] = [
+  { nom: "generer_document", label: "Générer un PDF/texte", Icone: FileText, onglet: "generer" },
+  { nom: "generer_document_word", label: "Générer un Word", Icone: FileType, onglet: "generer" },
+  { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet, onglet: "generer" },
+  { nom: "generer_document_powerpoint", label: "Générer un PowerPoint", Icone: Presentation, onglet: "generer" },
+  { nom: "generer_code", label: "Générer du code", Icone: Code, onglet: "generer" },
+  { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package, onglet: "generer" },
+  { nom: "generer_bundle", label: "Générer une archive", Icone: Archive, onglet: "generer" },
+  { nom: "generer_image", label: "Générer une image", Icone: IconImage, onglet: "generer" },
+
+  { nom: "tavily_search", label: "Recherche web", Icone: Search, onglet: "rechercher" },
+  { nom: "tavily_extract", label: "Extraire une page", Icone: FileSearch, onglet: "rechercher" },
+  { nom: "tavily_crawl", label: "Explorer un site", Icone: Globe, onglet: "rechercher" },
+  { nom: "tavily_map", label: "Cartographier un site", Icone: Map, onglet: "rechercher" },
+  { nom: "tavily_research", label: "Recherche approfondie", Icone: BookOpen, onglet: "rechercher" },
+  { nom: "chercher_fichier", label: "Chercher un fichier", Icone: FolderSearch, onglet: "rechercher" },
+
+  { nom: "explorer_depot_github", label: "Explorer un dépôt GitHub", Icone: FolderTree, onglet: "action_app", appli: "github" },
+  { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode, onglet: "action_app", appli: "github" },
+  { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3, onglet: "action_app", appli: "github" },
+
+  { nom: "exporter_donnees", label: "Exporter des données", Icone: Download, onglet: "utilitaires" },
+  { nom: "deployer_site", label: "Déployer un site", Icone: Rocket, onglet: "utilitaires" },
+  { nom: "planifier_rappel", label: "Planifier un rappel", Icone: Bell, onglet: "utilitaires" },
   // Actions locales (2026-07-28, refonte barre de saisie demandée par
   // Bourama) -- ces 4 entrées ne sont PAS des outils envoyés au backend
   // pour le tool-calling du modèle (contrairement à tout ce qui précède
@@ -48,17 +63,26 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   // Préfixe "ui_" utilisé comme marqueur de traitement spécial -- voir
   // estOutilActif/executerActionOutil plus bas, qui interceptent ce
   // préfixe au lieu de pousser vers `outilsForces` (backend).
-  { nom: "ui_localisation", label: "Joindre ma position", Icone: MapPin },
-  { nom: "ui_formule", label: "Insérer une formule / réaction chimique", Icone: Sigma },
-  { nom: "ui_recherche", label: "Forcer une recherche web", Icone: Search },
-  { nom: "ui_dessin", label: "Dessiner (géométrie, graphe, croquis)", Icone: PenLine },
+  { nom: "ui_localisation", label: "Joindre ma position", Icone: MapPin, onglet: "utilitaires" },
+  { nom: "ui_formule", label: "Insérer une formule / réaction chimique", Icone: Sigma, onglet: "utilitaires" },
+  { nom: "ui_recherche", label: "Forcer une recherche web", Icone: Search, onglet: "utilitaires" },
+  { nom: "ui_dessin", label: "Dessiner (géométrie, graphe, croquis)", Icone: PenLine, onglet: "utilitaires" },
+];
+
+export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
+  { id: "generer", label: "Générer" },
+  { id: "rechercher", label: "Rechercher / Explorer" },
+  { id: "action_app", label: "Action dans l'app" },
+  { id: "utilitaires", label: "Utilitaires" },
 ];
 
 // Liste "Appli" (2026-07-28) -- pendant symétrique à OUTILS_DISPONIBLES,
 // mais réservée à ce qui nécessite une connexion/authentification
 // utilisateur (OAuth, session tierce...). Une seule entrée pour l'instant
 // (GitHub) -- structure prête à en accueillir d'autres sans retoucher la
-// logique de récence/slot variable ci-dessous.
+// logique de récence/slot variable ci-dessous. Sert aussi de source pour
+// les en-têtes de groupe (icône + nom) de l'onglet "Action dans l'app"
+// ci-dessus, via le champ `appli` des entrées de OUTILS_DISPONIBLES.
 export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
   { nom: "github", label: "GitHub", Icone: Github },
 ];
@@ -240,6 +264,13 @@ export function BarreDeSaisie({
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
+  // Onglets du menu Outils (2026-07-28) -- voir ONGLETS_OUTILS en haut du
+  // fichier. "generer" ouvert par défaut au premier affichage.
+  const [ongletOutilActif, setOngletOutilActif] = useState<OngletOutil>("generer");
+  // Groupes d'applis dépliés dans l'onglet "Action dans l'app" -- accordéon
+  // à dépliage multiple (demande explicite de Bourama : "option B", pas un
+  // seul groupe ouvert à la fois).
+  const [groupesAppliDeplies, setGroupesAppliDeplies] = useState<string[]>([]);
 
   // Slots variables (2026-07-28, refonte barre de saisie demandée par
   // Bourama) -- 3 emplacements "derniers outils utilisés" + 1 emplacement
@@ -276,6 +307,15 @@ export function BarreDeSaisie({
 
   function enregistrerUtilisationAppli(nom: string) {
     setAppliRecente(nom);
+  }
+
+  // Accordéon "Action dans l'app" (2026-07-28) -- dépliage multiple, chaque
+  // groupe d'appli se toggle indépendamment des autres (option B validée
+  // par Bourama).
+  function toggleGroupeAppli(nomAppli: string) {
+    setGroupesAppliDeplies((prec) =>
+      prec.includes(nomAppli) ? prec.filter((n) => n !== nomAppli) : [...prec, nomAppli]
+    );
   }
 
   // Certaines entrées de OUTILS_DISPONIBLES (préfixe "ui_") ne sont pas des
@@ -1038,40 +1078,112 @@ export function BarreDeSaisie({
               <div
                 ref={menuOutilsRef}
                 className={
-                  "absolute bottom-full left-0 z-20 mb-2 max-h-72 w-64 origin-bottom-left overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                  "absolute bottom-full left-0 z-20 mb-2 w-72 origin-bottom-left overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-lg transition-all duration-150 ease-out " +
                   (menuOutilsOuvert
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none translate-y-1 scale-95 opacity-0")
                 }
               >
-                {OUTILS_DISPONIBLES.map(({ nom, label, Icone }) => {
-                  const actif = estOutilActif(nom);
-                  return (
+                {/* Barre d'onglets (2026-07-28, demande Bourama) -- voir
+                    ONGLETS_OUTILS en haut du fichier. */}
+                <div className="flex items-center gap-1 overflow-x-auto border-b border-dj-bordure px-1 pb-1 pt-1">
+                  {ONGLETS_OUTILS.map(({ id, label }) => (
                     <button
-                      key={nom}
-                      onClick={() => {
-                        executerActionOutil(nom);
-                        // Menu volontairement laissé ouvert (contrairement à
-                        // l'ancienne sélection unique) : cumuler plusieurs
-                        // outils demande plusieurs clics d'affilée sans
-                        // rouvrir le menu à chaque fois. Les entrées "ui_"
-                        // (localisation, formule, recherche, dessin) ferment
-                        // quand même leur propre panneau/permission au clic,
-                        // donc laisser le menu ouvert ne gêne pas.
-                      }}
+                      key={id}
+                      onClick={() => setOngletOutilActif(id)}
                       className={
-                        "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
-                        (actif
+                        "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors " +
+                        (ongletOutilActif === id
                           ? "bg-dj-accent-1/10 text-dj-accent-1"
-                          : "text-dj-texte hover:bg-dj-surface-haute")
+                          : "text-dj-texte-muet hover:text-dj-texte")
                       }
                     >
-                      <Icone size={14} />
-                      <span className="flex-1">{label}</span>
-                      {actif && <Check size={13} />}
+                      {label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+
+                <div className="max-h-64 overflow-y-auto p-1">
+                  {ongletOutilActif === "action_app" ? (
+                    // Onglet "Action dans l'app" (2026-07-28) -- groupé par
+                    // appli (icône + nom, trié A→Z) plutôt qu'en liste plate ;
+                    // clic sur une appli déplie ses actions liées en dessous,
+                    // triées A→Z elles aussi. Accordéon à dépliage multiple.
+                    [...APPLIS_DISPONIBLES]
+                      .filter((a) => OUTILS_DISPONIBLES.some((o) => o.appli === a.nom))
+                      .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+                      .map(({ nom: nomAppli, label: labelAppli, Icone: IconeAppli }) => {
+                        const deplie = groupesAppliDeplies.includes(nomAppli);
+                        const actionsAppli = OUTILS_DISPONIBLES.filter((o) => o.appli === nomAppli).sort((a, b) =>
+                          a.label.localeCompare(b.label, "fr")
+                        );
+                        return (
+                          <div key={nomAppli}>
+                            <button
+                              onClick={() => toggleGroupeAppli(nomAppli)}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs text-dj-texte transition-colors hover:bg-dj-surface-haute"
+                            >
+                              <IconeAppli size={14} />
+                              <span className="flex-1 font-medium">{labelAppli}</span>
+                              {deplie ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                            </button>
+                            {deplie && (
+                              <div className="ml-3 border-l border-dj-bordure pl-2">
+                                {actionsAppli.map(({ nom, label, Icone }) => {
+                                  const actif = estOutilActif(nom);
+                                  return (
+                                    <button
+                                      key={nom}
+                                      onClick={() => executerActionOutil(nom)}
+                                      className={
+                                        "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
+                                        (actif ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte hover:bg-dj-surface-haute")
+                                      }
+                                    >
+                                      <Icone size={14} />
+                                      <span className="flex-1">{label}</span>
+                                      {actif && <Check size={13} />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                  ) : (
+                    [...OUTILS_DISPONIBLES]
+                      .filter((o) => o.onglet === ongletOutilActif)
+                      .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+                      .map(({ nom, label, Icone }) => {
+                        const actif = estOutilActif(nom);
+                        return (
+                          <button
+                            key={nom}
+                            onClick={() => {
+                              executerActionOutil(nom);
+                              // Menu volontairement laissé ouvert (contrairement
+                              // à l'ancienne sélection unique) : cumuler
+                              // plusieurs outils demande plusieurs clics
+                              // d'affilée sans rouvrir le menu à chaque fois.
+                              // Les entrées "ui_" (localisation, formule,
+                              // recherche, dessin) ferment quand même leur
+                              // propre panneau/permission au clic, donc laisser
+                              // le menu ouvert ne gêne pas.
+                            }}
+                            className={
+                              "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
+                              (actif ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte hover:bg-dj-surface-haute")
+                            }
+                          >
+                            <Icone size={14} />
+                            <span className="flex-1">{label}</span>
+                            {actif && <Check size={13} />}
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1103,7 +1215,9 @@ export function BarreDeSaisie({
                     : "pointer-events-none translate-y-1 scale-95 opacity-0")
                 }
               >
-                {APPLIS_DISPONIBLES.map(({ nom, label, Icone }) => (
+                {[...APPLIS_DISPONIBLES]
+                  .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+                  .map(({ nom, label, Icone }) => (
                   <button
                     key={nom}
                     onClick={() => {
