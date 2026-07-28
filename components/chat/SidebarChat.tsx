@@ -50,6 +50,22 @@ type FilConversation = {
   derniere_activite: string;
 };
 
+// Libellé texte d'une ligne du rail -- corrige le "saut" du 28/07 (voir
+// note plus bas) : reste monté en permanence, seule sa max-width et son
+// opacity s'animent (même durée que la largeur du conteneur parent),
+// jamais un changement de forme instantané.
+function LibelleRail({ ouverte, children }: { ouverte: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`overflow-hidden whitespace-nowrap text-sm transition-[max-width,opacity] duration-300 ease-out ${
+        ouverte ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function SidebarChat({
   agentId,
   aDesMessages,
@@ -184,7 +200,7 @@ export function SidebarChat({
       </button>
 
       {/* Rail/panneau fusionnés -- desktop uniquement (Bourama, 28/07 :
-          "le rail qui s'élargit et devient exactement le panneau", au
+          "le rail qui s'élargit et devien exactement le panneau", au
           lieu d'un second panneau séparé qui s'ouvrait à côté). UN SEUL
           élément dont la largeur bascule entre 56px (icônes seules) et
           288px (icônes + libellés + contenu des volets) -- pas de
@@ -192,6 +208,22 @@ export function SidebarChat({
           l'ancien panneau plein-largeur plus bas restent utilisés sur
           MOBILE uniquement (md:hidden dessus), comportement inchangé
           depuis l'audit responsive du 27/07. */}
+      {/* CORRIGÉ le 28/07/2026 (Bourama : "quand ça apparaît, on dirait
+          que quelque chose de plus grand rétrécit... surtout le bouton
+          retour") : la largeur du conteneur s'animait bien, mais le
+          CONTENU à l'intérieur changeait de forme instantanément au clic
+          ({ouverte && "texte"} + classes justify-center/px-0 <->
+          justify-start/px-4 changées d'un coup) -- l'icône sautait de
+          taille (16<->18) ET de position (centrée <-> alignée à gauche),
+          ET le bouton Retour changeait de forme (pastille ronde <->
+          pilule). Résultat : le contenu "sautait" à sa forme finale
+          pendant que le conteneur était encore en train de s'élargir
+          lentement autour de lui. Corrigé en gardant l'icône dans un
+          emplacement fixe (toujours 40x40, jamais recentrée) et en
+          animant seulement l'apparition du libellé (max-width + opacity,
+          même durée que la largeur du conteneur) -- rien ne change de
+          forme ou de taille au clic, seul le texte se révèle
+          progressivement. */}
       <div
         ref={railRef}
         className={`hidden flex-shrink-0 flex-col overflow-hidden border-r border-dj-bordure bg-dj-fond px-2 py-3 transition-[width] duration-300 ease-out md:flex ${
@@ -201,49 +233,51 @@ export function SidebarChat({
         <button
           onClick={() => setOuverte((v) => !v)}
           aria-label={ouverte ? "Replier le panneau" : "Déplier le panneau"}
-          className={`flex items-center gap-2 rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte ${
-            ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"
-          }`}
+          className="flex w-full items-center gap-2 rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
         >
-          {ouverte ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
-          {ouverte && "Replier"}
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            {ouverte ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+          </span>
+          <LibelleRail ouverte={ouverte}>Replier</LibelleRail>
         </button>
 
-        <div className={`my-2 h-px bg-dj-bordure ${ouverte ? "w-full" : "w-8 self-center"}`} />
+        <div className="my-2 h-px w-full bg-dj-bordure" />
 
         <Link
           href={`/agent/${agentId}`}
-          className={`flex items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 ${
-            ouverte ? "justify-start px-4 py-2.5 text-sm" : "h-10 w-10 justify-center"
-          }`}
+          className="flex w-full items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
         >
-          <ArrowLeft size={ouverte ? 16 : 18} />
-          {ouverte && "Retour à l'agent"}
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <ArrowLeft size={18} />
+          </span>
+          <LibelleRail ouverte={ouverte}>Retour à l&apos;agent</LibelleRail>
         </Link>
 
         {connecte && aDesMessages && (
           <button
             onClick={onNouvelleConversation}
-            className={`mt-2 flex items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte ${
-              ouverte ? "justify-start px-4 py-2.5 text-sm" : "h-10 w-10 justify-center"
-            }`}
+            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
           >
-            <MessageSquarePlus size={ouverte ? 16 : 18} />
-            {ouverte && "Nouvelle conversation"}
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <MessageSquarePlus size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>Nouvelle conversation</LibelleRail>
           </button>
         )}
 
         {connecte && fils && fils.length > 0 && (
-          <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
+          <div className="mt-2 rounded-xl border border-dj-bordure">
             <button
               onClick={() => basculerVoletRail("historique")}
               title="Historique"
               className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
                 historiqueDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-              } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
+              }`}
             >
-              <History size={ouverte ? 16 : 18} />
-              {ouverte && "Historique"}
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <History size={18} />
+              </span>
+              <LibelleRail ouverte={ouverte}>Historique</LibelleRail>
             </button>
             {ouverte && (
               <div
@@ -276,16 +310,18 @@ export function SidebarChat({
           </div>
         )}
 
-        <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
+        <div className="mt-2 rounded-xl border border-dj-bordure">
           <button
             onClick={() => basculerVoletRail("avis")}
             title="Avis sur cet agent"
             className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
               avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-            } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
+            }`}
           >
-            <Star size={ouverte ? 16 : 18} />
-            {ouverte && "Avis sur cet agent"}
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Star size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>Avis sur cet agent</LibelleRail>
           </button>
           {ouverte && (
             <div
@@ -304,16 +340,18 @@ export function SidebarChat({
         </div>
 
         {connecte && profilADesChamps && (
-          <div className={`mt-2 rounded-xl ${ouverte ? "border border-dj-bordure" : ""}`}>
+          <div className="mt-2 rounded-xl border border-dj-bordure">
             <button
               onClick={() => basculerVoletRail("profil")}
               title="Mon profil"
               className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
                 profilDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-              } ${ouverte ? "justify-start px-3 py-2.5 text-sm" : "h-10 w-10 justify-center"}`}
+              }`}
             >
-              <UserCircle size={ouverte ? 16 : 18} />
-              {ouverte && "Mon profil"}
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <UserCircle size={18} />
+              </span>
+              <LibelleRail ouverte={ouverte}>Mon profil</LibelleRail>
             </button>
             {ouverte && (
               <div
@@ -337,12 +375,14 @@ export function SidebarChat({
 
         <button
           onClick={partager}
-          className={`flex items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 ${
-            ouverte ? "mt-2 justify-start px-4 py-2.5 text-sm" : "mt-auto h-10 w-10 justify-center"
+          className={`flex w-full items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-[transform,margin-top] duration-300 hover:-translate-y-0.5 ${
+            ouverte ? "mt-2" : "mt-auto"
           }`}
         >
-          <Share2 size={ouverte ? 16 : 18} />
-          {ouverte && (copie ? "Copié !" : "Partager")}
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <Share2 size={18} />
+          </span>
+          <LibelleRail ouverte={ouverte}>{copie ? "Copié !" : "Partager"}</LibelleRail>
         </button>
       </div>
 
@@ -350,6 +390,7 @@ export function SidebarChat({
           le panneau était monté/démonté d'un coup ({ouverte && ...}), donc
           aucune transition possible -- juste apparition/disparition
           instantanée. Maintenant toujours monté, seule la largeur du
+
           conteneur externe est animée (overflow-hidden pour clipper
           proprement), le contenu interne garde une largeur fixe pour ne
           jamais se tasser/reflow pendant l'animation. */}
