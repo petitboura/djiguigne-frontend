@@ -935,7 +935,7 @@ export function BarreDeSaisie({
           />
         )}
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-y-2">
           <div className="flex items-center gap-3">
             {/* Punaise (remplace le "+"), contour monochrome, même fonction
                 (upload fichier) -- section 3.3. Accepte images ET documents
@@ -1325,10 +1325,10 @@ export function BarreDeSaisie({
 
       {texteColleOuvert && texteColle && (
         <div
-          className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-6"
+          className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-4 sm:p-6"
           onClick={() => setTexteColleOuvert(false)}
         >
-          <div className="flex items-center justify-between pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
             <span className="text-sm text-dj-texte-muet">{libellePieceJointe(langageDetecte, texteColle)}</span>
             <button
               onClick={() => setTexteColleOuvert(false)}
@@ -1408,8 +1408,8 @@ export function BarreDeSaisie({
         // 2026-07-23). Coloration des liens reprise ici aussi (2026-07-23,
         // suite) via le même calque que le composer compact, juste sur des
         // refs séparées.
-        <div className="fixed inset-0 z-50 flex flex-col animate-dj-fade-in bg-dj-fond p-6">
-          <div className="flex items-center justify-between pb-4">
+        <div className="fixed inset-0 z-50 flex flex-col animate-dj-fade-in bg-dj-fond p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
             <span className="text-sm text-dj-texte-muet">Écris ton message</span>
             <button
               onClick={() => setPleinEcranSaisie(false)}
