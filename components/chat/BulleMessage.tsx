@@ -125,6 +125,14 @@ export interface MessageAffiche {
   // core/main.py, événement SSE "outils_suggeres"). Noms bruts (mêmes
   // clés que OUTILS_DISPONIBLES dans BarreDeSaisie.tsx).
   outilsSuggeres?: string[];
+  // Ajouté 2026-07-28 (demande Bourama) : lien(s) de fichier(s) générés
+  // par un outil, détectés côté backend de façon garantie (voir
+  // core/main.py, événement SSE "fichiers_generes") -- INDÉPENDANT de ce
+  // que le modèle écrit dans sa réponse texte, pour ne plus dépendre de
+  // sa fidélité à recopier le lien correctement. Affiché en carte fichier
+  // (FichierChip.tsx) à la fin du message, une entrée par appel d'outil,
+  // dans l'ordre chronologique réel (même logique que outilsResultats).
+  fichiersGeneres?: { nomOutil: string; fichiers: { url: string; nom: string }[] }[];
 }
 
 // Ajouté le 2026-07-23 (bug repéré par Bourama : en rechargeant un fil de
@@ -214,7 +222,8 @@ export function BulleMessage({
   raisonnementEnCours,
   outilsResultats,
   outilsSuggeres,
-  onOutilChoisi,
+  onOutilsChoisis,
+  fichiersGeneres,
 }: {
   message: MessageAffiche;
   onRegenerer?: () => void;
@@ -235,13 +244,22 @@ export function BulleMessage({
   raisonnementEnCours?: boolean;
   outilsResultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
   outilsSuggeres?: string[];
-  onOutilChoisi?: (nomOutil: string) => void;
+  // Multi-sélection (2026-07-28, demande Bourama, même mécanique que le
+  // menu manuel Outils) : un seul appel avec la liste complète des outils
+  // cochés au moment de la validation, plutôt qu'un rappel par outil.
+  onOutilsChoisis?: (nomsOutils: string[]) => void;
+  fichiersGeneres?: { nomOutil: string; fichiers: { url: string; nom: string }[] }[];
 }) {
   const [copie, setCopie] = useState(false);
   const [pieceJointeOuverte, setPieceJointeOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState(false);
   const [texteEdition, setTexteEdition] = useState(message.content);
   const [enLecture, setEnLecture] = useState(false);
+  // Multi-sélection des outils suggérés par le routeur (28/07, demande
+  // Bourama) : coche un ou plusieurs boutons avant de valider, au lieu de
+  // relancer immédiatement au premier clic -- même principe que le menu
+  // manuel Outils (BarreDeSaisie.tsx).
+  const [outilsSuggeresCoches, setOutilsSuggeresCoches] = useState<string[]>([]);
   const estUtilisateur = message.role === "user";
 
   // Sélection de texte -> "expliquer ce passage" (2026-07-20). Signal
@@ -518,28 +536,60 @@ export function BulleMessage({
       {!estUtilisateur && outilsResultats && outilsResultats.length > 0 && (
         <OutilResultatBulle resultats={outilsResultats} />
       )}
+      {/* Fichiers générés (28/07, demande Bourama) : lien(s) détecté(s) côté
+          backend de façon garantie (voir core/main.py, événement SSE
+          "fichiers_generes"), indépendant de ce que le modèle a écrit dans
+          sa réponse -- réutilise FichierChip.tsx tel quel, même rendu que
+          les liens que le modèle écrit correctement lui-même (PDF en aperçu
+          intégré, autre type en carte de téléchargement). */}
+      {!estUtilisateur && fichiersGeneres && fichiersGeneres.length > 0 && (
+        <div className="my-1.5 flex flex-col gap-1">
+          {fichiersGeneres.flatMap((appel) =>
+            appel.fichiers.map((f) => <FichierChip key={f.url} href={f.url} nom={f.nom} />)
+          )}
+        </div>
+      )}
+
       {/* Routeur d'outils (28/07) : le backend a court-circuité sa réponse
           pour proposer ces outils à la place (voir core/main.py,
-          événement "outils_suggeres"). Un clic relance EXACTEMENT la même
-          question, avec ce nom dans outil_force -- comme une sélection
-          manuelle via le menu Outils (BarreDeSaisie.tsx), voir
-          relancerAvecOutil dans ChatIA.tsx. */}
+          événement "outils_suggeres"). Multi-sélection (comme le menu
+          manuel Outils, BarreDeSaisie.tsx) : cocher un ou plusieurs boutons
+          coche/décoche seulement, puis "Valider" relance EXACTEMENT la
+          même question avec la liste complète dans outil_force -- voir
+          relancerAvecOutils dans ChatIA.tsx. */}
       {!estUtilisateur && outilsSuggeres && outilsSuggeres.length > 0 && (
-        <div className="my-1.5 flex flex-wrap gap-2">
+        <div className="my-1.5 flex flex-wrap items-center gap-2">
           {outilsSuggeres.map((nom) => {
             const outil = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
             const Icone = outil?.Icone;
+            const coche = outilsSuggeresCoches.includes(nom);
             return (
               <button
                 key={nom}
-                onClick={() => onOutilChoisi?.(nom)}
-                className="flex items-center gap-1.5 rounded-full border border-dj-bordure bg-dj-surface px-3 py-1.5 text-[13px] font-medium text-dj-texte transition-colors hover:border-dj-accent-1 hover:text-dj-accent-1"
+                onClick={() =>
+                  setOutilsSuggeresCoches((prec) =>
+                    coche ? prec.filter((n) => n !== nom) : [...prec, nom]
+                  )
+                }
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                  coche
+                    ? "border-dj-accent-1 bg-dj-accent-1/10 text-dj-accent-1"
+                    : "border-dj-bordure bg-dj-surface text-dj-texte hover:border-dj-accent-1 hover:text-dj-accent-1"
+                }`}
               >
                 {Icone && <Icone size={14} />}
                 {outil?.label ?? nom}
               </button>
             );
           })}
+          {outilsSuggeresCoches.length > 0 && (
+            <button
+              onClick={() => onOutilsChoisis?.(outilsSuggeresCoches)}
+              className="flex items-center gap-1.5 rounded-full bg-dj-gradient px-3 py-1.5 text-[13px] font-semibold text-[#1A0D02] transition-opacity hover:opacity-90"
+            >
+              Valider ({outilsSuggeresCoches.length})
+            </button>
+          )}
         </div>
       )}
 

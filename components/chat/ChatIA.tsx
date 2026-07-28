@@ -168,6 +168,26 @@ export function ChatIA({
         };
         return copie;
       });
+    } else if (evenement.type === "fichiers_generes") {
+      // Lien(s) de fichier(s) générés, détectés côté backend de façon
+      // garantie (28/07, demande Bourama) -- indépendant de ce que le
+      // modèle écrit dans sa réponse texte. Un élément par appel d'outil,
+      // même logique d'accumulation que outil_resultat (pas de
+      // dédoublonnage : deux générations distinctes dans le même tour
+      // gardent chacune leur entrée).
+      majMessages((prec) => {
+        const copie = [...prec];
+        const dernier = copie[copie.length - 1];
+        const existants = dernier.fichiersGeneres || [];
+        copie[copie.length - 1] = {
+          ...dernier,
+          fichiersGeneres: [
+            ...existants,
+            { nomOutil: evenement.nom_outil, fichiers: evenement.fichiers || [] },
+          ],
+        };
+        return copie;
+      });
     } else if (evenement.type === "confirmation_requise") {
       setConfirmation({
         nomLisible: evenement.nom_lisible,
@@ -356,16 +376,18 @@ export function ChatIA({
     envoyerMessage(messageUtilisateur.content, "moyenne", null);
   }
 
-  function relancerAvecOutil(index: number, nomOutil: string) {
-    // Clic sur un bouton suggéré par le routeur d'outils (28/07) --
-    // même mécanique que regenererDepuis (on retire la paire et on
-    // renvoie la question d'origine), sauf qu'on force cet outil précis
-    // au lieu de laisser le routeur redécider -- exactement comme une
-    // sélection manuelle via le menu Outils (voir BarreDeSaisie.tsx).
+  function relancerAvecOutils(index: number, nomsOutils: string[]) {
+    // Validation d'une sélection (un ou plusieurs) parmi les boutons
+    // suggérés par le routeur d'outils (28/07, multi-sélection demandée
+    // par Bourama) -- même mécanique que regenererDepuis (on retire la
+    // paire et on renvoie la question d'origine), sauf qu'on force ces
+    // outils précis au lieu de laisser le routeur redécider -- exactement
+    // comme une sélection manuelle via le menu Outils (BarreDeSaisie.tsx).
+    if (!nomsOutils.length) return;
     const messageUtilisateur = messages[index - 1];
     if (!messageUtilisateur) return;
     majMessages((prec) => prec.slice(0, index - 1));
-    envoyerMessage(messageUtilisateur.content, "moyenne", null, null, null, false, [nomOutil]);
+    envoyerMessage(messageUtilisateur.content, "moyenne", null, null, null, false, nomsOutils);
   }
 
   function editerMessage(index: number, nouveauTexte: string) {
@@ -446,7 +468,8 @@ export function ChatIA({
               raisonnementEnCours={estDernier ? raisonnementEnCours : false}
               outilsResultats={message.outilsResultats}
               outilsSuggeres={message.outilsSuggeres}
-              onOutilChoisi={(nom) => relancerAvecOutil(index, nom)}
+              fichiersGeneres={message.fichiersGeneres}
+              onOutilsChoisis={(noms) => relancerAvecOutils(index, noms)}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)
