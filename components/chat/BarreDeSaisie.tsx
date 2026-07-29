@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown, Plus } from "lucide-react";
-import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
+import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, obtenirOutilsDisponibles } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurFormule } from "./EditeurFormule";
@@ -265,6 +265,37 @@ export function BarreDeSaisie({
   // sélection unique précédente ne permettait pas de combiner par ex.
   // recherche web + GitHub sur un même message.
   const [outilsForces, setOutilsForces] = useState<string[]>([]);
+  // Outils réellement autorisés pour l'agent en cours (2026-07-29, voir
+  // GET /api/agents/{id}/outils-disponibles) -- `null` tant que pas
+  // encore chargé, auquel cas on affiche AUCUN bouton d'outil backend
+  // (fail closed, comme le fait déjà le backend par défaut) plutôt que
+  // de risquer d'afficher un bouton pour un outil désactivé le temps du
+  // chargement. Recalculé à chaque changement d'agent.
+  const [outilsAutorisesAgent, setOutilsAutorisesAgent] = useState<string[] | null>(null);
+  useEffect(() => {
+    let annule = false;
+    setOutilsAutorisesAgent(null);
+    if (!agentId) return;
+    obtenirOutilsDisponibles(agentId)
+      .then((resultat) => {
+        if (!annule) setOutilsAutorisesAgent(resultat.outils);
+      })
+      .catch(() => {
+        // Echec réseau : on reste fail-closed (liste vide) plutôt que
+        // d'afficher des boutons dont on ne peut plus garantir qu'ils
+        // sont réellement autorisés.
+        if (!annule) setOutilsAutorisesAgent([]);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [agentId]);
+  // Un outil backend (tout sauf le préfixe "ui_", voir OUTILS_DISPONIBLES
+  // plus haut) n'est affiché comme bouton que s'il est dans cette liste ;
+  // les actions locales "ui_*" restent toujours disponibles (jamais
+  // envoyées à Groq, pas concernées par l'autorisation par agent).
+  const estOutilAutoriseAgent = (nom: string) =>
+    nom.startsWith("ui_") || (outilsAutorisesAgent?.includes(nom) ?? false);
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const menuOutilsMobileRef = useRef<HTMLDivElement>(null);
@@ -1003,7 +1034,7 @@ export function BarreDeSaisie({
                 menu Outils juste en dessous, sans avoir à l'ouvrir. */}
             {outilsRecents.map((nom) => {
               const entree = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
-              if (!entree) return null;
+              if (!entree || !estOutilAutoriseAgent(nom)) return null;
               const actif = estOutilActif(nom);
               return (
                 <button
@@ -1160,11 +1191,13 @@ export function BarreDeSaisie({
                     // clic sur une appli déplie ses actions liées en dessous,
                     // triées A→Z elles aussi. Accordéon à dépliage multiple.
                     [...APPLIS_DISPONIBLES]
-                      .filter((a) => OUTILS_DISPONIBLES.some((o) => o.appli === a.nom))
+                      .filter((a) => OUTILS_DISPONIBLES.some((o) => o.appli === a.nom && estOutilAutoriseAgent(o.nom)))
                       .sort((a, b) => a.label.localeCompare(b.label, "fr"))
                       .map(({ nom: nomAppli, label: labelAppli, Icone: IconeAppli }) => {
                         const deplie = groupesAppliDeplies.includes(nomAppli);
-                        const actionsAppli = OUTILS_DISPONIBLES.filter((o) => o.appli === nomAppli).sort((a, b) =>
+                        const actionsAppli = OUTILS_DISPONIBLES.filter(
+                          (o) => o.appli === nomAppli && estOutilAutoriseAgent(o.nom)
+                        ).sort((a, b) =>
                           a.label.localeCompare(b.label, "fr")
                         );
                         return (
@@ -1218,6 +1251,7 @@ export function BarreDeSaisie({
                   ) : (
                     [...OUTILS_DISPONIBLES]
                       .filter((o) => o.onglet === ongletOutilActif)
+                      .filter((o) => estOutilAutoriseAgent(o.nom))
                       .sort((a, b) => a.label.localeCompare(b.label, "fr"))
                       .map(({ nom, label, Icone }) => {
                         const actif = estOutilActif(nom);
@@ -1472,7 +1506,7 @@ export function BarreDeSaisie({
                 tableau `outilsRecents` que desktop, juste 1 seul slot
                 affiché ici au lieu de 3. Repli sur le bouton Outils
                 lui-même tant qu'aucun outil n'a encore été utilisé. */}
-            {outilsRecents.length > 0 ? (
+            {outilsRecents.length > 0 && estOutilAutoriseAgent(outilsRecents[0]) ? (
               (() => {
                 const outil = OUTILS_DISPONIBLES.find((o) => o.nom === outilsRecents[0]);
                 if (!outil) return null;
@@ -1546,6 +1580,7 @@ export function BarreDeSaisie({
           <div className="overflow-y-auto p-1">
             {[...OUTILS_DISPONIBLES]
               .filter((o) => o.onglet === ongletOutilActif)
+              .filter((o) => estOutilAutoriseAgent(o.nom))
               .sort((a, b) => a.label.localeCompare(b.label, "fr"))
               .map(({ nom, label, Icone }) => {
                 const actif = estOutilActif(nom);

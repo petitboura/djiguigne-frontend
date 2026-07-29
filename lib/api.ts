@@ -267,6 +267,20 @@ export async function statutConnexion(service: string) {
 }
 
 /**
+ * Outils réellement autorisés pour un agent (voir GET /api/agents/{id}/
+ * outils-disponibles, ajouté le 29/07/2026, demande de Bourama) --
+ * utilisé par BarreDeSaisie.tsx pour n'afficher comme boutons QUE les
+ * outils que le créateur de l'agent a réellement activés, au lieu de
+ * la liste OUTILS_DISPONIBLES statique affichée identique pour tous les
+ * agents jusqu'ici (un outil désactivé restait cliquable, ce qui
+ * provoquait des faux appels d'outil côté modèle une fois cliqué).
+ */
+export async function obtenirOutilsDisponibles(agentId: string) {
+  const resultat = await appelerApi(`/api/agents/${encodeURIComponent(agentId)}/outils-disponibles`);
+  return resultat as { outils: string[] };
+}
+
+/**
  * Démarre une connexion OAuth : renvoie l'URL d'autorisation à ouvrir
  * (redirection complète, pas de popup) -- voir app/oauth/retour/page.tsx
  * pour la page qui traite le retour.
