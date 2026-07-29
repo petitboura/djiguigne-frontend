@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown, Plus } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
@@ -67,6 +67,10 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "ui_formule", label: "Insérer une formule / réaction chimique", Icone: Sigma, onglet: "utilitaires" },
   { nom: "ui_recherche", label: "Forcer une recherche web", Icone: Search, onglet: "utilitaires" },
   { nom: "ui_dessin", label: "Dessiner (géométrie, graphe, croquis)", Icone: PenLine, onglet: "utilitaires" },
+  // Retiré de la barre comme bouton dédié le 28/07 (Bourama) : n'était
+  // pas branché ("Pas disponible pour le moment" au clic), déplacé ici
+  // en attendant une vraie implémentation.
+  { nom: "ui_mode_vocal", label: "Mode vocal (bientôt disponible)", Icone: AudioLines, onglet: "utilitaires" },
 ];
 
 export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
@@ -263,6 +267,7 @@ export function BarreDeSaisie({
   const [outilsForces, setOutilsForces] = useState<string[]>([]);
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
+  const menuOutilsMobileRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
   // Onglets du menu Outils (2026-07-28) -- voir ONGLETS_OUTILS en haut du
   // fichier. "generer" ouvert par défaut au premier affichage.
@@ -287,7 +292,31 @@ export function BarreDeSaisie({
   const [appliRecente, setAppliRecente] = useState<string | null>("github");
   const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
   const menuAppliRef = useRef<HTMLDivElement>(null);
+  const menuAppliMobileRef = useRef<HTMLDivElement>(null);
   const boutonAppliRef = useRef<HTMLButtonElement>(null);
+
+  // Menu du bouton "+" mobile (2026-07-28, refonte mobile demandée par
+  // Bourama : "en une ligne, + à gauche, champ, 2 boutons à droite") --
+  // regroupe les 3 icônes fixes desktop (Joindre un fichier / Outils /
+  // Applications) qui n'ont plus la place d'être affichées côte à côte
+  // sur petit écran. Déclenche les MÊMES états que les icônes desktop
+  // (setMenuOutilsOuvert / setMenuAppliOuvert) -- pas de logique dupliquée,
+  // juste un point d'entrée en plus.
+  const [menuPlusOuvert, setMenuPlusOuvert] = useState(false);
+  const menuPlusRef = useRef<HTMLDivElement>(null);
+  const boutonPlusRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuPlusOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuPlusRef.current?.contains(cible)) return;
+      if (boutonPlusRef.current?.contains(cible)) return;
+      setMenuPlusOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuPlusOuvert]);
 
   useEffect(() => {
     if (!menuAppliOuvert) return;
@@ -295,6 +324,8 @@ export function BarreDeSaisie({
       const cible = e.target as Node;
       if (menuAppliRef.current?.contains(cible)) return;
       if (boutonAppliRef.current?.contains(cible)) return;
+      if (menuAppliMobileRef.current?.contains(cible)) return;
+      if (boutonPlusRef.current?.contains(cible)) return;
       setMenuAppliOuvert(false);
     }
     document.addEventListener("mousedown", gererClicExterieur);
@@ -351,6 +382,9 @@ export function BarreDeSaisie({
       case "ui_dessin":
         setCanvasOuvert(true);
         break;
+      case "ui_mode_vocal":
+        pasDisponible();
+        break;
       default:
         setOutilsForces((prec) => (prec.includes(nom) ? prec.filter((o) => o !== nom) : [...prec, nom]));
     }
@@ -379,6 +413,8 @@ export function BarreDeSaisie({
       const cible = e.target as Node;
       if (menuOutilsRef.current?.contains(cible)) return;
       if (boutonOutilsRef.current?.contains(cible)) return;
+      if (menuOutilsMobileRef.current?.contains(cible)) return;
+      if (boutonPlusRef.current?.contains(cible)) return;
       setMenuOutilsOuvert(false);
     }
     document.addEventListener("mousedown", gererClicExterieur);
@@ -437,6 +473,9 @@ export function BarreDeSaisie({
   }
   const inputFichierRef = useRef<HTMLInputElement>(null);
   const zoneTexteRef = useRef<HTMLTextAreaElement>(null);
+  // Ref séparée pour le composeur mobile (2026-07-28) -- même état
+  // `texte`, DOM distinct.
+  const zoneTexteMobileRef = useRef<HTMLTextAreaElement>(null);
   const calqueRef = useRef<HTMLDivElement>(null);
   // Aperçu formules (2026-07-27, retour Bourama : l'aperçu restait figé
   // à son ancienne position de défilement -- en ajoutant des lignes, ce
@@ -843,7 +882,7 @@ export function BarreDeSaisie({
 
       {/* Rectangle à coins arrondis (plus une pilule ovale complète), tous
           les éléments alignés en bas -- voir section 3.3. */}
-      <div className="relative rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-3 focus-within:border-dj-bordure-forte">
+      <div className="relative hidden rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-3 focus-within:border-dj-bordure-forte md:block">
         {/* Aperçu formules (2026-07-27) -- affiché seulement si le
             brouillon contient au moins un "$", pour ne pas dupliquer
             inutilement un simple message texte sans maths. Placé
@@ -1314,14 +1353,245 @@ export function BarreDeSaisie({
                 >
                   <Mic size={18} />
                 </button>
-                <button onClick={pasDisponible} aria-label="Mode vocal" className="text-dj-texte-muet transition-colors hover:text-dj-texte">
-                  <AudioLines size={18} />
-                </button>
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Composeur mobile (2026-07-28, refonte demandée par Bourama) --
+          une seule ligne : "+" (regroupe Joindre un fichier / Outils /
+          Applications) / champ de texte / 2 boutons (Dictée + 1 slot
+          variable "dernier outil utilisé"). Ref de textarea séparée
+          (zoneTexteMobileRef) mais MÊME état `texte` que la version
+          desktop -- les deux restent synchronisés même si un seul est
+          visible à la fois (l'autre est juste caché en CSS, pas
+          démonté). Pas de calque couleur/auto-agrandissement ici (v1
+          volontairement plus simple sur mobile) : défilement interne au
+          -delà de max-h. */}
+      <div className="flex items-end gap-2 md:hidden">
+        <div className="relative flex-shrink-0">
+          <button
+            ref={boutonPlusRef}
+            type="button"
+            onClick={() => setMenuPlusOuvert((v) => !v)}
+            aria-label="Plus d'options"
+            className={
+              "flex h-11 w-11 items-center justify-center rounded-full border transition-colors " +
+              (menuPlusOuvert
+                ? "border-dj-accent-1 text-dj-accent-1"
+                : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+            }
+          >
+            <Plus size={20} />
+          </button>
+
+          {menuPlusOuvert && (
+            <div
+              ref={menuPlusRef}
+              className="absolute bottom-full left-0 z-30 mb-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  inputFichierRef.current?.click();
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <Pin size={16} /> Joindre un fichier
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOutilsOuvert(true);
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <Wrench size={16} /> Outils
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuAppliOuvert(true);
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <AppWindow size={16} /> Applications
+              </button>
+            </div>
+          )}
+        </div>
+
+        <textarea
+          ref={zoneTexteMobileRef}
+          value={texte}
+          onChange={(e) => setTexte(e.target.value)}
+          onPaste={gererCollage}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              envoyer();
+            }
+          }}
+          placeholder={transcriptionEnCours ? "Transcription en cours..." : "Pose ta question..."}
+          rows={1}
+          className="max-h-32 min-h-11 flex-1 resize-none overflow-y-auto rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-[15px] leading-normal text-dj-texte outline-none placeholder:text-dj-texte-muet focus:border-dj-bordure-forte"
+        />
+
+        {dictant ? (
+          <button
+            onClick={arreterDictee}
+            aria-label="Arrêter la dictée"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-dj-accent-2 text-white"
+          >
+            <Square size={16} />
+          </button>
+        ) : texte.trim() || texteColle ? (
+          <button
+            onClick={envoyer}
+            disabled={desactive}
+            aria-label="Envoyer"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-dj-gradient text-[#1A0D02] disabled:opacity-60"
+          >
+            <ArrowUp size={18} />
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={demarrerDictee}
+              disabled={transcriptionEnCours}
+              aria-label="Dictée vocale"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
+            >
+              <Mic size={18} />
+            </button>
+            {/* Slot variable "dernier outil utilisé" (2026-07-28) -- même
+                tableau `outilsRecents` que desktop, juste 1 seul slot
+                affiché ici au lieu de 3. Repli sur le bouton Outils
+                lui-même tant qu'aucun outil n'a encore été utilisé. */}
+            {outilsRecents.length > 0 ? (
+              (() => {
+                const outil = OUTILS_DISPONIBLES.find((o) => o.nom === outilsRecents[0]);
+                if (!outil) return null;
+                const Icone = outil.Icone;
+                const actif = estOutilActif(outil.nom);
+                return (
+                  <button
+                    onClick={() => executerActionOutil(outil.nom)}
+                    aria-label={outil.label}
+                    title={outil.label}
+                    className={
+                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      (actif
+                        ? "border-dj-accent-1 text-dj-accent-1"
+                        : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+                    }
+                  >
+                    <Icone size={18} />
+                  </button>
+                );
+              })()
+            ) : (
+              <button
+                onClick={() => setMenuOutilsOuvert(true)}
+                aria-label="Outils"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte"
+              >
+                <Wrench size={18} />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Panneau Outils mobile (2026-07-28) -- déclenché par le menu du
+          "+" ci-dessus OU par le slot Outils de repli, même état
+          `menuOutilsOuvert` que le menu desktop. Version volontairement
+          simplifiée (liste à plat par onglet, pas d'accordéon par appli)
+          -- même données/handlers (OUTILS_DISPONIBLES, ONGLETS_OUTILS,
+          executerActionOutil, estOutilActif) que la version desktop. */}
+      {menuOutilsOuvert && (
+        <div
+          ref={menuOutilsMobileRef}
+          className="fixed inset-x-4 bottom-24 z-40 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl md:hidden"
+        >
+          <div className="flex items-center justify-between border-b border-dj-bordure px-3 py-2">
+            <div className="flex items-center gap-1 overflow-x-auto">
+              {ONGLETS_OUTILS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setOngletOutilActif(id)}
+                  className={
+                    "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition-colors " +
+                    (ongletOutilActif === id
+                      ? "bg-dj-accent-1/10 text-dj-accent-1"
+                      : "text-dj-texte-muet hover:text-dj-texte")
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setMenuOutilsOuvert(false)}
+              aria-label="Fermer"
+              className="flex-shrink-0 text-dj-texte-muet hover:text-dj-texte"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="overflow-y-auto p-1">
+            {[...OUTILS_DISPONIBLES]
+              .filter((o) => o.onglet === ongletOutilActif)
+              .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+              .map(({ nom, label, Icone }) => {
+                const actif = estOutilActif(nom);
+                return (
+                  <button
+                    key={nom}
+                    onClick={() => executerActionOutil(nom)}
+                    className={
+                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors " +
+                      (actif ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte hover:bg-dj-surface-haute")
+                    }
+                  >
+                    <Icone size={16} />
+                    <span className="flex-1">{label}</span>
+                    {actif && <Check size={14} />}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Panneau Applications mobile (2026-07-28) -- même principe,
+          même état `menuAppliOuvert` que l'icône desktop. */}
+      {menuAppliOuvert && (
+        <div
+          ref={menuAppliMobileRef}
+          className="fixed inset-x-4 bottom-24 z-40 max-h-[60vh] overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl md:hidden"
+        >
+          {[...APPLIS_DISPONIBLES]
+            .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+            .map(({ nom, label, Icone }) => (
+              <button
+                key={nom}
+                onClick={() => {
+                  executerActionAppli(nom);
+                  setMenuAppliOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <Icone size={16} />
+                <span className="flex-1">{label}</span>
+              </button>
+            ))}
+        </div>
+      )}
 
       {texteColleOuvert && texteColle && (
         <div
