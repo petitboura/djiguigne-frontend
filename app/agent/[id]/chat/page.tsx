@@ -45,9 +45,32 @@ export async function generateMetadata({
   };
 }
 
-export default async function PageChatAgent({ params }: { params: { id: string } }) {
+// Support "retour vers la vitrine" (Bourama, 2026-07-30) : la vitrine peut
+// lier directement vers le chat d'un agent choisi par le visiteur via
+// ?retour=<url complète de la vitrine>. Si présent, le bouton "Retour à
+// l'agent" de la sidebar renvoie vers cette URL externe au lieu de la page
+// agent interne. On ne garde que http(s):// pour éviter tout schéma
+// dangereux (javascript:, data:, etc.) glissé dans le paramètre.
+function nettoyerUrlRetour(valeur: string | undefined): string | undefined {
+  if (!valeur) return undefined;
+  try {
+    const url = new URL(valeur);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+export default async function PageChatAgent({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { retour?: string };
+}) {
   const agent = await chargerAgent(params.id);
   if (!agent) notFound();
 
-  return <ChatAgentClient agent={agent} />;
+  return <ChatAgentClient agent={agent} retourExterne={nettoyerUrlRetour(searchParams.retour)} />;
 }

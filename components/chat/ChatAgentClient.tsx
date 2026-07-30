@@ -15,6 +15,7 @@ import { SidebarChat, FilConversation } from "./SidebarChat";
 // sa logique ici.
 export function ChatAgentClient({
   agent,
+  retourExterne,
 }: {
   agent: {
     id: string;
@@ -23,6 +24,7 @@ export function ChatAgentClient({
     titre_accueil: string;
     sous_titre_accueil: string;
   };
+  retourExterne?: string;
 }) {
   const [cle, setCle] = useState(() => crypto.randomUUID());
   const [messagesInitiaux, setMessagesInitiaux] = useState<MessageAffiche[]>([]);
@@ -73,6 +75,7 @@ export function ChatAgentClient({
     <div className="flex h-screen">
       <SidebarChat
         agentId={agent.id}
+        retourExterne={retourExterne}
         aDesMessages={nbMessages > 0}
         conversationActiveId={cle}
         onNouvelleConversation={nouvelleConversation}

@@ -68,12 +68,14 @@ function LibelleRail({ ouverte, children }: { ouverte: boolean; children: React.
 
 export function SidebarChat({
   agentId,
+  retourExterne,
   aDesMessages,
   conversationActiveId,
   onNouvelleConversation,
   onSelectionnerConversation,
 }: {
   agentId: string;
+  retourExterne?: string;
   aDesMessages: boolean;
   conversationActiveId: string | null;
   onNouvelleConversation: () => void;
@@ -244,13 +246,15 @@ export function SidebarChat({
         <div className="my-2 h-px w-full bg-dj-bordure" />
 
         <Link
-          href={`/agent/${agentId}`}
+          href={retourExterne ?? `/agent/${agentId}`}
           className="flex w-full items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
         >
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
             <ArrowLeft size={18} />
           </span>
-          <LibelleRail ouverte={ouverte}>Retour à l&apos;agent</LibelleRail>
+          <LibelleRail ouverte={ouverte}>
+            {retourExterne ? "Retour au site" : "Retour à l'agent"}
+          </LibelleRail>
         </Link>
 
         {connecte && aDesMessages && (
@@ -417,11 +421,11 @@ export function SidebarChat({
           }`}
         >
           <Link
-            href={`/agent/${agentId}`}
+            href={retourExterne ?? `/agent/${agentId}`}
             className="flex items-center justify-center gap-2 rounded-full bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
           >
             <ArrowLeft size={16} />
-            Retour à l&apos;agent
+            {retourExterne ? "Retour au site" : "Retour à l'agent"}
           </Link>
 
           {connecte && aDesMessages && (
