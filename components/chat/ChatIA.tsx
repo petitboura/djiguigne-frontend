@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { appelerApiStream, uploaderImageChat, uploaderDocumentChat, uploaderVideoChat, transcrireAudioChat } from "@/lib/api";
 import { useNotificationsPush, proposerNotificationsPushUneFois } from "@/lib/useNotificationsPush";
 import { BulleMessage, MessageAffiche } from "./BulleMessage";
@@ -36,6 +36,18 @@ export function ChatIA({
   onMessagesChange?: (nbMessages: number) => void;
 }) {
   const [messages, setMessages] = useState<MessageAffiche[]>(messagesInitiaux);
+  // Correctif mobile (2026-07-30, demande Bourama) : aucun scroll auto
+  // n'existait avant -- sur desktop le "scroll anchoring" natif du
+  // navigateur masquait le problème la plupart du temps, mais sur mobile
+  // (redimensionnement du viewport visible à l'ouverture du clavier +
+  // barre de saisie qui grandit sur plusieurs lignes) ça ne suffit plus :
+  // le bas de la conversation (donc la barre de saisie et le début de la
+  // réponse en cours) reste hors champ. `collePresBasRef` retient si
+  // l'utilisateur était déjà proche du bas AVANT le changement -- on ne
+  // force le scroll que dans ce cas, jamais s'il a remonté lire l'historique.
+  const conteneurMessagesRef = useRef<HTMLDivElement>(null);
+  const finDesMessagesRef = useRef<HTMLDivElement>(null);
+  const collePresBasRef = useRef(true);
   const { activer: activerNotificationsPush } = useNotificationsPush();
   const [genEnCours, setGenEnCours] = useState(false);
   const [statuts, setStatuts] = useState<{ texte: string; etat: EtatStatut }[]>([]);
@@ -430,9 +442,32 @@ export function ChatIA({
     }
   }
 
+  // Marge de tolérance : "proche du bas" plutôt qu'exactement au pixel
+  // près, pour rester collé même avec une légère imprécision de mesure
+  // (fréquent sur mobile pendant l'animation d'ouverture du clavier).
+  function estPresDuBas() {
+    const el = conteneurMessagesRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }
+
+  useEffect(() => {
+    if (collePresBasRef.current) {
+      finDesMessagesRef.current?.scrollIntoView({ block: "end" });
+    }
+    // Se redéclenche à chaque octet reçu en streaming (content grandit),
+    // pas seulement à l'ajout d'un message -- sinon le scroll se fige dès
+    // la première ligne d'une réponse longue.
+  }, [messages, statuts, raisonnementEnCours]);
+
   return (
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6">
+      <div
+        ref={conteneurMessagesRef}
+        onScroll={() => {
+          collePresBasRef.current = estPresDuBas();
+        }}
+        className="flex-1 space-y-5 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
           titreAccueil ? (
             <div className="mb-4 mt-6">
@@ -515,9 +550,14 @@ export function ChatIA({
             onAnnuler={() => repriseApresConfirmation(false)}
           />
         )}
+        <div ref={finDesMessagesRef} />
       </div>
 
-      <div className="px-4 pb-6">
+      {/* pb-[env(safe-area-inset-bottom)] (2026-07-30) : marge pour la
+          barre d'accueil iOS (encoche du bas) en plus du pb-6 existant --
+          s'additionne, ne le remplace pas (viewport-fit=cover posé dans
+          app/layout.tsx rend cette variable non nulle sur iPhone). */}
+      <div className="px-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1.5rem)]">
         <BarreDeSaisie onEnvoyer={envoyerMessage} desactive={genEnCours} agentId={agentId} />
       </div>
 

@@ -1593,6 +1593,16 @@ export function BarreDeSaisie({
               envoyer();
             }
           }}
+          onFocus={(e) => {
+            // Correctif mobile (2026-07-30) : à l'ouverture du clavier,
+            // iOS Safari met quelques centaines de ms à réduire le
+            // viewport visible (voir lib/useHauteurVisuelle.ts) -- sans
+            // ça le champ reste visuellement "sous" le clavier le temps
+            // de l'animation. setTimeout laisse cette animation démarrer
+            // avant de forcer le champ dans la zone désormais visible.
+            const el = e.currentTarget;
+            setTimeout(() => el.scrollIntoView({ block: "end", behavior: "smooth" }), 300);
+          }}
           placeholder={transcriptionEnCours ? "Transcription en cours..." : "Pose ta question..."}
           rows={1}
           className="max-h-32 min-h-10 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-[15px] leading-normal text-dj-texte outline-none placeholder:text-dj-texte-muet"

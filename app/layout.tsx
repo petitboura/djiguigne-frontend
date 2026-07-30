@@ -1,7 +1,22 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+
+// Correctif mobile (2026-07-30, demande Bourama) : viewportFit "cover" +
+// interactiveWidget "resizes-content" -- sur Android/Chrome récents, ça
+// force le navigateur à redimensionner le layout viewport (pas juste le
+// visual viewport) quand le clavier virtuel s'ouvre, donc les conteneurs
+// en h-dvh (voir ChatAgentClient.tsx) rétrécissent correctement au lieu de
+// laisser la barre de saisie glisser sous le clavier. "cover" est
+// nécessaire pour que les paddings env(safe-area-inset-*) (encoche/barre
+// d'accueil iOS) prennent effet.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+};
 
 // Étape D.1 (pivot social) : les 3 polices de la marque, chargées ici à
 // l'identique de djiguigne-frontend/app/layout.tsx (next/font, auto-

@@ -147,11 +147,23 @@ export function EditeurFormule({
   // donc on lui donne une hauteur explicite -- mais seulement pendant
   // que le clavier est réellement affiché, sinon il resterait un vide
   // permanent dans le panneau même quand on ne s'en sert pas.
-  const [clavierVisible, setClavierVisible] = useState(false);
+  // Correctif (2026-07-31, demande Bourama : "le grand, le vrai clavier"
+  // ne s'affichait pas en entier) -- la doc MathLive est explicite : "The
+  // height of the container element will be adjusted so that the virtual
+  // keyboard can fit" (c'est la lib qui pose la hauteur nécessaire, pas
+  // nous). L'ancienne version imposait une hauteur FIXE de 300px dès que
+  // `visible` passait à vrai, quel que soit l'onglet du clavier
+  // (numérique/alphabétique/symboles/grec...) -- sur les onglets à
+  // plusieurs rangées le clavier réel dépassait ces 300px et se
+  // retrouvait tronqué en bas (les dernières rangées de touches
+  // inaccessibles). `boundingRect.height`, disponible sur le même
+  // événement "geometrychange", donne la hauteur RÉELLE du clavier tel
+  // qu'affiché à cet instant -- on la suit en direct au lieu de la deviner.
+  const [hauteurClavier, setHauteurClavier] = useState(0);
   useEffect(() => {
     if (!mathliveInstalle) return;
     function surChangement() {
-      setClavierVisible(!!window.mathVirtualKeyboard?.visible);
+      setHauteurClavier(window.mathVirtualKeyboard?.visible ? window.mathVirtualKeyboard.boundingRect.height : 0);
     }
     window.mathVirtualKeyboard.addEventListener("geometrychange", surChangement);
     return () => window.mathVirtualKeyboard.removeEventListener("geometrychange", surChangement);
@@ -273,7 +285,8 @@ export function EditeurFormule({
           {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
           <div
             ref={clavierConteneurRef}
-            className={clavierVisible ? "relative mt-2 h-[300px] w-full rounded-lg" : "h-0 w-full"}
+            style={{ height: hauteurClavier ? `${hauteurClavier}px` : 0 }}
+            className={`relative w-full min-w-[320px] overflow-y-auto rounded-lg transition-[height] duration-150 ease-out ${hauteurClavier ? "mt-2" : ""}`}
           />
         </>
       ) : (

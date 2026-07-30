@@ -5,6 +5,7 @@ import { appelerApi } from "@/lib/api";
 import { ChatIA } from "./ChatIA";
 import { MessageAffiche, nettoyerMessageHistorique } from "./BulleMessage";
 import { SidebarChat, FilConversation } from "./SidebarChat";
+import { useHauteurVisuelle } from "@/lib/useHauteurVisuelle";
 
 // Composant client qui porte l'état de "quel fil de conversation est
 // affiché" -- ajouté le 2026-07-16 pour brancher la sidebar façon
@@ -29,6 +30,7 @@ export function ChatAgentClient({
   const [cle, setCle] = useState(() => crypto.randomUUID());
   const [messagesInitiaux, setMessagesInitiaux] = useState<MessageAffiche[]>([]);
   const [nbMessages, setNbMessages] = useState(0);
+  useHauteurVisuelle();
 
   function nouvelleConversation() {
     setCle(crypto.randomUUID());
@@ -72,7 +74,15 @@ export function ChatAgentClient({
   }
 
   return (
-    <div className="flex h-screen">
+    <div
+      className="flex h-dvh"
+      // h-dvh (Tailwind) suffit sur la plupart des navigateurs récents ;
+      // --vh-visuelle (posée par useHauteurVisuelle) prend le relais en
+      // style inline uniquement là où le navigateur la calcule (iOS
+      // Safari, voir lib/useHauteurVisuelle.ts) -- fallback sur 100dvh si
+      // le JS n'a pas encore tourné (premier rendu SSR).
+      style={{ height: "var(--vh-visuelle, 100dvh)" }}
+    >
       <SidebarChat
         agentId={agent.id}
         retourExterne={retourExterne}
