@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { MapPin, ExternalLink } from "lucide-react";
 
 // Rend un bloc ```carte du markdown -- convention : JSON
@@ -11,11 +12,38 @@ import { MapPin, ExternalLink } from "lucide-react";
 // En attendant, carte stylée cohérente avec la charte + lien direct vers
 // Google Maps (fonctionne sans clé, sans dépendance). Mieux vaut ça
 // qu'un composant qui a l'air interactif mais ne l'est pas.
+type Lieu = { lat: number; lng: number; label?: string };
+
 export function CarteMessage({ code }: { code: string }) {
-  let lieu: { lat: number; lng: number; label?: string } | null = null;
-  try {
-    lieu = JSON.parse(code);
-  } catch {
+  const [lieu, setLieu] = useState<Lieu | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  // CORRECTIF 2026-07-30 (audit UX, même principe que GraphiqueDonnees.tsx
+  // et Mermaid.tsx) : avant, un JSON réellement cassé (pas juste encore en
+  // train d'arriver pendant le streaming) affichait "Localisation du
+  // lieu..." pour toujours, sans jamais de message d'erreur. On attend
+  // désormais que le texte arrête de changer pendant 500ms avant de
+  // tenter le parsing -- un échec à ce moment-là est une vraie erreur.
+  useEffect(() => {
+    const delai = setTimeout(() => {
+      try {
+        setLieu(JSON.parse(code));
+        setErreur(null);
+      } catch (e) {
+        setErreur(e instanceof Error ? e.message : String(e));
+      }
+    }, 500);
+    return () => clearTimeout(delai);
+  }, [code]);
+
+  if (!lieu) {
+    if (erreur) {
+      return (
+        <div className="my-3 flex h-20 items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface px-4 text-xs text-dj-texte-muet">
+          <span className="text-[#f87171]">Carte invalide :</span> format JSON non reconnu.
+        </div>
+      );
+    }
     return (
       <div className="my-3 flex h-20 items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface px-4 text-xs text-dj-texte-muet">
         <span className="h-2 w-2 animate-dj-glow rounded-full bg-dj-accent-1" />
@@ -24,7 +52,7 @@ export function CarteMessage({ code }: { code: string }) {
     );
   }
 
-  if (!lieu || typeof lieu.lat !== "number" || typeof lieu.lng !== "number") {
+  if (typeof lieu.lat !== "number" || typeof lieu.lng !== "number") {
     return (
       <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
         Coordonnées invalides.

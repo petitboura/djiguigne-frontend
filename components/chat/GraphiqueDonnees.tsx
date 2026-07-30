@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -106,13 +106,38 @@ export function telechargerImage(
 export function GraphiqueDonnees({ code }: { code: string }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
   const [telecharge, setTelecharge] = useState(false);
-  let chart: Chart | null = null;
-  try {
-    chart = JSON.parse(code);
-  } catch {
-    // JSON incomplet -- probablement encore en cours de streaming, voir
-    // le throttling dans BulleMessage.tsx qui limite la fréquence de
-    // parsing. Pas d'erreur affichée, juste une attente discrète.
+  const [chart, setChart] = useState<Chart | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  // CORRECTIF 2026-07-30 (audit UX) : avant, le JSON était re-parsé de
+  // façon SYNCHRONE à chaque rendu, et le moindre échec de parsing --
+  // qu'il soit transitoire (JSON encore incomplet, streaming en cours)
+  // ou définitif (JSON réellement cassé) -- affichait indéfiniment
+  // "Construction du graphique...", sans jamais distinguer les deux cas.
+  // Même principe déjà appliqué à Mermaid.tsx (qui, lui, avait déjà été
+  // corrigé) : on attend que le texte arrête de changer pendant 500ms
+  // avant de tenter le parsing -- s'il échoue à ce moment-là, ce n'est
+  // plus un JSON "en cours d'arrivée", c'est une vraie erreur à afficher.
+  useEffect(() => {
+    const delai = setTimeout(() => {
+      try {
+        setChart(JSON.parse(code));
+        setErreur(null);
+      } catch (e) {
+        setErreur(e instanceof Error ? e.message : String(e));
+      }
+    }, 500);
+    return () => clearTimeout(delai);
+  }, [code]);
+
+  if (!chart) {
+    if (erreur) {
+      return (
+        <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
+          <span className="text-[#f87171]">Graphique invalide :</span> format JSON non reconnu.
+        </div>
+      );
+    }
     return (
       <div className="my-3 flex h-40 items-center justify-center rounded-xl border border-dj-bordure bg-dj-surface text-xs text-dj-texte-muet">
         <span className="h-2 w-2 animate-dj-glow rounded-full bg-dj-accent-1" />
@@ -121,7 +146,7 @@ export function GraphiqueDonnees({ code }: { code: string }) {
     );
   }
 
-  if (!chart || !Array.isArray(chart.data) || chart.data.length === 0) {
+  if (!Array.isArray(chart.data) || chart.data.length === 0) {
     return (
       <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
         Graphique invalide (format non reconnu).

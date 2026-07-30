@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, Check } from "lucide-react";
 import { telechargerImage } from "./GraphiqueDonnees";
 
@@ -68,13 +68,36 @@ const COULEUR_AXE = "rgba(255,255,255,0.35)";
 export function SchemaGeometrique({ code }: { code: string }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
   const [telecharge, setTelecharge] = useState(false);
+  const [schema, setSchema] = useState<Schema | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
 
-  let schema: Schema | null = null;
-  try {
-    schema = JSON.parse(code);
-  } catch {
-    // JSON incomplet -- encore en cours de streaming, même logique que
-    // GraphiqueDonnees.tsx : attente discrète, pas d'erreur affichée.
+  // CORRECTIF 2026-07-30 (audit UX, même principe que GraphiqueDonnees.tsx
+  // et CarteMessage.tsx) : avant, un JSON réellement cassé (pas juste
+  // encore en train d'arriver pendant le streaming) affichait
+  // "Construction du schéma..." pour toujours, sans jamais de message
+  // d'erreur. On attend désormais que le texte arrête de changer pendant
+  // 500ms avant de tenter le parsing -- un échec à ce moment-là est une
+  // vraie erreur, pas un JSON encore incomplet.
+  useEffect(() => {
+    const delai = setTimeout(() => {
+      try {
+        setSchema(JSON.parse(code));
+        setErreur(null);
+      } catch (e) {
+        setErreur(e instanceof Error ? e.message : String(e));
+      }
+    }, 500);
+    return () => clearTimeout(delai);
+  }, [code]);
+
+  if (!schema) {
+    if (erreur) {
+      return (
+        <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
+          <span className="text-[#f87171]">Schéma invalide :</span> format JSON non reconnu.
+        </div>
+      );
+    }
     return (
       <div className="my-3 flex h-40 items-center justify-center rounded-xl border border-dj-bordure bg-dj-surface text-xs text-dj-texte-muet">
         <span className="h-2 w-2 animate-dj-glow rounded-full bg-dj-accent-1" />
@@ -83,7 +106,7 @@ export function SchemaGeometrique({ code }: { code: string }) {
     );
   }
 
-  if (!schema || !Array.isArray(schema.points) || schema.points.length === 0) {
+  if (!Array.isArray(schema.points) || schema.points.length === 0) {
     return (
       <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
         Schéma géométrique invalide (format non reconnu).
@@ -260,6 +283,13 @@ export function SchemaGeometrique({ code }: { code: string }) {
             );
           }
           if (el.type === "polygone") {
+            // CORRECTIF 2026-07-30 (audit sécurité/UX) : sans le
+            // Array.isArray, un "points" mal formé (le modèle a oublié le
+            // champ, ou donné autre chose qu'un tableau) faisait planter
+            // TOUT le rendu du schéma -- contrairement aux autres types
+            // d'éléments (segment/cercle/vecteur/angle), déjà protégés par
+            // un simple "if (!p1 || !p2) return null".
+            if (!Array.isArray(el.points)) return null;
             const pts = el.points.map((id) => parId.get(id)).filter(Boolean) as Point[];
             if (pts.length < 2) return null;
             const coords = pts.map((p) => versSvg(p.x, p.y).join(",")).join(" ");
