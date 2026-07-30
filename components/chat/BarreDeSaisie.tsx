@@ -1456,7 +1456,7 @@ export function BarreDeSaisie({
           démonté). Pas de calque couleur/auto-agrandissement ici (v1
           volontairement plus simple sur mobile) : défilement interne au
           -delà de max-h. */}
-      <div className="flex items-end gap-2 md:hidden">
+      <div className="flex items-end gap-1 rounded-3xl border border-dj-bordure bg-dj-surface-haute px-2 py-1.5 focus-within:border-dj-bordure-forte md:hidden">
         <div className="relative flex-shrink-0">
           <button
             ref={boutonPlusRef}
@@ -1464,10 +1464,10 @@ export function BarreDeSaisie({
             onClick={() => setMenuPlusOuvert((v) => !v)}
             aria-label="Plus d'options"
             className={
-              "flex h-11 w-11 items-center justify-center rounded-full border transition-colors " +
+              "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
               (menuPlusOuvert
-                ? "border-dj-accent-1 text-dj-accent-1"
-                : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+                ? "bg-dj-surface text-dj-accent-1"
+                : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
             }
           >
             <Plus size={20} />
@@ -1548,7 +1548,7 @@ export function BarreDeSaisie({
           }}
           placeholder={transcriptionEnCours ? "Transcription en cours..." : "Pose ta question..."}
           rows={1}
-          className="max-h-32 min-h-11 flex-1 resize-none overflow-y-auto rounded-3xl border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-[15px] leading-normal text-dj-texte outline-none placeholder:text-dj-texte-muet focus:border-dj-bordure-forte"
+          className="max-h-32 min-h-11 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 text-[15px] leading-normal text-dj-texte outline-none placeholder:text-dj-texte-muet"
         />
 
         {dictant ? (
@@ -1574,7 +1574,7 @@ export function BarreDeSaisie({
               onClick={demarrerDictee}
               disabled={transcriptionEnCours}
               aria-label="Dictée vocale"
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte disabled:opacity-60"
             >
               <Mic size={18} />
             </button>
@@ -1601,10 +1601,10 @@ export function BarreDeSaisie({
                     aria-label={outil.label}
                     title={outil.label}
                     className={
-                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
                       (actif
-                        ? "border-dj-accent-1 text-dj-accent-1"
-                        : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+                        ? "bg-dj-surface text-dj-accent-1"
+                        : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
                     }
                   >
                     <Icone size={18} />
@@ -1623,10 +1623,10 @@ export function BarreDeSaisie({
                     aria-label={outil.label}
                     title={outil.label}
                     className={
-                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
                       (actif
-                        ? "border-dj-accent-1 text-dj-accent-1"
-                        : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+                        ? "bg-dj-surface text-dj-accent-1"
+                        : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
                     }
                   >
                     <Icone size={18} />
@@ -1637,7 +1637,7 @@ export function BarreDeSaisie({
                 <button
                   onClick={() => setMenuOutilsOuvert(true)}
                   aria-label="Outils"
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte"
                 >
                   <Wrench size={18} />
                 </button>
