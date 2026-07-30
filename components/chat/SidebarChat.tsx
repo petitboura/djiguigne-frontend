@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Home, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { NoteAgent } from "@/components/NoteAgent";
@@ -257,6 +257,22 @@ export function SidebarChat({
           </LibelleRail>
         </Link>
 
+        {/* Vitrine (2026-07-30, demande Bourama) : accès direct à la liste
+            de tous les agents depuis le chat -- sans ça, changer d'IA
+            depuis l'app installée (PWA globale) demandait de repasser par
+            la fiche de CET agent d'abord. Bouton distinct de "Retour à
+            l'agent" ci-dessus : l'un revient à l'agent courant, l'autre
+            permet d'en choisir un autre. */}
+        <Link
+          href="/"
+          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <Home size={18} />
+          </span>
+          <LibelleRail ouverte={ouverte}>Vitrine</LibelleRail>
+        </Link>
+
         {connecte && aDesMessages && (
           <button
             onClick={onNouvelleConversation}
@@ -426,6 +442,14 @@ export function SidebarChat({
           >
             <ArrowLeft size={16} />
             {retourExterne ? "Retour au site" : "Retour à l'agent"}
+          </Link>
+
+          <Link
+            href="/"
+            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+          >
+            <Home size={16} />
+            Vitrine
           </Link>
 
           {connecte && aDesMessages && (
