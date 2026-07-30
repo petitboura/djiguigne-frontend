@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus } from "lucide-react";
-import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, obtenirOutilsDisponibles } from "@/lib/api";
+import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurFormule } from "./EditeurFormule";
@@ -276,7 +276,7 @@ export function BarreDeSaisie({
     let annule = false;
     setOutilsAutorisesAgent(null);
     if (!agentId) return;
-    obtenirOutilsDisponibles(agentId)
+    lireOutilsChatAgent(agentId)
       .then((resultat) => {
         if (!annule) setOutilsAutorisesAgent(resultat.outils);
       })
