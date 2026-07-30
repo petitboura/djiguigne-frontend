@@ -81,7 +81,6 @@ export function EditeurFormule({
   valeurInitiale?: string;
 }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
-  const clavierConteneurRef = useRef<HTMLDivElement>(null);
   const [onglet, setOnglet] = useState<"maths" | "chimie">("maths");
   const mathfieldRef = useRef<MathfieldElement | null>(null);
   const [valeurChimie, setValeurChimie] = useState("");
@@ -121,53 +120,20 @@ export function EditeurFormule({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mathliveInstalle]);
 
-  // Par défaut, MathLive ajoute le panneau du clavier virtuel comme enfant
-  // direct de <body> (position fixe, pleine largeur, collé en bas de
-  // l'écran) -- c'est ce qui le fait apparaître complètement détaché du
-  // panneau. La lib expose `mathVirtualKeyboard.container` pour rediriger
-  // ce panneau vers un élément précis (prévu à l'origine pour les
-  // éléments plein écran) -- on le pointe vers une div dédiée à
-  // l'intérieur du panneau, pour qu'il s'affiche comme une section
-  // normale plutôt qu'ancré à la fenêtre. Restauré au démontage pour ne
-  // pas affecter un futur mathfield ailleurs dans l'app.
-  useEffect(() => {
-    if (!mathliveInstalle || !clavierConteneurRef.current) return;
-    window.mathVirtualKeyboard.container = clavierConteneurRef.current;
-    return () => {
-      window.mathVirtualKeyboard.container = null;
-    };
-  }, [mathliveInstalle]);
-
-  // Le panneau du clavier virtuel ("MLK__backdrop") est positionné en
-  // absolu à l'intérieur de `.ML__keyboard`, qui doit donc avoir une
-  // vraie hauteur pour lui servir de repère -- sans ça, rien ne
-  // s'affiche (voir commentaire au-dessus). Dans le cas `document.body`
-  // par défaut, `.ML__keyboard` est en `position: fixed` et prend donc
-  // la hauteur de la fenêtre entière ; notre div n'a pas cet avantage,
-  // donc on lui donne une hauteur explicite -- mais seulement pendant
-  // que le clavier est réellement affiché, sinon il resterait un vide
-  // permanent dans le panneau même quand on ne s'en sert pas.
-  // Correctif (2026-07-31, demande Bourama : "le grand, le vrai clavier"
-  // ne s'affichait pas en entier) -- la doc MathLive est explicite : "The
-  // height of the container element will be adjusted so that the virtual
-  // keyboard can fit" (c'est la lib qui pose la hauteur nécessaire, pas
-  // nous). L'ancienne version imposait une hauteur FIXE de 300px dès que
-  // `visible` passait à vrai, quel que soit l'onglet du clavier
-  // (numérique/alphabétique/symboles/grec...) -- sur les onglets à
-  // plusieurs rangées le clavier réel dépassait ces 300px et se
-  // retrouvait tronqué en bas (les dernières rangées de touches
-  // inaccessibles). `boundingRect.height`, disponible sur le même
-  // événement "geometrychange", donne la hauteur RÉELLE du clavier tel
-  // qu'affiché à cet instant -- on la suit en direct au lieu de la deviner.
-  const [hauteurClavier, setHauteurClavier] = useState(0);
-  useEffect(() => {
-    if (!mathliveInstalle) return;
-    function surChangement() {
-      setHauteurClavier(window.mathVirtualKeyboard?.visible ? window.mathVirtualKeyboard.boundingRect.height : 0);
-    }
-    window.mathVirtualKeyboard.addEventListener("geometrychange", surChangement);
-    return () => window.mathVirtualKeyboard.removeEventListener("geometrychange", surChangement);
-  }, [mathliveInstalle]);
+  // Correctif (2026-07-31, demande Bourama : "rien ne se passe" au clic
+  // sur le bouton clavier) -- en lisant le code source de MathLive : la
+  // redirection du panneau vers un <div> à nous (ci-dessous, tentative du
+  // 2026-07-25) désactive silencieusement toute la logique interne de
+  // dimensionnement automatique de la lib -- celle-ci ne calcule/applique
+  // une hauteur RÉELLE que lorsque le clavier reste dans son emplacement
+  // d'origine (`container === document.body`, vérifié explicitement dans
+  // sa fonction show()). Avec un conteneur perso, cette vérification
+  // échoue et rien n'est jamais dimensionné ni affiché -- ce n'est pas un
+  // problème de timing ou de CSS de notre côté, c'est la lib elle-même
+  // qui coupe court. On revient donc à son comportement natif (panneau
+  // ancré en bas de l'écran, plein format, exactement comme un clavier
+  // de téléphone) plutôt que de continuer à fiabiliser un mode que la lib
+  // ne supporte pas correctement.
 
   // Le panneau du clavier virtuel de MathLive est injecté au niveau de
   // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
@@ -283,11 +249,6 @@ export function EditeurFormule({
             className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
           />
           {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
-          <div
-            ref={clavierConteneurRef}
-            style={{ height: hauteurClavier ? `${hauteurClavier}px` : 0 }}
-            className={`relative w-full min-w-[320px] overflow-y-auto rounded-lg transition-[height] duration-150 ease-out ${hauteurClavier ? "mt-2" : ""}`}
-          />
         </>
       ) : (
         <>
