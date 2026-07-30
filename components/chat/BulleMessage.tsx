@@ -7,7 +7,7 @@ import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeKatex from "rehype-katex";
-import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle } from "lucide-react";
+import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { formaterHeure } from "@/lib/formatageHeure";
 import { BlocCode } from "./BlocCode";
 import { Mermaid } from "./Mermaid";
@@ -255,6 +255,7 @@ export function BulleMessage({
   const [enEdition, setEnEdition] = useState(false);
   const [texteEdition, setTexteEdition] = useState(message.content);
   const [enLecture, setEnLecture] = useState(false);
+  const [fichiersOuverts, setFichiersOuverts] = useState(false);
   // Multi-sélection des outils suggérés par le routeur (28/07, demande
   // Bourama) : coche un ou plusieurs boutons avant de valider, au lieu de
   // relancer immédiatement au premier clic -- même principe que le menu
@@ -559,12 +560,42 @@ export function BulleMessage({
           "fichiers_generes"), indépendant de ce que le modèle a écrit dans
           sa réponse -- réutilise FichierChip.tsx tel quel, même rendu que
           les liens que le modèle écrit correctement lui-même (PDF en aperçu
-          intégré, autre type en carte de téléchargement). */}
+          intégré, autre type en carte de téléchargement).
+
+          Repliable, fermé par défaut (2026-07-30, demande Bourama) : la
+          réponse du modèle n'est plus filtrée/masquée côté backend (round-
+          trip standard rétabli, voir core/main.py) -- si le modèle recopie
+          ou casse un lien, sa réponse s'affiche telle quelle, SANS y
+          toucher. Ce menu sert de filet fiable et discret : le résultat
+          garanti par le backend (URL correcte à coup sûr) reste disponible
+          juste en dessous, quel que soit ce que le modèle a écrit. */}
       {!estUtilisateur && fichiersGeneres && fichiersGeneres.length > 0 && (
-        <div className="my-1.5 flex flex-col gap-1">
-          {fichiersGeneres.flatMap((appel) =>
-            appel.fichiers.map((f) => <FichierChip key={f.url} href={f.url} nom={f.nom} />)
-          )}
+        <div className="my-1.5 flex max-w-[85%] flex-col gap-1">
+          <button
+            onClick={() => setFichiersOuverts((prec) => !prec)}
+            className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+          >
+            <FileText size={13} />
+            <span>
+              {fichiersGeneres.reduce((total, appel) => total + appel.fichiers.length, 0) > 1
+                ? "Fichiers générés"
+                : "Fichier généré"}
+            </span>
+            {fichiersOuverts ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+          </button>
+          <div
+            className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+              fichiersOuverts ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-1.5 flex flex-col gap-1">
+                {fichiersGeneres.flatMap((appel) =>
+                  appel.fichiers.map((f) => <FichierChip key={f.url} href={f.url} nom={f.nom} />)
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
