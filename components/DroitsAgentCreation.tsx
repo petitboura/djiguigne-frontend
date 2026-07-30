@@ -19,16 +19,30 @@ type OutilPlateforme = {
   disponible: boolean;
 };
 
+// Libellés lisibles pour les actions locales (catégorie 4) : ce ne sont
+// pas des outils LLM, juste des fonctions UI du chat (voir BarreDeSaisie.tsx),
+// donc pas de nom technique brut affiché ici.
+const LIBELLES_ACTIONS_LOCALES: Record<string, string> = {
+  ui_localisation: "Joindre la position de l'utilisateur",
+  ui_formule: "Clavier formule / LaTeX",
+  ui_recherche: "Bouton \"forcer une recherche web\"",
+  ui_dessin: "Dessin (géométrie, graphe, croquis)",
+  ui_mode_vocal: "Mode vocal",
+};
+
 export function DroitsAgentCreation({
   onChange,
 }: {
-  onChange: (droits: { outilsGeneration: string[]; serveurs: string[] }) => void;
+  onChange: (droits: { outilsGeneration: string[]; serveurs: string[]; actionsLocales: string[] }) => void;
 }) {
-  const [registre, setRegistre] = useState<{ generation: OutilPlateforme[]; serveurs: OutilPlateforme[] } | null>(
-    null
-  );
+  const [registre, setRegistre] = useState<{
+    generation: OutilPlateforme[];
+    serveurs: OutilPlateforme[];
+    actions_locales: OutilPlateforme[];
+  } | null>(null);
   const [genererCoches, setGenererCoches] = useState<Set<string>>(new Set());
   const [serveursCoches, setServeursCoches] = useState<Set<string>>(new Set());
+  const [actionsLocalesCoches, setActionsLocalesCoches] = useState<Set<string>>(new Set());
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,9 +52,13 @@ export function DroitsAgentCreation({
   }, []);
 
   useEffect(() => {
-    onChange({ outilsGeneration: Array.from(genererCoches), serveurs: Array.from(serveursCoches) });
+    onChange({
+      outilsGeneration: Array.from(genererCoches),
+      serveurs: Array.from(serveursCoches),
+      actionsLocales: Array.from(actionsLocalesCoches),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [genererCoches, serveursCoches]);
+  }, [genererCoches, serveursCoches, actionsLocalesCoches]);
 
   function basculerGeneration(nomOutil: string) {
     setGenererCoches((precedent) => {
@@ -56,6 +74,15 @@ export function DroitsAgentCreation({
       const suivant = new Set(precedent);
       if (suivant.has(nomServeur)) suivant.delete(nomServeur);
       else suivant.add(nomServeur);
+      return suivant;
+    });
+  }
+
+  function basculerActionLocale(nomAction: string) {
+    setActionsLocalesCoches((precedent) => {
+      const suivant = new Set(precedent);
+      if (suivant.has(nomAction)) suivant.delete(nomAction);
+      else suivant.add(nomAction);
       return suivant;
     });
   }
@@ -108,6 +135,30 @@ export function DroitsAgentCreation({
                 <span className="text-xs text-dj-texte-muet">(compte utilisateur requis)</span>
               )}
               {!serveur.disponible && <span className="text-xs text-dj-texte-muet">(indisponible)</span>}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-dj-texte">Actions locales (chat)</h3>
+        <p className="mb-2 text-xs text-dj-texte-muet">
+          Ne sont pas envoyées au LLM, uniquement des boutons affichés dans la barre de saisie du chat.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {registre.actions_locales.map((action) => (
+            <label
+              key={action.nom_outil}
+              className={`flex items-center gap-2 text-sm text-dj-texte ${!action.disponible ? "opacity-40" : ""}`}
+            >
+              <input
+                type="checkbox"
+                disabled={!action.disponible}
+                checked={actionsLocalesCoches.has(action.nom_outil)}
+                onChange={() => basculerActionLocale(action.nom_outil)}
+              />
+              {LIBELLES_ACTIONS_LOCALES[action.nom_outil] || action.nom_outil}
+              {!action.disponible && <span className="text-xs text-dj-texte-muet">(indisponible)</span>}
             </label>
           ))}
         </div>

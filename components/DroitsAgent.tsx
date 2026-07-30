@@ -27,12 +27,24 @@ type OutilPlateforme = {
 type DroitsAgentReponse = {
   generation: OutilPlateforme[];
   serveurs: OutilPlateforme[];
+  actions_locales: OutilPlateforme[];
+};
+
+// Voir même dict dans DroitsAgentCreation.tsx -- pas d'outil LLM, juste
+// des boutons UI dans la barre de saisie du chat.
+const LIBELLES_ACTIONS_LOCALES: Record<string, string> = {
+  ui_localisation: "Joindre la position de l'utilisateur",
+  ui_formule: "Clavier formule / LaTeX",
+  ui_recherche: "Bouton \"forcer une recherche web\"",
+  ui_dessin: "Dessin (géométrie, graphe, croquis)",
+  ui_mode_vocal: "Mode vocal",
 };
 
 export function DroitsAgent({ agentId }: { agentId: string }) {
   const [droits, setDroits] = useState<DroitsAgentReponse | null>(null);
   const [genererCoches, setGenererCoches] = useState<Set<string>>(new Set());
   const [serveursCoches, setServeursCoches] = useState<Set<string>>(new Set());
+  const [actionsLocalesCoches, setActionsLocalesCoches] = useState<Set<string>>(new Set());
   const [informerUtilisateurs, setInformerUtilisateurs] = useState(true);
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -44,6 +56,7 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
         setDroits(reponse);
         setGenererCoches(new Set(reponse.generation.filter((o) => o.coche).map((o) => o.nom_outil)));
         setServeursCoches(new Set(reponse.serveurs.filter((o) => o.coche).map((o) => o.nom_serveur)));
+        setActionsLocalesCoches(new Set(reponse.actions_locales.filter((o) => o.coche).map((o) => o.nom_outil)));
       })
       .catch((e) => setErreur(e.message || "Impossible de charger les droits de cet agent."));
   }, [agentId]);
@@ -66,6 +79,15 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
     });
   }
 
+  function basculerActionLocale(nomAction: string) {
+    setActionsLocalesCoches((precedent) => {
+      const suivant = new Set(precedent);
+      if (suivant.has(nomAction)) suivant.delete(nomAction);
+      else suivant.add(nomAction);
+      return suivant;
+    });
+  }
+
   async function enregistrer() {
     setEnregistrement(true);
     setErreur(null);
@@ -74,6 +96,7 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
       const resultat = await modifierDroitsAgent(agentId, {
         outils_generation: Array.from(genererCoches),
         serveurs: Array.from(serveursCoches),
+        actions_locales: Array.from(actionsLocalesCoches),
         informer_utilisateurs: informerUtilisateurs,
       });
       setMessageSucces(
@@ -143,6 +166,30 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
                 <span className="text-xs text-neutral-400">(compte utilisateur requis)</span>
               )}
               {!serveur.disponible && <span className="text-xs text-neutral-400">(indisponible)</span>}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-semibold mb-2">Actions locales (chat)</h3>
+        <p className="mb-2 text-xs text-neutral-500">
+          Ne sont pas envoyées au LLM, uniquement des boutons affichés dans la barre de saisie du chat.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {droits.actions_locales.map((action) => (
+            <label
+              key={action.nom_outil}
+              className={`flex items-center gap-2 text-sm ${!action.disponible ? "opacity-40" : ""}`}
+            >
+              <input
+                type="checkbox"
+                disabled={!action.disponible}
+                checked={actionsLocalesCoches.has(action.nom_outil)}
+                onChange={() => basculerActionLocale(action.nom_outil)}
+              />
+              {LIBELLES_ACTIONS_LOCALES[action.nom_outil] || action.nom_outil}
+              {!action.disponible && <span className="text-xs text-neutral-400">(indisponible)</span>}
             </label>
           ))}
         </div>

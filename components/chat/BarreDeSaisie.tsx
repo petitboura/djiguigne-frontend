@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, AppWindow, ChevronDown, Plus } from "lucide-react";
-import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, obtenirOutilsDisponibles } from "@/lib/api";
+import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurFormule } from "./EditeurFormule";
@@ -90,6 +90,22 @@ export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
 export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
   { nom: "github", label: "GitHub", Icone: Github },
 ];
+
+// CORRECTION (2026-07-30) : simplifié pour coller au nouvel endpoint
+// fusionné GET /api/agents/{id}/outils-disponibles (voir lib/api.ts),
+// qui réutilise lister_outils_autorises_pour_agent -- `outils` est déjà
+// la liste PLATE et déjà expansée des vrais noms d'outils autorisés
+// (ex. tavily_search, explorer_depot_github inclus directement si le
+// serveur correspondant est activé), donc plus besoin de deviner ici à
+// quel serveur appartient une entrée.
+function outilAutorisePourAgent(
+  outil: { nom: string },
+  actifs: { outils: string[]; actions_locales: string[] } | null
+): boolean {
+  if (!actifs) return false;
+  if (outil.nom.startsWith("ui_")) return actifs.actions_locales.includes(outil.nom);
+  return actifs.outils.includes(outil.nom);
+}
 
 // Détection de langage pour un collage de code (2026-07-25, demande de
 // Bourama : coller du code aujourd'hui atterrit comme texte brut, sans
@@ -265,37 +281,6 @@ export function BarreDeSaisie({
   // sélection unique précédente ne permettait pas de combiner par ex.
   // recherche web + GitHub sur un même message.
   const [outilsForces, setOutilsForces] = useState<string[]>([]);
-  // Outils réellement autorisés pour l'agent en cours (2026-07-29, voir
-  // GET /api/agents/{id}/outils-disponibles) -- `null` tant que pas
-  // encore chargé, auquel cas on affiche AUCUN bouton d'outil backend
-  // (fail closed, comme le fait déjà le backend par défaut) plutôt que
-  // de risquer d'afficher un bouton pour un outil désactivé le temps du
-  // chargement. Recalculé à chaque changement d'agent.
-  const [outilsAutorisesAgent, setOutilsAutorisesAgent] = useState<string[] | null>(null);
-  useEffect(() => {
-    let annule = false;
-    setOutilsAutorisesAgent(null);
-    if (!agentId) return;
-    obtenirOutilsDisponibles(agentId)
-      .then((resultat) => {
-        if (!annule) setOutilsAutorisesAgent(resultat.outils);
-      })
-      .catch(() => {
-        // Echec réseau : on reste fail-closed (liste vide) plutôt que
-        // d'afficher des boutons dont on ne peut plus garantir qu'ils
-        // sont réellement autorisés.
-        if (!annule) setOutilsAutorisesAgent([]);
-      });
-    return () => {
-      annule = true;
-    };
-  }, [agentId]);
-  // Un outil backend (tout sauf le préfixe "ui_", voir OUTILS_DISPONIBLES
-  // plus haut) n'est affiché comme bouton que s'il est dans cette liste ;
-  // les actions locales "ui_*" restent toujours disponibles (jamais
-  // envoyées à Groq, pas concernées par l'autorisation par agent).
-  const estOutilAutoriseAgent = (nom: string) =>
-    nom.startsWith("ui_") || (outilsAutorisesAgent?.includes(nom) ?? false);
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const menuOutilsMobileRef = useRef<HTMLDivElement>(null);
@@ -321,6 +306,52 @@ export function BarreDeSaisie({
   // disponible pour l'instant (avant cette refonte c'était une icône fixe,
   // donc on ne veut pas que le slot parte vide au premier chargement).
   const [appliRecente, setAppliRecente] = useState<string | null>("github");
+
+  // CORRECTION (2026-07-29) : droits réels de CET agent (flux 1 -> flux 2).
+  // Tant que ce n'est pas chargé, on n'affiche RIEN (mieux vaut masquer un
+  // outil disponible une fraction de seconde que d'en montrer un que le
+  // créateur n'a jamais activé).
+  const [outilsActifsAgent, setOutilsActifsAgent] = useState<{
+    outils: string[];
+    actions_locales: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!agentId) {
+      setOutilsActifsAgent({ outils: [], actions_locales: [] });
+      return;
+    }
+    let annule = false;
+    lireOutilsChatAgent(agentId)
+      .then((reponse) => {
+        if (!annule) setOutilsActifsAgent(reponse);
+      })
+      .catch(() => {
+        if (!annule) setOutilsActifsAgent({ outils: [], actions_locales: [] });
+      });
+    return () => {
+      annule = true;
+    };
+  }, [agentId]);
+
+  // Listes réellement proposables pour CET agent (flux 2) -- toute la
+  // suite de ce composant (menus + slots, desktop et mobile) doit
+  // utiliser CES listes filtrées, jamais OUTILS_DISPONIBLES /
+  // APPLIS_DISPONIBLES brutes.
+  const outilsPourAgent = OUTILS_DISPONIBLES.filter((o) => outilAutorisePourAgent(o, outilsActifsAgent));
+  // Une appli (ex. GitHub) est autorisée si AU MOINS UNE de ses actions
+  // (ex. explorer_depot_github) fait partie des outils autorisés.
+  const applisPourAgent = APPLIS_DISPONIBLES.filter((a) =>
+    outilsPourAgent.some((o) => o.appli === a.nom)
+  );
+
+  // Flux 3 : bascules d'affichage adaptatif de la barre selon le nombre
+  // d'outils/applis réellement activés pour l'agent.
+  const NB_MIN_POUR_MENU_OUTILS = 3;
+  const outilsButtonVisible = outilsPourAgent.length >= NB_MIN_POUR_MENU_OUTILS;
+  const outilsSlotsFixes = outilsPourAgent.length > 0 && outilsPourAgent.length < NB_MIN_POUR_MENU_OUTILS ? outilsPourAgent : [];
+  const appliButtonVisible = applisPourAgent.length > 1;
+  const appliSlotUnique = applisPourAgent.length === 1 ? applisPourAgent[0] : null;
   const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
   const menuAppliRef = useRef<HTMLDivElement>(null);
   const menuAppliMobileRef = useRef<HTMLDivElement>(null);
@@ -1031,10 +1062,17 @@ export function BarreDeSaisie({
                 des anciennes icônes autonomes (localisation, formule,
                 recherche, dessin) qui vivent maintenant uniquement dans
                 OUTILS_DISPONIBLES. Même comportement qu'un clic dans le
-                menu Outils juste en dessous, sans avoir à l'ouvrir. */}
-            {outilsRecents.map((nom) => {
+                menu Outils juste en dessous, sans avoir à l'ouvrir.
+                CORRECTION (2026-07-29, flux 3) : si l'agent a MOINS de 3
+                outils au total, il n'y a pas de bouton Outils (voir
+                outilsButtonVisible plus bas) -- on affiche alors ces
+                outils directement et en permanence (outilsSlotsFixes),
+                pas seulement les derniers cliqués. Sinon, comportement
+                inchangé (derniers cliqués), juste filtré par sécurité sur
+                ce qui est encore autorisé pour l'agent. */}
+            {(outilsButtonVisible ? outilsRecents.filter((n) => outilsPourAgent.some((o) => o.nom === n)) : outilsSlotsFixes.map((o) => o.nom)).map((nom) => {
               const entree = OUTILS_DISPONIBLES.find((o) => o.nom === nom);
-              if (!entree || !estOutilAutoriseAgent(nom)) return null;
+              if (!entree) return null;
               const actif = estOutilActif(nom);
               return (
                 <button
@@ -1054,13 +1092,15 @@ export function BarreDeSaisie({
               );
             })}
 
-            {/* Slot variable "Appli" (2026-07-28) -- 1 seul emplacement,
-                pour la dernière appli utilisée (une seule existe pour
-                l'instant : GitHub, voir APPLIS_DISPONIBLES). Cas GitHub
-                traité à part pour conserver le sélecteur de dépôts déjà en
-                place -- les futures applis passeront par executerActionAppli
-                seul, sans dropdown dédié, tant qu'elles n'en ont pas besoin. */}
-            {appliRecente === "github" && (
+            {/* Slot variable "Appli" (2026-07-28, corrigé le 2026-07-29
+                pour dépendre du nombre RÉEL d'applis activées pour CET
+                agent -- flux 3) -- affiché seul (sans bouton dropdown)
+                uniquement si l'agent n'a exactement qu'une seule appli
+                activée. Cas GitHub traité à part pour conserver le
+                sélecteur de dépôts déjà en place -- les futures applis
+                passeront par executerActionAppli seul, sans dropdown
+                dédié, tant qu'elles n'en ont pas besoin. */}
+            {appliSlotUnique?.nom === "github" && (
               <div className="relative" ref={selecteurRef}>
                 <button
                   onClick={() => executerActionAppli("github")}
@@ -1117,7 +1157,11 @@ export function BarreDeSaisie({
                 outils, y compris les entrées "ui_" ci-dessus.
                 sélection cumulative de PLUSIEURS outils pour le prochain
                 message, voir OUTILS_DISPONIBLES en haut du fichier et
-                core/mcp_tools.py:lister_tous_les_outils côté backend. */}
+                core/mcp_tools.py:lister_tous_les_outils côté backend.
+                CORRECTION (2026-07-29, flux 3) : masqué si l'agent a moins
+                de 3 outils activés (voir outilsSlotsFixes ci-dessous) ou
+                aucun. */}
+            {outilsButtonVisible && (
             <div className="relative">
               <button
                 ref={boutonOutilsRef}
@@ -1156,9 +1200,16 @@ export function BarreDeSaisie({
                 }
               >
                 {/* Barre d'onglets (2026-07-28, demande Bourama) -- voir
-                    ONGLETS_OUTILS en haut du fichier. */}
+                    ONGLETS_OUTILS en haut du fichier. CORRECTION (2026-07-29) :
+                    un onglet sans aucune entrée autorisée pour cet agent ne
+                    s'affiche plus (ex. agent sans GitHub -> pas d'onglet
+                    "Action dans l'app" vide). */}
                 <div className="flex items-center gap-1 overflow-x-auto border-b border-dj-bordure px-1 pb-1 pt-1">
-                  {ONGLETS_OUTILS.map(({ id, label }) => (
+                  {ONGLETS_OUTILS.filter(({ id }) =>
+                    id === "action_app"
+                      ? applisPourAgent.some((a) => outilsPourAgent.some((o) => o.appli === a.nom))
+                      : outilsPourAgent.some((o) => o.onglet === id)
+                  ).map(({ id, label }) => (
                     <button
                       key={id}
                       onClick={() => setOngletOutilActif(id)}
@@ -1190,14 +1241,12 @@ export function BarreDeSaisie({
                     // appli (icône + nom, trié A→Z) plutôt qu'en liste plate ;
                     // clic sur une appli déplie ses actions liées en dessous,
                     // triées A→Z elles aussi. Accordéon à dépliage multiple.
-                    [...APPLIS_DISPONIBLES]
-                      .filter((a) => OUTILS_DISPONIBLES.some((o) => o.appli === a.nom && estOutilAutoriseAgent(o.nom)))
+                    [...applisPourAgent]
+                      .filter((a) => outilsPourAgent.some((o) => o.appli === a.nom))
                       .sort((a, b) => a.label.localeCompare(b.label, "fr"))
                       .map(({ nom: nomAppli, label: labelAppli, Icone: IconeAppli }) => {
                         const deplie = groupesAppliDeplies.includes(nomAppli);
-                        const actionsAppli = OUTILS_DISPONIBLES.filter(
-                          (o) => o.appli === nomAppli && estOutilAutoriseAgent(o.nom)
-                        ).sort((a, b) =>
+                        const actionsAppli = outilsPourAgent.filter((o) => o.appli === nomAppli).sort((a, b) =>
                           a.label.localeCompare(b.label, "fr")
                         );
                         return (
@@ -1249,9 +1298,8 @@ export function BarreDeSaisie({
                         );
                       })
                   ) : (
-                    [...OUTILS_DISPONIBLES]
+                    [...outilsPourAgent]
                       .filter((o) => o.onglet === ongletOutilActif)
-                      .filter((o) => estOutilAutoriseAgent(o.nom))
                       .sort((a, b) => a.label.localeCompare(b.label, "fr"))
                       .map(({ nom, label, Icone }) => {
                         const actif = estOutilActif(nom);
@@ -1285,13 +1333,17 @@ export function BarreDeSaisie({
                 </div>
               </div>
             </div>
+            )}
 
             {/* Icône Appli (2026-07-28) -- icône FIXE (ne varie jamais),
                 pendante de l'icône Outils juste au-dessus : ouvre la liste
                 complète des applis (nécessitant une connexion utilisateur),
-                voir APPLIS_DISPONIBLES en haut du fichier. Une seule appli
-                pour l'instant (GitHub), le menu est prêt à en accueillir
-                d'autres sans changement. */}
+                voir APPLIS_DISPONIBLES en haut du fichier.
+                CORRECTION (2026-07-29, flux 3) : ce bouton-dropdown ne
+                s'affiche que s'il y a PLUSIEURS applis activées pour
+                l'agent (sinon c'est le slot unique ci-dessus qui s'affiche
+                directement, sans avoir besoin de choisir). */}
+            {appliButtonVisible && (
             <div className="relative">
               <button
                 ref={boutonAppliRef}
@@ -1314,7 +1366,7 @@ export function BarreDeSaisie({
                     : "pointer-events-none translate-y-1 scale-95 opacity-0")
                 }
               >
-                {[...APPLIS_DISPONIBLES]
+                {[...applisPourAgent]
                   .sort((a, b) => a.label.localeCompare(b.label, "fr"))
                   .map(({ nom, label, Icone }) => (
                   <button
@@ -1331,6 +1383,7 @@ export function BarreDeSaisie({
                 ))}
               </div>
             </div>
+            )}
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
                 modifiable à chaque message -- section 3.3. */}
@@ -1435,6 +1488,11 @@ export function BarreDeSaisie({
               >
                 <Pin size={16} /> Joindre un fichier
               </button>
+              {/* CORRECTION (2026-07-29, flux 3) : ces deux entrées n'ont
+                  de sens que si le bouton dropdown correspondant existe
+                  (>=3 outils / >1 appli) -- sinon le raccourci direct
+                  juste en dessous (slot fixe) suffit. */}
+              {outilsButtonVisible && (
               <button
                 type="button"
                 onClick={() => {
@@ -1445,6 +1503,8 @@ export function BarreDeSaisie({
               >
                 <Wrench size={16} /> Outils
               </button>
+              )}
+              {appliButtonVisible && (
               <button
                 type="button"
                 onClick={() => {
@@ -1455,6 +1515,22 @@ export function BarreDeSaisie({
               >
                 <AppWindow size={16} /> Applications
               </button>
+              )}
+              {/* Une seule appli activée pour l'agent -> pas besoin d'un
+                  sous-menu, on déclenche directement (même logique que le
+                  slot GitHub desktop). */}
+              {appliSlotUnique && (
+              <button
+                type="button"
+                onClick={() => {
+                  executerActionAppli(appliSlotUnique.nom);
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <appliSlotUnique.Icone size={16} /> {appliSlotUnique.label}
+              </button>
+              )}
             </div>
           )}
         </div>
@@ -1504,11 +1580,18 @@ export function BarreDeSaisie({
             </button>
             {/* Slot variable "dernier outil utilisé" (2026-07-28) -- même
                 tableau `outilsRecents` que desktop, juste 1 seul slot
-                affiché ici au lieu de 3. Repli sur le bouton Outils
-                lui-même tant qu'aucun outil n'a encore été utilisé. */}
-            {outilsRecents.length > 0 && estOutilAutoriseAgent(outilsRecents[0]) ? (
-              (() => {
-                const outil = OUTILS_DISPONIBLES.find((o) => o.nom === outilsRecents[0]);
+                affiché ici au lieu de 3.
+                CORRECTION (2026-07-29, flux 3) : si l'agent a MOINS de 3
+                outils, il n'y a pas de bouton "Outils" dropdown (voir
+                outilsButtonVisible) -- ce slot affiche alors directement
+                le premier outil fixe de l'agent (outilsSlotsFixes), et
+                disparaît complètement si l'agent n'a aucun outil. Sinon
+                (>=3 outils), comportement inchangé : dernier outil
+                cliqué, repli sur le bouton Outils générique tant qu'aucun
+                clic n'a encore eu lieu. */}
+            {(() => {
+              if (!outilsButtonVisible) {
+                const outil = outilsSlotsFixes[0];
                 if (!outil) return null;
                 const Icone = outil.Icone;
                 const actif = estOutilActif(outil.nom);
@@ -1527,16 +1610,39 @@ export function BarreDeSaisie({
                     <Icone size={18} />
                   </button>
                 );
-              })()
-            ) : (
-              <button
-                onClick={() => setMenuOutilsOuvert(true)}
-                aria-label="Outils"
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte"
-              >
-                <Wrench size={18} />
-              </button>
-            )}
+              }
+              const recentAutorise = outilsRecents.filter((n) => outilsPourAgent.some((o) => o.nom === n));
+              if (recentAutorise.length > 0) {
+                const outil = OUTILS_DISPONIBLES.find((o) => o.nom === recentAutorise[0]);
+                if (!outil) return null;
+                const Icone = outil.Icone;
+                const actif = estOutilActif(outil.nom);
+                return (
+                  <button
+                    onClick={() => executerActionOutil(outil.nom)}
+                    aria-label={outil.label}
+                    title={outil.label}
+                    className={
+                      "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      (actif
+                        ? "border-dj-accent-1 text-dj-accent-1"
+                        : "border-dj-bordure text-dj-texte-muet hover:text-dj-texte")
+                    }
+                  >
+                    <Icone size={18} />
+                  </button>
+                );
+              }
+              return (
+                <button
+                  onClick={() => setMenuOutilsOuvert(true)}
+                  aria-label="Outils"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet transition-colors hover:text-dj-texte"
+                >
+                  <Wrench size={18} />
+                </button>
+              );
+            })()}
           </>
         )}
       </div>
@@ -1554,7 +1660,11 @@ export function BarreDeSaisie({
         >
           <div className="flex items-center justify-between border-b border-dj-bordure px-3 py-2">
             <div className="flex items-center gap-1 overflow-x-auto">
-              {ONGLETS_OUTILS.map(({ id, label }) => (
+              {ONGLETS_OUTILS.filter(({ id }) =>
+                id === "action_app"
+                  ? applisPourAgent.some((a) => outilsPourAgent.some((o) => o.appli === a.nom))
+                  : outilsPourAgent.some((o) => o.onglet === id)
+              ).map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setOngletOutilActif(id)}
@@ -1578,9 +1688,8 @@ export function BarreDeSaisie({
             </button>
           </div>
           <div className="overflow-y-auto p-1">
-            {[...OUTILS_DISPONIBLES]
+            {[...outilsPourAgent]
               .filter((o) => o.onglet === ongletOutilActif)
-              .filter((o) => estOutilAutoriseAgent(o.nom))
               .sort((a, b) => a.label.localeCompare(b.label, "fr"))
               .map(({ nom, label, Icone }) => {
                 const actif = estOutilActif(nom);
@@ -1610,7 +1719,7 @@ export function BarreDeSaisie({
           ref={menuAppliMobileRef}
           className="fixed inset-x-4 bottom-24 z-40 max-h-[60vh] overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl md:hidden"
         >
-          {[...APPLIS_DISPONIBLES]
+          {[...applisPourAgent]
             .sort((a, b) => a.label.localeCompare(b.label, "fr"))
             .map(({ nom, label, Icone }) => (
               <button

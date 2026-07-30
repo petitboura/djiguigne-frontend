@@ -253,12 +253,35 @@ export async function lireDroitsAgent(agentId: string) {
 
 export async function modifierDroitsAgent(
   agentId: string,
-  payload: { outils_generation: string[]; serveurs: string[]; informer_utilisateurs: boolean }
+  payload: {
+    outils_generation: string[];
+    serveurs: string[];
+    actions_locales: string[];
+    informer_utilisateurs: boolean;
+  }
 ) {
   return appelerApi(`/api/agents/${agentId}/droits`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+}
+
+/**
+ * Outils/actions locales réellement actifs pour CET agent, côté chat --
+ * endpoint public (pas besoin d'être le créateur), sert à filtrer les
+ * boutons de BarreDeSaisie.tsx pour que ce que le créateur n'a pas coché
+ * n'apparaisse jamais dans le chat. `outils` réutilise directement
+ * lister_outils_autorises_pour_agent côté backend (même fonction que la
+ * vraie requête envoyée à Groq) -- inclut donc déjà les noms d'outils
+ * dérivés d'un serveur (ex. tavily_search, explorer_depot_github).
+ * `actions_locales` couvre les boutons UI (préfixe "ui_") qui ne sont pas
+ * des outils LLM et donc invisibles à cette fonction.
+ */
+export async function lireOutilsChatAgent(agentId: string) {
+  return appelerApi(`/api/agents/${agentId}/outils-disponibles`) as Promise<{
+    outils: string[];
+    actions_locales: string[];
+  }>;
 }
 
 export async function statutConnexion(service: string) {
@@ -267,18 +290,13 @@ export async function statutConnexion(service: string) {
 }
 
 /**
- * Outils réellement autorisés pour un agent (voir GET /api/agents/{id}/
- * outils-disponibles, ajouté le 29/07/2026, demande de Bourama) --
- * utilisé par BarreDeSaisie.tsx pour n'afficher comme boutons QUE les
- * outils que le créateur de l'agent a réellement activés, au lieu de
- * la liste OUTILS_DISPONIBLES statique affichée identique pour tous les
- * agents jusqu'ici (un outil désactivé restait cliquable, ce qui
- * provoquait des faux appels d'outil côté modèle une fois cliqué).
+ * CORRECTION (2026-07-30) : obtenirOutilsDisponibles() faisait double
+ * emploi avec lireOutilsChatAgent() ci-dessus -- même endpoint, mais
+ * lireOutilsChatAgent() couvre en plus les actions locales (catégorie 4,
+ * boutons UI type localisation/LaTeX/dessin, ajoutées le même jour).
+ * Fusionné en une seule fonction pour ne pas avoir deux sources
+ * divergentes du même appel réseau.
  */
-export async function obtenirOutilsDisponibles(agentId: string) {
-  const resultat = await appelerApi(`/api/agents/${encodeURIComponent(agentId)}/outils-disponibles`);
-  return resultat as { outils: string[] };
-}
 
 /**
  * Démarre une connexion OAuth : renvoie l'URL d'autorisation à ouvrir

@@ -120,6 +120,7 @@ export default function PageCreerAgent() {
   // reste, pas configurés après coup.
   const [droitsGeneration, setDroitsGeneration] = useState<string[]>([]);
   const [droitsServeurs, setDroitsServeurs] = useState<string[]>([]);
+  const [droitsActionsLocales, setDroitsActionsLocales] = useState<string[]>([]);
 
   const [envoi, setEnvoi] = useState(false);
   const [agentCree, setAgentCree] = useState<{ id: string; nom: string; icone: string } | null>(
@@ -181,6 +182,7 @@ export default function PageCreerAgent() {
           outils_choisis: [],
           outils_generation_choisis: droitsGeneration,
           serveurs_choisis: droitsServeurs,
+          actions_locales_choisies: droitsActionsLocales,
           description_connaissance: descriptionConnaissance,
           lien_notion: lienNotion || null,
           texte_libre: texteLibre,
@@ -628,9 +630,10 @@ export default function PageCreerAgent() {
               </p>
             </div>
             <DroitsAgentCreation
-              onChange={({ outilsGeneration, serveurs }) => {
+              onChange={({ outilsGeneration, serveurs, actionsLocales }) => {
                 setDroitsGeneration(outilsGeneration);
                 setDroitsServeurs(serveurs);
+                setDroitsActionsLocales(actionsLocales);
               }}
             />
           </section>
