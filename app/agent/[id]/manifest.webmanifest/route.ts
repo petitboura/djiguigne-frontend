@@ -3,9 +3,8 @@ import { appelerApiPublicOuNull } from "@/lib/api-serveur";
 
 // Bourama (2026-07-15) : chaque IA installable séparément, avec son
 // propre nom/icône -- "tu clique sur cette appli, tu ouvres une IA comme
-// GPT ou autre". `scope` borne cette installation aux pages de CET
-// agent, `start_url` pointe direct sur son chat (pas la fiche) : ouvrir
-// l'icône doit lancer la conversation, pas une page intermédiaire.
+// GPT ou autre". `start_url` pointe direct sur son chat (pas la fiche) :
+// ouvrir l'icône doit lancer la conversation, pas une page intermédiaire.
 //
 // Nuance importante (voir échange avec Bourama) : ce comportement est
 // fiable sur iOS (metadata par page, voir generateMetadata dans
@@ -20,6 +19,26 @@ import { appelerApiPublicOuNull } from "@/lib/api-serveur";
 // agent, différent de celui de app/manifest.ts, donne à Chrome de quoi
 // les distinguer. Toujours pas garanti à 100% sur toutes les versions
 // Android/Chrome (limite du navigateur, pas du code).
+//
+// `scope` élargi à tout le site le 30/07/2026 (demande Bourama) : "l'app
+// globale doit être le chat, et c'est la vitrine qui est un composant
+// maintenant". Avant, `scope: /agent/{id}/` bornait la fenêtre installée
+// à CET agent uniquement -- cliquer sur "Vitrine" (voir SidebarChat.tsx)
+// ou naviguer vers un autre agent faisait sortir de l'app installée et
+// rouvrait un onglet de navigateur classique. Avec `scope: "/"`, le point
+// d'entrée fixe reste cet agent (`start_url` inchangé), mais TOUT le site
+// reste "dans" la même fenêtre d'app -- vitrine et autres agents
+// deviennent des pages internes accessibles sans jamais quitter l'app ni
+// réinstaller. C'est la seule IA d'entrée que l'utilisateur télécharge
+// (le bouton "Télécharger" n'existe que dans le chat d'un agent, jamais
+// hors contexte) -- mais depuis là, tout le reste de la plateforme
+// s'ouvre dans la même app.
+//
+// IMPORTANT (limite connue, pas de solution côté code) : ce changement
+// ne s'applique qu'aux NOUVELLES installations. Les icônes déjà posées
+// sur un écran d'accueil gardent le comportement figé au moment de leur
+// installation -- iOS ne relit jamais le manifest après coup, et Android/
+// Chrome ne le fait que de façon non garantie.
 
 type AgentPublic = { id: string; nom: string };
 
@@ -40,7 +59,7 @@ export async function GET(
     name: agent.nom,
     short_name: agent.nom,
     start_url: `/agent/${agent.id}/chat`,
-    scope: `/agent/${agent.id}/`,
+    scope: "/",
     display: "standalone",
     background_color: "#0b0908",
     theme_color: "#0b0908",
