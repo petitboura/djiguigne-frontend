@@ -1491,6 +1491,22 @@ export function BarreDeSaisie({
               >
                 <AppWindow size={16} /> Applications
               </button>
+              {/* Plein écran (2026-07-30, demande Bourama) : même rôle que
+                  le bouton Maximize2 du composer desktop -- ouvre la même
+                  zone d'écriture agrandie (pleinEcranSaisie, partagée entre
+                  PC et mobile, voir plus bas dans ce fichier). Logé dans le
+                  menu "+" plutôt qu'en icône dédiée, faute de place dans la
+                  barre compacte mobile. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPleinEcranSaisie(true);
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <Maximize2 size={16} /> Plein écran
+              </button>
             </div>
           )}
         </div>
