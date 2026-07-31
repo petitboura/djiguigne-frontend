@@ -34,6 +34,16 @@ export function Mermaid({ definition }: { definition: string }) {
         mermaid.initialize({
           startOnLoad: false,
           theme: "dark",
+          // CORRECTIF 2026-07-30 (audit sécurité) : sans ce réglage
+          // explicite, le niveau de sécurité de mermaid dépend de sa
+          // valeur par défaut -- qui a changé plusieurs fois selon les
+          // versions de la librairie. Le SVG produit est injecté tel quel
+          // via dangerouslySetInnerHTML juste en dessous ; en mode
+          // "strict", mermaid nettoie (DOMPurify) tout HTML/script qu'un
+          // diagramme pourrait contenir dans le texte d'un nœud -- utile
+          // en particulier si ce texte provient, via le modèle, d'un
+          // contenu externe (page web lue par l'agent, dépôt GitHub...).
+          securityLevel: "strict",
           // Sans ça, mermaid ne lève JAMAIS d'exception sur une erreur de
           // syntaxe : render() "réussit" quand même, avec un SVG contenant
           // son propre dessin d'erreur générique (icône bombe "Syntax
