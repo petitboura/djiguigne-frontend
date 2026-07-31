@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Wrench } from "lucide-react";
+import { ChevronDown, ChevronRight, Wrench, Link2 } from "lucide-react";
 import { OUTILS_DISPONIBLES } from "./BarreDeSaisie";
 import { SourcesBulle } from "./SourcesBulle";
 
@@ -33,6 +33,13 @@ import { SourcesBulle } from "./SourcesBulle";
 // l'ouverture/fermeture (astuce grid-template-rows 0fr/1fr, même
 // principe que RaisonnementBulle.tsx -- avant, c'était un
 // affichage/masquage brut, sans transition).
+//
+// Menu "Sources" indépendant (31/07, demande Bourama) : avant, les
+// sources n'étaient visibles qu'en dépliant le résultat brut complet de
+// l'outil (JSON/texte technique) -- pas pratique pour juste vérifier
+// d'où vient une réponse. Bouton dédié, son propre état ouvert/fermé,
+// visible directement à côté du résultat de l'outil plutôt que niché
+// dedans.
 function iconePourOutil(nomOutil: string) {
   return OUTILS_DISPONIBLES.find((o) => o.nom === nomOutil)?.Icone ?? Wrench;
 }
@@ -43,6 +50,7 @@ export function OutilResultatBulle({
   resultats?: { nomOutil: string; nomLisible: string; resultat: string; sources?: { titre: string; url: string }[] }[];
 }) {
   const [ouverts, setOuverts] = useState<Record<number, boolean>>({});
+  const [sourcesOuvertes, setSourcesOuvertes] = useState<Record<number, boolean>>({});
 
   if (!resultats || !resultats.length) return null;
 
@@ -51,16 +59,30 @@ export function OutilResultatBulle({
       {resultats.map((r, index) => {
         const Icone = iconePourOutil(r.nomOutil);
         const ouvert = !!ouverts[index];
+        const aDesSources = !!r.sources && r.sources.length > 0;
+        const sourcesOuvert = !!sourcesOuvertes[index];
         return (
           <div key={index} className="animate-dj-fade-in">
-            <button
-              onClick={() => setOuverts((prec) => ({ ...prec, [index]: !ouvert }))}
-              className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
-            >
-              <Icone size={13} />
-              <span>{r.nomLisible}</span>
-              {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            </button>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button
+                onClick={() => setOuverts((prec) => ({ ...prec, [index]: !ouvert }))}
+                className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+              >
+                <Icone size={13} />
+                <span>{r.nomLisible}</span>
+                {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              </button>
+              {aDesSources && (
+                <button
+                  onClick={() => setSourcesOuvertes((prec) => ({ ...prec, [index]: !sourcesOuvert }))}
+                  className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+                >
+                  <Link2 size={13} />
+                  <span>Sources ({r.sources!.length})</span>
+                  {sourcesOuvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </button>
+              )}
+            </div>
             <div
               className={`grid transition-[grid-template-rows] duration-300 ease-out ${
                 ouvert ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
@@ -70,11 +92,19 @@ export function OutilResultatBulle({
                 <pre className="mt-1.5 max-h-64 overflow-auto rounded-xl border border-dj-bordure bg-dj-surface p-2.5 text-[12px] leading-relaxed text-dj-texte-muet">
                   {r.resultat}
                 </pre>
-                {/* Sources DE CET outil précis, juste après son résultat --
-                    pas dans un bloc "Sources" séparé plus bas. */}
-                <SourcesBulle sources={r.sources} />
               </div>
             </div>
+            {aDesSources && (
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  sourcesOuvert ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <SourcesBulle sources={r.sources} />
+                </div>
+              </div>
+            )}
           </div>
         );
       })}

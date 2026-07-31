@@ -381,6 +381,23 @@ export function BulleMessage({
 
   return (
     <div className={`group flex flex-col ${estUtilisateur ? "items-end" : "items-start"}`}>
+      {/* Raisonnement tout en haut, avant le contenu de la réponse (31/07,
+          demande Bourama) -- avant, ce bloc s'affichait après le texte de
+          la réponse, ce qui ne reflétait pas l'ordre réel "le modèle
+          réfléchit D'ABORD, répond ENSUITE". */}
+      {!estUtilisateur && enAttente && (
+        <div className="my-1 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
+          <span>{nomAgent} réfléchit</span>
+          <span className="flex gap-0.5">
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
+          </span>
+        </div>
+      )}
+      {!estUtilisateur && raisonnement && (
+        <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
+      )}
       <div
         className={
           estUtilisateur
@@ -542,22 +559,6 @@ export function BulleMessage({
         )}
       </div>
 
-      {/* Rattachés à CE message précis (juste sous son contenu, avant les
-          boutons d'action) plutôt qu'en bloc séparé plus bas dans la liste
-          -- voir props enAttente/raisonnement ci-dessus. */}
-      {!estUtilisateur && enAttente && (
-        <div className="my-1 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
-          <span>{nomAgent} réfléchit</span>
-          <span className="flex gap-0.5">
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
-          </span>
-        </div>
-      )}
-      {!estUtilisateur && raisonnement && (
-        <RaisonnementBulle nomAgent={nomAgent ?? "L'agent"} texte={raisonnement} enCours={!!raisonnementEnCours} />
-      )}
       {!estUtilisateur && outilsResultats && outilsResultats.length > 0 && (
         <OutilResultatBulle resultats={outilsResultats} />
       )}
@@ -700,45 +701,57 @@ export function BulleMessage({
         <span className="mt-1 text-[11px] text-dj-inactif">{formaterHeure(message.created_at)}</span>
       )}
 
-      <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={copier} aria-label="Copier" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
-          {copie ? <Check size={14} /> : <Copy size={14} />}
-        </button>
+      {/* Boutons d'action (31/07, demande Bourama) : pour l'assistant,
+          n'apparaissent qu'une fois la génération VRAIMENT terminée --
+          message.id reste null tant que la réponse est en cours de
+          streaming (voir le commentaire sur ce champ plus haut) et n'est
+          rempli qu'après coup par l'événement "meta", que le backend
+          n'émet qu'APRÈS avoir sauvegardé la réponse complète (voir
+          core/main.py:chat()). Avant, ces boutons (copier, régénérer...)
+          étaient cliquables pendant que le texte s'écrivait encore.
+          Côté utilisateur, pas de streaming à attendre -- toujours
+          affichés au survol comme avant. */}
+      {(estUtilisateur || message.id !== null) && (
+        <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button onClick={copier} aria-label="Copier" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+            {copie ? <Check size={14} /> : <Copy size={14} />}
+          </button>
 
-        {estUtilisateur ? (
-          <>
-            <button onClick={onRegenerer} aria-label="Renvoyer" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
-              <RotateCw size={14} />
-            </button>
-            <button
-              onClick={() => setEnEdition(true)}
-              aria-label="Éditer"
-              className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte"
-            >
-              <Pencil size={14} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={lireAVoixHaute}
-              aria-label={enLecture ? "Arrêter la lecture" : "Lire à voix haute"}
-              className={`rounded-md p-1.5 hover:text-dj-texte ${enLecture ? "text-dj-accent-1" : "text-dj-texte-muet"}`}
-            >
-              <Volume2 size={14} />
-            </button>
-            <button onClick={onLike} aria-label="Retour positif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
-              <ThumbsUp size={14} />
-            </button>
-            <button onClick={onDislike} aria-label="Retour négatif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
-              <ThumbsDown size={14} />
-            </button>
-            <button onClick={onRegenerer} aria-label="Régénérer" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
-              <RotateCw size={14} />
-            </button>
-          </>
-        )}
-      </div>
+          {estUtilisateur ? (
+            <>
+              <button onClick={onRegenerer} aria-label="Renvoyer" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+                <RotateCw size={14} />
+              </button>
+              <button
+                onClick={() => setEnEdition(true)}
+                aria-label="Éditer"
+                className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte"
+              >
+                <Pencil size={14} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={lireAVoixHaute}
+                aria-label={enLecture ? "Arrêter la lecture" : "Lire à voix haute"}
+                className={`rounded-md p-1.5 hover:text-dj-texte ${enLecture ? "text-dj-accent-1" : "text-dj-texte-muet"}`}
+              >
+                <Volume2 size={14} />
+              </button>
+              <button onClick={onLike} aria-label="Retour positif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+                <ThumbsUp size={14} />
+              </button>
+              <button onClick={onDislike} aria-label="Retour négatif" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+                <ThumbsDown size={14} />
+              </button>
+              <button onClick={onRegenerer} aria-label="Régénérer" className="rounded-md p-1.5 text-dj-texte-muet hover:text-dj-texte">
+                <RotateCw size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {pieceJointeOuverte && message.pieceJointe?.previewUrl && (
         <div
