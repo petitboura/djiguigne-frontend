@@ -113,6 +113,15 @@ export function telechargerImage(
   // lucide, puis on choisit le plus GRAND par surface -- le vrai
   // graphique est toujours largement plus grand que n'importe quelle
   // icône (légende, bouton, tooltip), quelle que soit la lib utilisée.
+  //
+  // CORRECTIF 2026-07-31 : les appelants (GraphiqueDonnees.tsx,
+  // SchemaGeometrique.tsx) scopent désormais `conteneur` au wrapper du
+  // graphique/schéma SEUL, plus à toute la carte (titre + bouton
+  // Télécharger avec ses propres icônes) -- le tie-break par taille
+  // ci-dessous reste en place en filet de sécurité (légende vs graphique
+  // dans le cas d'un camembert/bar/line), mais n'a plus à départager
+  // contre des éléments de la carte qui n'ont rien à voir avec le
+  // graphique lui-même.
   const candidats = Array.from(conteneur?.querySelectorAll("svg") ?? []).filter(
     (el) => !el.classList.contains("lucide")
   );
@@ -123,6 +132,13 @@ export function telechargerImage(
   })[0];
   if (!svgEl) return;
   const { width, height } = svgEl.getBoundingClientRect();
+  // CORRECTIF 2026-07-31 (audit UX) : si le graphique est masqué à l'écran
+  // au moment du clic (ex. dans un bloc replié/accordéon), getBoundingClientRect()
+  // renvoie 0x0 -- sans cette garde, un PNG vide (0x0, invalide) était
+  // téléchargé en silence, avec "Téléchargé" affiché comme si tout
+  // s'était bien passé. On abandonne proprement à la place (onSucces
+  // n'est pas appelé, donc pas de faux "Téléchargé").
+  if (width === 0 || height === 0) return;
   const clone = svgEl.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   clone.setAttribute("width", String(width));
@@ -277,10 +293,7 @@ export function GraphiqueDonnees({ code }: { code: string }) {
       : clesSeries.map((cle, i) => ({ libelle: cle, couleur: COULEURS[i % COULEURS.length] }));
 
   return (
-    <div
-      ref={conteneurRef}
-      className="my-3 animate-dj-fade-in rounded-xl border border-dj-bordure bg-dj-surface p-4"
-    >
+    <div className="my-3 animate-dj-fade-in rounded-xl border border-dj-bordure bg-dj-surface p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
         {chart.titre ? (
           <p className="text-sm font-semibold text-dj-texte">{chart.titre}</p>
@@ -313,54 +326,66 @@ export function GraphiqueDonnees({ code }: { code: string }) {
           )}
         </button>
       </div>
-      <ResponsiveContainer width="100%" height={260}>
-        {chart.type === "pie" ? (
-          <PieChart>
-            <Pie
-              data={chart.data}
-              dataKey={cleValeurPie}
-              nameKey={cleNomPie}
-              outerRadius={90}
-              label
-            >
-              {chart.data.map((_, index) => (
-                <Cell key={index} fill={COULEURS[index % COULEURS.length]} />
+      {/* CORRECTIF 2026-07-31 (audit UX/fiabilité) : la référence passée à
+          telechargerImage() était sur la carte ENTIÈRE (titre + bouton
+          Télécharger, avec ses propres icônes lucide), ce qui forçait
+          l'heuristique "on prend le plus grand <svg>" à départager le
+          vrai graphique de tout ce qui traîne alentour. En scopant la
+          référence à CE SEUL wrapper (rien d'autre à l'intérieur que le
+          graphique recharts lui-même, légende HTML comprise -- voir
+          dessinerLegende plus haut), il ne reste plus qu'un candidat
+          plausible : le tie-break par taille devient une garantie, pas
+          une supposition. */}
+      <div ref={conteneurRef}>
+        <ResponsiveContainer width="100%" height={260}>
+          {chart.type === "pie" ? (
+            <PieChart>
+              <Pie
+                data={chart.data}
+                dataKey={cleValeurPie}
+                nameKey={cleNomPie}
+                outerRadius={90}
+                label
+              >
+                {chart.data.map((_, index) => (
+                  <Cell key={index} fill={COULEURS[index % COULEURS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <Legend />
+            </PieChart>
+          ) : chart.type === "bar" ? (
+            <BarChart data={chart.data}>
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
+              <YAxis stroke="#A79A8C" fontSize={12} />
+              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <Legend />
+              {clesSeries.map((cle, index) => (
+                <Bar key={cle} dataKey={cle} fill={COULEURS[index % COULEURS.length]} radius={[4, 4, 0, 0]} />
               ))}
-            </Pie>
-            <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
-            <Legend />
-          </PieChart>
-        ) : chart.type === "bar" ? (
-          <BarChart data={chart.data}>
-            <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
-            <YAxis stroke="#A79A8C" fontSize={12} />
-            <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
-            <Legend />
-            {clesSeries.map((cle, index) => (
-              <Bar key={cle} dataKey={cle} fill={COULEURS[index % COULEURS.length]} radius={[4, 4, 0, 0]} />
-            ))}
-          </BarChart>
-        ) : (
-          <LineChart data={chart.data}>
-            <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
-            <YAxis stroke="#A79A8C" fontSize={12} />
-            <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
-            <Legend />
-            {clesSeries.map((cle, index) => (
-              <Line
-                key={cle}
-                type="monotone"
-                dataKey={cle}
-                stroke={COULEURS[index % COULEURS.length]}
-                strokeWidth={2}
-                dot={false}
-              />
-            ))}
-          </LineChart>
-        )}
-      </ResponsiveContainer>
+            </BarChart>
+          ) : (
+            <LineChart data={chart.data}>
+              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
+              <YAxis stroke="#A79A8C" fontSize={12} />
+              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <Legend />
+              {clesSeries.map((cle, index) => (
+                <Line
+                  key={cle}
+                  type="monotone"
+                  dataKey={cle}
+                  stroke={COULEURS[index % COULEURS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

@@ -184,10 +184,7 @@ export function SchemaGeometrique({ code }: { code: string }) {
   const nomFichier = `${schema.titre ? schema.titre.replace(/[^a-z0-9-_]+/gi, "_") : "schema"}.png`;
 
   return (
-    <div
-      ref={conteneurRef}
-      className="my-3 animate-dj-fade-in rounded-xl border border-dj-bordure bg-dj-surface p-4"
-    >
+    <div className="my-3 animate-dj-fade-in rounded-xl border border-dj-bordure bg-dj-surface p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
         {schema.titre ? (
           <p className="text-sm font-semibold text-dj-texte">{schema.titre}</p>
@@ -215,12 +212,18 @@ export function SchemaGeometrique({ code }: { code: string }) {
           )}
         </button>
       </div>
-      <svg
-        viewBox={`0 0 ${largeurSvg} ${hauteurSvg}`}
-        width="100%"
-        height={280}
-        className="mx-auto block"
-      >
+      {/* CORRECTIF 2026-07-31 (audit UX/fiabilité, même principe que
+          GraphiqueDonnees.tsx) : la référence passée à telechargerImage()
+          est désormais scopée à CE SEUL wrapper (rien d'autre à
+          l'intérieur que le <svg> du schéma), au lieu de la carte entière
+          avec le bouton Télécharger et ses propres icônes lucide. */}
+      <div ref={conteneurRef}>
+        <svg
+          viewBox={`0 0 ${largeurSvg} ${hauteurSvg}`}
+          width="100%"
+          height={280}
+          className="mx-auto block"
+        >
         {afficherRepere && (
           <g>
             {lignesGrilleX.map((x) => {
@@ -428,6 +431,7 @@ export function SchemaGeometrique({ code }: { code: string }) {
           );
         })}
       </svg>
+      </div>
     </div>
   );
 }
