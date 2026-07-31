@@ -162,6 +162,37 @@ export function EditeurFormule({
   // hors de portée de `conteneurRef`) et à l'intérieur du champ de
   // formule (cliquer dans le champ pour repositionner le curseur ne doit
   // pas fermer le clavier qu'on est justement en train d'utiliser).
+  //
+  // Correctif (2026-07-31, demande Bourama : "sa disparition qui est
+  // brute") -- vérifié dans le code source MathLive : sa fonction hide()
+  // supprime le panneau du DOM instantanément, sans aucune transition
+  // (contrairement à l'ouverture, qui elle est animée -- voir
+  // `.animate` dans le CSS de la lib). On ne peut pas se contenter de
+  // retirer sa classe "is-visible" nous-mêmes pour profiter de sa
+  // transition CSS : cette transition n'existe QUE quand "is-visible" ET
+  // "animate" sont présents ensemble, donc la retirer désactive la
+  // transition au même instant qu'elle devrait s'appliquer. On anime
+  // donc nous-mêmes le panneau (fondu + léger glissement) avec l'API
+  // Web Animations avant d'appeler hide(), qui peut alors supprimer le
+  // panneau déjà invisible sans que ça se voie.
+  function fermerClavierEnDouceur() {
+    const panneau = document.querySelector(".ML__keyboard") as HTMLElement | null;
+    if (!panneau || !panneau.animate) {
+      window.mathVirtualKeyboard?.hide();
+      return;
+    }
+    const anim = panneau.animate(
+      [
+        { opacity: 1, transform: "translateY(0)" },
+        { opacity: 0, transform: "translateY(12px)" },
+      ],
+      { duration: 180, easing: "cubic-bezier(0.4, 0, 1, 1)" }
+    );
+    anim.finished
+      .catch(() => {})
+      .finally(() => window.mathVirtualKeyboard?.hide());
+  }
+
   useEffect(() => {
     if (!mathliveInstalle) return;
     function surClicDocument(e: PointerEvent) {
@@ -170,7 +201,7 @@ export function EditeurFormule({
       const panneauClavier = document.querySelector(".ML__keyboard");
       if (panneauClavier?.contains(cible)) return;
       if (mathfieldRef.current?.contains(cible)) return;
-      window.mathVirtualKeyboard.hide();
+      fermerClavierEnDouceur();
     }
     document.addEventListener("pointerdown", surClicDocument);
     return () => document.removeEventListener("pointerdown", surClicDocument);
