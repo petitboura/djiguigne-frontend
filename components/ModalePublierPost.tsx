@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { ChampImage } from "@/components/ChampImage";
+import { messageErreur } from "@/lib/erreurs";
 
 // Ajouté le 2026-07-15 (Bourama) : "Publier un article" (bouton déjà
 // présent mais jamais branché, voir app/dashboard/page.tsx) + les deux
@@ -76,7 +77,7 @@ export function ModalePublierPost({
       onPublie();
       onClose();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoi(false);
     }

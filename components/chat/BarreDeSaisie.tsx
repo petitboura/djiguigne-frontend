@@ -9,6 +9,7 @@ import { EditeurFormule } from "./EditeurFormule";
 import { BlocCode } from "./BlocCode";
 import hljs from "highlight.js";
 import katex from "katex";
+import { messageErreur } from "@/lib/erreurs";
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
 export type LocalisationJointe = { latitude: number; longitude: number } | null;
@@ -656,19 +657,16 @@ export function BarreDeSaisie({
     if (!githubConnecte) {
       setGithubEnCours(true);
       try {
-        const { url, erreur } = await demarrerConnexion("github", agentId);
-        if (url) {
-          window.location.href = url;
-        } else {
-          alert(erreur || "Connexion GitHub indisponible pour le moment.");
-          setGithubEnCours(false);
-        }
+        const { url } = await demarrerConnexion("github", agentId);
+        window.location.href = url;
       } catch (e) {
-        // Corrigé le 2026-07-23 : masquait la vraie cause (erreur réseau,
+        // Corrigé le 2026-07-23, puis le 2026-07-31 (demarrerConnexion lève
+        // maintenant une vraie erreur au lieu de renvoyer {url: null,
+        // erreur: "..."}) : masquait la vraie cause (erreur réseau,
         // 401/500 côté backend, session expirée...) derrière le même
         // texte générique à chaque fois -- même correction que pour la
         // dictée vocale et l'upload de fichiers plus tôt dans la session.
-        alert(e instanceof Error ? e.message : "Connexion GitHub indisponible pour le moment.");
+        alert(messageErreur(e));
         setGithubEnCours(false);
       }
       return;
@@ -680,12 +678,11 @@ export function BarreDeSaisie({
     if (depots === null) {
       setGithubEnCours(true);
       try {
-        const { depots: liste, erreur } = await depotsGithub();
+        const { depots: liste } = await depotsGithub();
         setDepots(liste);
-        if (erreur) alert(erreur);
       } catch (e) {
         setDepots([]);
-        alert(e instanceof Error ? e.message : "Impossible de récupérer tes dépôts pour le moment.");
+        alert(messageErreur(e));
       } finally {
         setGithubEnCours(false);
       }
@@ -810,7 +807,7 @@ export function BarreDeSaisie({
           // cause (non connecté / audio vide-silencieux / vraie erreur
           // serveur) derrière un seul texte, impossible à diagnostiquer
           // depuis le retour utilisateur.
-          alert(e instanceof Error ? e.message : "Je n'ai pas compris, réessaie.");
+          alert(messageErreur(e));
         } finally {
           setTranscriptionEnCours(false);
         }

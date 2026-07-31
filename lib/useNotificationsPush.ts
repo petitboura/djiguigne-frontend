@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
+import { messageErreur } from "./erreurs";
 
 // CORRIGÉ le 24/07/2026 (Bourama : "quand tu envoies un premier message
 // ça marche, dans mon profil ça marche, le problème vient du bouton").
@@ -112,7 +113,7 @@ async function activerPartage(): Promise<boolean> {
     definirEtat("actif");
     return true;
   } catch (e) {
-    definirErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+    definirErreur(messageErreur(e));
     definirEtat("inactif");
     return false;
   }
@@ -133,7 +134,7 @@ async function desactiverPartage() {
     }
     definirEtat("inactif");
   } catch (e) {
-    definirErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+    definirErreur(messageErreur(e));
     definirEtat("actif");
   }
 }

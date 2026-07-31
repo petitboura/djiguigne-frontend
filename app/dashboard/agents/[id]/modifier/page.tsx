@@ -11,6 +11,7 @@ import { ChampImage } from "@/components/ChampImage";
 import { PopupCategories, chargerCategories, type Categorie } from "@/components/PopupCategories";
 import { DroitsAgent } from "@/components/DroitsAgent";
 import { ProactiviteAgent } from "@/components/ProactiviteAgent";
+import { messageErreur } from "@/lib/erreurs";
 
 // Étape "modifier un agent" (2026-07-12, demande de Bourama : "on ne peut
 // pas modifier ces agents créés" — gros morceau manquant depuis le début
@@ -177,7 +178,7 @@ export default function PageModifierAgent() {
             .catch(() => setCategorie({ id: idCategorie, nom: idCategorie, mots_cles: [], parent_id: null }));
         }
       })
-      .catch((e) => setErreurChargement(e instanceof Error ? e.message : "Erreur inconnue."))
+      .catch((e) => setErreurChargement(messageErreur(e)))
       .finally(() => setChargement(false));
 
     chargerDocuments();
@@ -234,7 +235,7 @@ export default function PageModifierAgent() {
       });
       setMessage("IA mise à jour.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
@@ -248,7 +249,7 @@ export default function PageModifierAgent() {
       setNouveauPdf(null);
       chargerDocuments();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Échec de l'ajout du PDF.");
+      window.alert(messageErreur(e));
     } finally {
       setEnvoiPdf(false);
     }
@@ -262,7 +263,7 @@ export default function PageModifierAgent() {
       });
       chargerDocuments();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Échec de la suppression.");
+      window.alert(messageErreur(e));
     }
   }
 
@@ -281,7 +282,7 @@ export default function PageModifierAgent() {
       setDescriptionFichierBiblio("");
       chargerBibliotheque();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Échec de l'ajout du fichier.");
+      window.alert(messageErreur(e));
     } finally {
       setEnvoiBiblio(false);
     }
@@ -293,7 +294,7 @@ export default function PageModifierAgent() {
       await appelerApi(`/api/agents/${agentId}/bibliotheque/${id}`, { method: "DELETE" });
       chargerBibliotheque();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Échec de la suppression.");
+      window.alert(messageErreur(e));
     }
   }
 
@@ -843,7 +844,7 @@ function SectionMiseAJour({ agentId }: { agentId: string }) {
       setPleinEcran(false);
       setMessage("Mise à jour publiée — les personnes ayant déjà utilisé cet agent sont notifiées.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoi(false);
     }

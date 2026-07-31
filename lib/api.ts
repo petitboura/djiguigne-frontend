@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { ErreurApi } from "./erreurs";
 
 // URL du backend FastAPI (voir api/main.py). En local pendant le dev :
 // http://localhost:8000. Une fois déployé sur Railway : l'URL publique de
@@ -8,6 +9,66 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL est requis (voir .env.local.example).");
+}
+
+/**
+ * Construit une ErreurApi à partir d'une réponse HTTP en échec.
+ *
+ * AVANT (bug corrigé le 2026-07-31) : le corps JSON de la réponse était
+ * pris comme texte brut et collé dans le message d'erreur affiché à
+ * l'utilisateur, ex. `Erreur API 403 sur /api/agents/x : {"detail":{"code":
+ * "CET_AGENT_NE_T_APPARTIENT_PAS","message":"Cet agent ne t'appartient
+ * pas."}}`. Tout le travail de messages propres côté backend (voir
+ * djiguigne-backend/core/erreurs.py) était donc invisible : ce JSON brut
+ * atterrissait tel quel dans les <p>{erreur}</p> et les alert() du front.
+ *
+ * MAINTENANT : on parse le corps et on extrait proprement `code`,
+ * `message` et `params` (voir erreur_api() côté backend), avec un repli
+ * sur chaque format qu'on peut rencontrer :
+ * - {"detail": {"code": ..., "message": ..., "params"?: {...}}}  (notre format)
+ * - {"detail": [{"msg": ..., ...}, ...]}                         (422 auto FastAPI/pydantic)
+ * - {"detail": "texte brut"}                                     (ancien format / lib externe)
+ * - corps non-JSON ou vide                                       (erreur réseau, proxy, etc.)
+ */
+async function construireErreurApi(reponse: Response, chemin: string): Promise<ErreurApi> {
+  const texteBrut = await reponse.text().catch(() => "");
+
+  let corps: unknown = null;
+  try {
+    corps = texteBrut ? JSON.parse(texteBrut) : null;
+  } catch {
+    corps = null;
+  }
+
+  const detail = corps && typeof corps === "object" ? (corps as any).detail : undefined;
+
+  if (detail && typeof detail === "object" && !Array.isArray(detail) && typeof detail.message === "string") {
+    // Notre format standard (voir erreur_api() dans core/erreurs.py).
+    return new ErreurApi(reponse.status, detail.message, detail.code, detail.params);
+  }
+
+  if (typeof detail === "string" && detail.trim()) {
+    // Ancienne HTTPException FastAPI avec un detail texte simple.
+    return new ErreurApi(reponse.status, detail);
+  }
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    // Erreur de validation automatique de FastAPI/pydantic (422), jamais
+    // écrite pour un humain -- on ne montre pas sa structure technique.
+    return new ErreurApi(reponse.status, "La requête envoyée est invalide.", "REQUETE_INVALIDE");
+  }
+
+  if (reponse.status === 401) {
+    return new ErreurApi(401, "Ta session a expiré, reconnecte-toi.", "SESSION_EXPIREE");
+  }
+
+  // Corps vide/non-JSON (ex: proxy, 502/504, coupure réseau) : pas de code
+  // exploitable, mais on évite au moins d'afficher du JSON brut ou "".
+  return new ErreurApi(
+    reponse.status,
+    `Une erreur est survenue (${reponse.status}), réessaie dans un instant.`,
+    "ERREUR_INCONNUE"
+  );
 }
 
 /**
@@ -32,12 +93,12 @@ export async function appelerApi(chemin: string, options: RequestInit = {}) {
   });
 
   if (!reponse.ok) {
-    const detail = await reponse.text().catch(() => "");
-    throw new Error(`Erreur API ${reponse.status} sur ${chemin} : ${detail}`);
+    throw await construireErreurApi(reponse, chemin);
   }
 
   // Certaines routes (ex: POST .../rating) renvoient 204 No Content —
   // aucun corps à parser. Sans ce garde-fou, response.json() plante avec
+
   // "Unexpected end of JSON input" (bug remonté par Bourama, 2026-07-12,
   // sur le clic étoile de la note). content-length à "0" couvre aussi le
   // cas d'un corps vide envoyé avec un autre code que 204.
@@ -78,8 +139,7 @@ export async function appelerApiStream(
   });
 
   if (!reponse.ok || !reponse.body) {
-    const detail = await reponse.text().catch(() => "");
-    throw new Error(`Erreur API ${reponse.status} sur ${chemin} : ${detail}`);
+    throw await construireErreurApi(reponse, chemin);
   }
 
   const lecteur = reponse.body.getReader();
@@ -133,8 +193,7 @@ export async function appelerApiFichier(chemin: string, fichier: File) {
   });
 
   if (!reponse.ok) {
-    const detail = await reponse.text().catch(() => "");
-    throw new Error(`Erreur API ${reponse.status} sur ${chemin} : ${detail}`);
+    throw await construireErreurApi(reponse, chemin);
   }
 
   return reponse.json();
@@ -172,8 +231,7 @@ export async function ajouterFichierBibliotheque(
   });
 
   if (!reponse.ok) {
-    const detail = await reponse.text().catch(() => "");
-    throw new Error(`Erreur API ${reponse.status} : ${detail}`);
+    throw await construireErreurApi(reponse, `/api/agents/${agentId}/bibliotheque`);
   }
 
   return reponse.json();
@@ -302,24 +360,31 @@ export async function statutConnexion(service: string) {
  * Démarre une connexion OAuth : renvoie l'URL d'autorisation à ouvrir
  * (redirection complète, pas de popup) -- voir app/oauth/retour/page.tsx
  * pour la page qui traite le retour.
+ *
+ * CORRECTION (2026-07-31) : le backend renvoyait avant un statut 200 avec
+ * `{url: null, erreur: "..."}` en cas d'échec (voir api/connexions.py) --
+ * incohérent avec le reste de l'API et invisible pour tout code qui ne
+ * pense pas à lire ce champ précis. Il lève maintenant une vraie erreur
+ * (voir erreur_api() côté backend) : à catcher avec messageErreur(e),
+ * comme n'importe quel autre appel API.
  */
 export async function demarrerConnexion(service: string, agentId?: string) {
   const chemin = agentId
     ? `/api/connexions/${service}/demarrer?agent_id=${encodeURIComponent(agentId)}`
     : `/api/connexions/${service}/demarrer`;
   const resultat = await appelerApi(chemin);
-  return resultat as { url: string | null; erreur?: string };
+  return resultat as { url: string };
 }
 
 /**
  * Liste les dépôts GitHub (publics et privés) de la personne connectée --
  * voir api/connexions.py:depots_github, utilisé par le sélecteur de dépôt
- * dans BarreDeSaisie.tsx.
+ * dans BarreDeSaisie.tsx. Voir demarrerConnexion ci-dessus pour la même
+ * correction (vraie erreur levée plutôt que champ `erreur` dans le corps).
  */
 export async function depotsGithub() {
   const resultat = await appelerApi("/api/connexions/github/depots");
   return resultat as {
     depots: { nom_complet: string; prive: boolean; description: string | null; url: string }[];
-    erreur?: string;
   };
 }

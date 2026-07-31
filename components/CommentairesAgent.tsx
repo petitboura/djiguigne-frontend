@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Étape D.3 (pivot social). Contrat backend (api/agents.py) :
 // GET .../comments est public et renvoie une liste brute (pas d'enveloppe
@@ -58,7 +59,7 @@ export function CommentairesAgent({ agentId }: { agentId: string }) {
       setBrouillon("");
       charger();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoi(false);
     }

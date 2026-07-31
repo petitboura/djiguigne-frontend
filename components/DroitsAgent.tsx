@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { lireDroitsAgent, modifierDroitsAgent } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Formulaire des droits d'un agent -- categories 1 (generation, par
 // outil), 2 et 3 (serveur externe, par serveur entier). Voir
@@ -58,7 +59,7 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
         setServeursCoches(new Set(reponse.serveurs.filter((o) => o.coche).map((o) => o.nom_serveur)));
         setActionsLocalesCoches(new Set(reponse.actions_locales.filter((o) => o.coche).map((o) => o.nom_outil)));
       })
-      .catch((e) => setErreur(e.message || "Impossible de charger les droits de cet agent."));
+      .catch((e) => setErreur(messageErreur(e)));
   }, [agentId]);
 
   function basculerGeneration(nomOutil: string) {
@@ -105,7 +106,7 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
           : "Droits enregistrés (aucun changement détecté)."
       );
     } catch (e: any) {
-      setErreur(e.message || "Impossible d'enregistrer les droits pour le moment.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }

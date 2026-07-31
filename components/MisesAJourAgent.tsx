@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { formaterDate } from "@/lib/formaterDate";
 import { BoutonPartager } from "@/components/BoutonPartager";
+import { messageErreur } from "@/lib/erreurs";
 
 // Ajouté le 2026-07-15 (Bourama) : section "Mises à jour" sur la page
 // publique d'un agent -- ce que le créateur a changé, avec date,
@@ -111,7 +112,7 @@ function ItemMiseAJour({
       setJaime(r.jaime);
       setTotalLikes(r.total_likes);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiLike(false);
     }
@@ -138,7 +139,7 @@ function ItemMiseAJour({
       setBrouillon("");
       chargerCommentaires();
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiCommentaire(false);
     }

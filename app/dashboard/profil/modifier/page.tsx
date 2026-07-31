@@ -10,6 +10,7 @@ import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { ChampImage } from "@/components/ChampImage";
 import { NotificationsPushToggle } from "@/components/NotificationsPushToggle";
+import { messageErreur } from "@/lib/erreurs";
 
 // Formulaire d'édition de profil, déplacé depuis app/dashboard/page.tsx
 // le 2026-07-12 (Bourama : "Mon espace" doit maintenant ressembler au
@@ -97,7 +98,7 @@ export default function PageModifierProfil() {
       }
       setMessageProfil("Profil enregistré.");
     } catch (e) {
-      setMessageProfil(e instanceof Error ? e.message : "Erreur inconnue.");
+      setMessageProfil(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
@@ -211,7 +212,7 @@ function SectionZoneDanger({ userId }: { userId: string }) {
       await appelerApi(`/api/agents/${agentId}`, { method: "DELETE" });
       setAgents((a) => (a ? a.filter((x) => x.id !== agentId) : a));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnSuppression(null);
     }
@@ -225,7 +226,7 @@ function SectionZoneDanger({ userId }: { userId: string }) {
       await appelerApi(`/api/posts/${postId}`, { method: "DELETE" });
       setHistoires((h) => (h ? h.filter((x) => x.id !== postId) : h));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnSuppression(null);
     }
@@ -245,7 +246,7 @@ function SectionZoneDanger({ userId }: { userId: string }) {
       await supabase.auth.signOut();
       router.push("/");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
       setEnSuppression(null);
     }
   }

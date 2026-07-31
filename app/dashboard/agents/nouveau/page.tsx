@@ -12,6 +12,7 @@ import { ChampImage } from "@/components/ChampImage";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { PopupCategories, type Categorie } from "@/components/PopupCategories";
 import { DroitsAgentCreation } from "@/components/DroitsAgentCreation";
+import { messageErreur } from "@/lib/erreurs";
 
 // Étape D.6 (pivot social) : formulaire de création d'agent, nouveau flow
 // (nom → icône → image vitrine → description →
@@ -230,7 +231,7 @@ export default function PageCreerAgent() {
       });
       idAgentCree = reponse.id;
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
       setEnvoi(false);
       return;
     }
@@ -246,7 +247,7 @@ export default function PageCreerAgent() {
       } catch (e) {
         window.alert(
           `L'IA est créée, mais le PDF n'a pas pu être indexé : ${
-            e instanceof Error ? e.message : "erreur inconnue"
+            messageErreur(e)
           }. Tu pourras réessayer depuis "Mes IA".`
         );
       }

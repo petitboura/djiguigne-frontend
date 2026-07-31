@@ -8,6 +8,7 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
+import { messageErreur } from "@/lib/erreurs";
 
 // Page de chat qui remplace chat.py (Streamlit). Consomme la
 // nouvelle route /api/chat (api/chat.py) en streaming, au lieu d'appeler
@@ -323,7 +324,7 @@ export function ChatIA({
         // message générique masquait la vraie cause (format refusé,
         // fichier trop lourd, erreur serveur précise...) derrière un seul
         // texte, impossible à diagnostiquer depuis le retour utilisateur.
-        const detail = e instanceof Error ? e.message : null;
+        const detail = messageErreur(e);
         const prefixe =
           typeFichier === "image"
             ? "Je n'ai pas pu envoyer l'image jointe"

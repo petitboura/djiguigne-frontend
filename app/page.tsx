@@ -7,6 +7,7 @@ import { AgentCard, type AgentResume } from "@/components/AgentCard";
 import { CreateurCard, type CreateurResume } from "@/components/CreateurCard";
 import { PopupCategories, type Categorie } from "@/components/PopupCategories";
 import { PostCard, type PostResume } from "@/components/PostCard";
+import { messageErreur } from "@/lib/erreurs";
 
 // Étape D.2 (pivot social) : "/" est le feed PUBLIC, pas une page qui
 // exige une connexion — c'est un
@@ -91,7 +92,7 @@ export default function PageAccueil() {
         if (annule) return;
         setFeed({
           statut: "erreur",
-          message: e instanceof Error ? e.message : "Erreur inconnue",
+          message: messageErreur(e),
         });
       });
 
@@ -120,7 +121,7 @@ export default function PageAccueil() {
         if (annule) return;
         setFeedCreateurs({
           statut: "erreur",
-          message: e instanceof Error ? e.message : "Erreur inconnue",
+          message: messageErreur(e),
         });
       });
 
@@ -150,7 +151,7 @@ export default function PageAccueil() {
         if (annule) return;
         setFeedsPosts((f) => ({
           ...f,
-          [type]: { statut: "erreur", message: e instanceof Error ? e.message : "Erreur inconnue" },
+          [type]: { statut: "erreur", message: messageErreur(e) },
         }));
       });
 
@@ -183,7 +184,7 @@ export default function PageAccueil() {
           if (annule) return;
           setRecherche({
             statut: "erreur",
-            message: e instanceof Error ? e.message : "Erreur inconnue",
+            message: messageErreur(e),
           });
         });
     }, 300);

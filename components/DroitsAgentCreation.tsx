@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { lireRegistreOutils } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Variante de DroitsAgent.tsx pour le formulaire de CRÉATION : l'agent
 // n'existe pas encore, donc pas d'agentId, pas de lecture "coche" déjà
@@ -48,7 +49,7 @@ export function DroitsAgentCreation({
   useEffect(() => {
     lireRegistreOutils()
       .then(setRegistre)
-      .catch((e) => setErreur(e.message || "Impossible de charger les outils disponibles."));
+      .catch((e) => setErreur(messageErreur(e)));
   }, []);
 
   useEffect(() => {

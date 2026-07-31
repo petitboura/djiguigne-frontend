@@ -7,6 +7,7 @@ import { appelerApi } from "@/lib/api";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
+import { messageErreur } from "@/lib/erreurs";
 
 // Ajouté le 2026-07-21 (demande Bourama : l'utilisateur final doit pouvoir
 // voir/modifier/effacer ce que la plateforme retient de lui d'une session
@@ -41,7 +42,7 @@ export default function PageMaMemoire() {
     if (!session) return;
     appelerApi("/api/memoire")
       .then((r: { resume: string }) => setResume(r.resume || ""))
-      .catch((e) => setErreur(e instanceof Error ? e.message : "Erreur inconnue."))
+      .catch((e) => setErreur(messageErreur(e)))
       .finally(() => setChargement(false));
   }, [session]);
 
@@ -56,7 +57,7 @@ export default function PageMaMemoire() {
       });
       setMessage("Mémoire enregistrée.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
@@ -76,7 +77,7 @@ export default function PageMaMemoire() {
       setResume("");
       setMessage("Mémoire effacée.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }

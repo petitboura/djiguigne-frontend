@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { PostCard, type PostResume } from "@/components/PostCard";
+import { messageErreur } from "@/lib/erreurs";
 
 // Ajouté le 2026-07-15 (Bourama : "dans son profil aussi, les trois
 // sections") -- mêmes 3 onglets (texte + ligne de couleur) que l'accueil
@@ -45,7 +46,7 @@ export function SectionsPostsCreateur({ userId }: { userId: string }) {
         if (annule) return;
         setFeeds((f) => ({
           ...f,
-          [ongletActif]: { statut: "erreur", message: e instanceof Error ? e.message : "Erreur inconnue" },
+          [ongletActif]: { statut: "erreur", message: messageErreur(e) },
         }));
       });
 

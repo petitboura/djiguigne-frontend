@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { RecadreurImage } from "@/components/RecadreurImage";
+import { messageErreur } from "@/lib/erreurs";
 
 // Réutilisé par le feed (D.2), la recherche (D.2) et le portfolio créateur
 // (D.4) — un seul endroit à faire évoluer si l'apparence d'une carte agent
@@ -81,7 +82,7 @@ export function AgentCard({
       });
       setDonnees((d) => ({ ...d, actif: nouveauActif }));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiActif(false);
     }
@@ -98,7 +99,7 @@ export function AgentCard({
       setDonnees((d) => ({ ...d, description: brouillonDescription }));
       setEdition(null);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiDescription(false);
     }
@@ -116,7 +117,7 @@ export function AgentCard({
       setDonnees((d) => ({ ...d, icone_page: nouvelleIcone }));
       setEdition(null);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiIcone(false);
     }
@@ -135,7 +136,7 @@ export function AgentCard({
       });
       setDonnees((d) => ({ ...d, image_vitrine_url: upload.url }));
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoiImage(false);
       if (inputImageRef.current) inputImageRef.current.value = "";

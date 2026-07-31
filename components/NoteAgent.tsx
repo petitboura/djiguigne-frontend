@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Étape D.3 (pivot social) : note 1-5, PAS un like (clarification
 // explicite de Bourama sur ce point). Contrat backend
@@ -49,7 +50,7 @@ export function NoteAgent({ agentId }: { agentId: string }) {
       const r = await appelerApi(`/api/agents/${agentId}/rating`);
       setAgrege(r);
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnvoi(false);
     }

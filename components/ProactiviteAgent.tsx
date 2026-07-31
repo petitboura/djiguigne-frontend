@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Proactivité (25/07) : le créateur décide QUAND (délai d'inactivité), à
 // quelle fréquence max, et POURQUOI/COMMENT (instructions libres, comme le
@@ -52,7 +53,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
           proactivite_instructions: r.proactivite_instructions,
         })
       )
-      .catch((e) => setErreur(e instanceof Error ? e.message : "Erreur inconnue."));
+      .catch((e) => setErreur(messageErreur(e)));
   }, [agentId]);
 
   async function enregistrer() {
@@ -72,7 +73,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
       });
       setMessage("Proactivité enregistrée.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Impossible d'enregistrer pour le moment.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
@@ -90,7 +91,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
       });
       setResultatTest(r as { relance: string | null; aucune_conversation: boolean; erreur?: string | null });
     } catch (e) {
-      setErreurTest(e instanceof Error ? e.message : "Impossible de tester pour le moment.");
+      setErreurTest(messageErreur(e));
     } finally {
       setTest(false);
     }

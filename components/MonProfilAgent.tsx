@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 
 // Ajouté le 2026-07-21 (demande Bourama : l'utilisateur final doit pouvoir
 // voir/modifier/effacer ce que l'IA a retenu sur lui, pas seulement le
@@ -55,7 +56,7 @@ export function MonProfilAgent({
       });
       setMessage("Enregistré.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
@@ -70,7 +71,7 @@ export function MonProfilAgent({
       setValeurs({});
       setMessage("Profil effacé.");
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
     }
