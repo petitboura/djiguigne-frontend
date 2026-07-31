@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Home, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { NoteAgent } from "@/components/NoteAgent";
@@ -262,15 +262,20 @@ export function SidebarChat({
             depuis l'app installée (PWA globale) demandait de repasser par
             la fiche de CET agent d'abord. Bouton distinct de "Retour à
             l'agent" ci-dessus : l'un revient à l'agent courant, l'autre
-            permet d'en choisir un autre. */}
+            permet d'en choisir un autre.
+            Renommé "Changer d'IA" et repointé vers /choisir-agent le 31/07 :
+            `/` redirige maintenant automatiquement vers le premier_agent_id
+            déjà choisi (voir app/page.tsx) -- pointer encore vers `/`
+            aurait ramené tout droit au même chat en boucle. /choisir-agent
+            réutilise le même SelecteurAgent mais sans jamais rediriger. */}
         <Link
-          href="/"
+          href="/choisir-agent"
           className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
         >
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <Home size={18} />
+            <Shuffle size={18} />
           </span>
-          <LibelleRail ouverte={ouverte}>Vitrine</LibelleRail>
+          <LibelleRail ouverte={ouverte}>Changer d'IA</LibelleRail>
         </Link>
 
         {connecte && aDesMessages && (
@@ -445,11 +450,11 @@ export function SidebarChat({
           </Link>
 
           <Link
-            href="/"
+            href="/choisir-agent"
             className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
           >
-            <Home size={16} />
-            Vitrine
+            <Shuffle size={16} />
+            Changer d'IA
           </Link>
 
           {connecte && aDesMessages && (
