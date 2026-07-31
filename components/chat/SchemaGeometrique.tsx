@@ -125,7 +125,13 @@ export function SchemaGeometrique({ code }: { code: string }) {
   let yMin = Math.min(...points.map((p) => p.y));
   let yMax = Math.max(...points.map((p) => p.y));
   for (const el of schema.elements || []) {
-    if (el.type === "cercle") {
+    // CORRECTIF 2026-07-31 (audit UX) : sans la vérification de rayon,
+    // un cercle mal formé (rayon manquant/non numérique) donnait
+    // `c.x - undefined` = NaN, qui contaminait xMin/xMax/yMin/yMax via
+    // Math.min/Math.max (NaN se propage) -- résultat : TOUT le schéma
+    // disparaissait (coordonnées SVG invalides pour chaque élément), pas
+    // seulement le cercle fautif.
+    if (el.type === "cercle" && typeof el.rayon === "number" && Number.isFinite(el.rayon) && el.rayon > 0) {
       const c = parId.get(el.centre);
       if (c) {
         xMin = Math.min(xMin, c.x - el.rayon);
@@ -306,7 +312,14 @@ export function SchemaGeometrique({ code }: { code: string }) {
           }
           if (el.type === "cercle") {
             const c = parId.get(el.centre);
-            if (!c) return null;
+            // CORRECTIF 2026-07-31 (audit UX, même famille que le fix
+            // "polygone" ci-dessus) : un rayon manquant/invalide donnait
+            // `r={NaN}` -- un attribut SVG invalide, silencieusement
+            // ignoré par le navigateur. Résultat : le cercle disparaît
+            // sans aucune erreur, alors que le reste du schéma s'affiche
+            // normalement -- plus sournois qu'un plantage complet,
+            // puisque rien ne signale qu'un élément manque.
+            if (!c || typeof el.rayon !== "number" || !Number.isFinite(el.rayon) || el.rayon <= 0) return null;
             const [cx, cy] = versSvg(c.x, c.y);
             return (
               <circle
