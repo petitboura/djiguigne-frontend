@@ -153,15 +153,16 @@ export function FichierChip({ href, nom }: { href: string; nom: string }) {
         enfant={
           <iframe
             src={href}
-            // CORRECTIF 2026-07-30 (audit sécurité) : cette iframe n'avait
-            // aucun attribut sandbox, contrairement à WidgetSandbox.tsx. Un
-            // PDF ne devrait jamais avoir besoin d'exécuter quoi que ce
-            // soit -- sandbox="" (aucune permission accordée) n'empêche
-            // pas le visionneur PDF natif du navigateur d'afficher le
-            // document, ça bloque juste tout JS/accès à l'origine si le
-            // fichier servi n'était, pour une raison quelconque, pas
-            // vraiment un PDF.
-            sandbox=""
+            // CORRECTIF 2026-07-31 : sandbox="" a ete retire -- testé en
+            // conditions réelles par Bourama, ça empêche le PDF de
+            // s'afficher du tout. Comportement documenté et connu des
+            // navigateurs (Chrome/WebKit) : le visionneur PDF intégré est
+            // traité comme un "plugin", et sandbox désactive tous les
+            // plugins, quel que soit le jeu de permissions accordées.
+            // Le gain de sécurité était de toute façon marginal (défense
+            // en profondeur seulement, contingente au correctif path
+            // traversal déjà en place côté backend) -- pas justifié face
+            // à une fonctionnalité cassée pour tout le monde.
             className="h-[70vh] w-full rounded-lg border border-dj-bordure"
             title={nom}
           />
