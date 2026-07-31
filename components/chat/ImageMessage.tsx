@@ -92,6 +92,20 @@ export function ImageMessage({ src, alt }: { src?: string; alt?: string }) {
           </button>
           <button
             aria-label="Fermer"
+            // CORRECTIF 2026-07-31 (audit sécurité/UX) : ce bouton n'avait
+            // aucun onClick propre -- il ne fermait la fenêtre que parce
+            // que le clic remontait par accident (bubbling) jusqu'au fond
+            // qui, lui, a bien un onClick={() => setOuverte(false)}.
+            // Fonctionnait aujourd'hui, mais fragile : une future
+            // modification du fond (autre interaction ajoutée dessus)
+            // pourrait casser la fermeture sans que ce soit évident à la
+            // lecture du code -- même précaution que le bouton
+            // "Télécharger" juste au-dessus, qui lui a déjà son propre
+            // onClick + stopPropagation.
+            onClick={(e) => {
+              e.stopPropagation();
+              setOuverte(false);
+            }}
             className="absolute right-5 top-5 text-dj-texte-muet hover:text-dj-texte"
           >
             <X size={22} />
