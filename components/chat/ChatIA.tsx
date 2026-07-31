@@ -228,7 +228,8 @@ export function ChatIA({
     localisation: LocalisationJointe = null,
     texteColle: string | null = null,
     rechercheForcee: boolean = false,
-    outilsForces: string[] = []
+    outilsForces: string[] = [],
+    ignorerRouteurOutils: boolean = false
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -361,6 +362,9 @@ export function ChatIA({
           // BarreDeSaisie.tsx:OUTILS_DISPONIBLES et
           // core/mcp_tools.py:lister_tous_les_outils côté backend.
           outil_force: outilsForces,
+          // Bouton "Aucun" (31/07, demande Bourama) -- voir
+          // ignorerSuggestionOutils ci-dessous.
+          ignorer_suggestion_outils: ignorerRouteurOutils,
         },
         (evenement) => traiterEvenement(evenement)
       );
@@ -400,6 +404,20 @@ export function ChatIA({
     if (!messageUtilisateur) return;
     majMessages((prec) => prec.slice(0, index - 1));
     envoyerMessage(messageUtilisateur.content, "moyenne", null, null, null, false, nomsOutils);
+  }
+
+  function ignorerSuggestionOutils(index: number) {
+    // Bouton "Aucun" (31/07, demande Bourama : le routeur se trompe
+    // souvent -- suggère un outil sans rapport avec la question, et
+    // l'utilisateur se retrouvait bloqué devant des boutons à choisir
+    // pour rien). Même mécanique que relancerAvecOutils (retire la paire,
+    // renvoie la question d'origine), mais avec ignorerRouteurOutils=true
+    // pour que le backend réponde normalement SANS repasser par le
+    // routeur (sinon la même suggestion inutile pourrait réapparaître).
+    const messageUtilisateur = messages[index - 1];
+    if (!messageUtilisateur) return;
+    majMessages((prec) => prec.slice(0, index - 1));
+    envoyerMessage(messageUtilisateur.content, "moyenne", null, null, null, false, [], true);
   }
 
   function editerMessage(index: number, nouveauTexte: string) {
@@ -505,6 +523,7 @@ export function ChatIA({
               outilsSuggeres={message.outilsSuggeres}
               fichiersGeneres={message.fichiersGeneres}
               onOutilsChoisis={(noms) => relancerAvecOutils(index, noms)}
+              onIgnorerSuggestion={() => ignorerSuggestionOutils(index)}
               onRegenerer={
                 message.role === "assistant"
                   ? () => regenererDepuis(index)

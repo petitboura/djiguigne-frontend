@@ -223,6 +223,7 @@ export function BulleMessage({
   outilsResultats,
   outilsSuggeres,
   onOutilsChoisis,
+  onIgnorerSuggestion,
   fichiersGeneres,
 }: {
   message: MessageAffiche;
@@ -248,6 +249,11 @@ export function BulleMessage({
   // menu manuel Outils) : un seul appel avec la liste complète des outils
   // cochés au moment de la validation, plutôt qu'un rappel par outil.
   onOutilsChoisis?: (nomsOutils: string[]) => void;
+  // Bouton "Aucun" (31/07, demande Bourama) : toujours affiché à côté des
+  // suggestions -- le routeur se trompe parfois, l'utilisateur doit
+  // pouvoir décliner sans être bloqué devant un choix qui ne correspond
+  // pas à sa question.
+  onIgnorerSuggestion?: () => void;
   fichiersGeneres?: { nomOutil: string; fichiers: { url: string; nom: string }[] }[];
 }) {
   const [copie, setCopie] = useState(false);
@@ -606,7 +612,12 @@ export function BulleMessage({
           immédiate (pas de coche/validation à part) ; PLUSIEURS outils ->
           coche un ou plusieurs boutons, "Valider" (ou touche Entrée, voir
           l'effet ci-dessus) relance avec la liste complète dans
-          outil_force -- voir relancerAvecOutils dans ChatIA.tsx. */}
+          outil_force -- voir relancerAvecOutils dans ChatIA.tsx.
+          Bouton "Aucun" (31/07, demande Bourama) : le routeur se trompe
+          souvent (suggère un outil sans rapport avec la question) --
+          toujours affiché à côté, pour ne jamais bloquer l'utilisateur
+          devant un choix qui ne l'intéresse pas. Voir
+          ignorerSuggestionOutils dans ChatIA.tsx. */}
       {!estUtilisateur && outilsSuggeres && outilsSuggeres.length > 0 && (
         <div className="my-1.5 flex flex-wrap items-center gap-2">
           {outilsSuggeres.length === 1 ? (
@@ -664,6 +675,12 @@ export function BulleMessage({
               )}
             </>
           )}
+          <button
+            onClick={() => onIgnorerSuggestion?.()}
+            className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-3 py-1.5 text-[13px] font-medium text-dj-texte-muet transition-colors hover:border-dj-bordure-forte hover:text-dj-texte"
+          >
+            Aucun
+          </button>
         </div>
       )}
 
