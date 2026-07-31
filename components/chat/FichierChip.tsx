@@ -42,6 +42,31 @@ const EXTENSIONS_FICHIER: Record<string, { icone: typeof File; libelle: string }
 
 const EXTENSIONS_IMAGE = new Set(["png", "jpg", "jpeg", "webp"]);
 
+// CORRECTIF 2026-07-31 (audit sécurité, alternative après l'échec du
+// correctif sandbox="" du 31/07 -- voir plus bas, ça cassait le rendu
+// PDF natif du navigateur). La vraie question de sécurité n'est pas
+// "cette iframe a-t-elle un sandbox" mais "cette iframe affiche-t-elle
+// vraiment un fichier QUE NOUS AVONS GÉNÉRÉ" : `href` vient soit d'un
+// résultat d'outil (toujours une URL Supabase de notre propre bucket,
+// fiable), soit d'un lien markdown écrit librement par le modèle dans
+// son texte (voir BulleMessage.tsx) -- ce second cas n'est, en théorie,
+// pas garanti de pointer vers notre stockage (le system prompt le lui
+// interdit, mais ce n'est qu'une consigne, pas une contrainte technique). On
+// vérifie donc l'origine avant d'intégrer quoi que ce soit en iframe :
+// seul notre propre stockage Supabase a droit à l'aperçu intégré,
+// n'importe quelle autre origine retombe sur une carte de téléchargement
+// simple (pas d'iframe du tout) -- sans jamais toucher au rendu normal
+// des vrais PDF générés, qui viennent toujours de cette origine.
+function estOrigineDeConfiance(href: string): boolean {
+  const urlSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!urlSupabase) return false;
+  try {
+    return new URL(href).origin === new URL(urlSupabase).origin;
+  } catch {
+    return false;
+  }
+}
+
 // Détecte si un lien markdown pointe vers un fichier "document" (PDF,
 // Word, Excel, PowerPoint...) via son extension d'URL, et si oui le
 // remplace par une carte fichier au lieu d'un <a> souligné brut. Le
@@ -143,7 +168,12 @@ export function FichierChip({ href, nom }: { href: string; nom: string }) {
   // iframe sans lib supplémentaire -- se déroule dans le fil comme le
   // code et les widgets (voir BlocExpansible.tsx). Plus de panneau
   // latéral (retiré, 2026-07-20, demande de Bourama).
-  if (infos === "pdf") {
+  //
+  // L'aperçu intégré (iframe) n'est proposé que si l'URL vient de notre
+  // propre stockage Supabase (voir estOrigineDeConfiance ci-dessus) --
+  // n'importe quelle autre origine retombe sur la carte téléchargement
+  // générique plus bas, jamais d'iframe.
+  if (infos === "pdf" && estOrigineDeConfiance(href)) {
     return (
       <BlocExpansible
         titre={nom}
@@ -159,10 +189,8 @@ export function FichierChip({ href, nom }: { href: string; nom: string }) {
             // navigateurs (Chrome/WebKit) : le visionneur PDF intégré est
             // traité comme un "plugin", et sandbox désactive tous les
             // plugins, quel que soit le jeu de permissions accordées.
-            // Le gain de sécurité était de toute façon marginal (défense
-            // en profondeur seulement, contingente au correctif path
-            // traversal déjà en place côté backend) -- pas justifié face
-            // à une fonctionnalité cassée pour tout le monde.
+            // La vraie protection est désormais la vérification d'origine
+            // ci-dessus, pas un attribut sur l'iframe elle-même.
             className="h-[70vh] w-full rounded-lg border border-dj-bordure"
             title={nom}
           />
