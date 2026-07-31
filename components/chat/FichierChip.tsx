@@ -150,7 +150,22 @@ export function FichierChip({ href, nom }: { href: string; nom: string }) {
         icone={Icone}
         sousTitre={libelle}
         hrefTelechargement={href}
-        enfant={<iframe src={href} className="h-[70vh] w-full rounded-lg border border-dj-bordure" title={nom} />}
+        enfant={
+          <iframe
+            src={href}
+            // CORRECTIF 2026-07-30 (audit sécurité) : cette iframe n'avait
+            // aucun attribut sandbox, contrairement à WidgetSandbox.tsx. Un
+            // PDF ne devrait jamais avoir besoin d'exécuter quoi que ce
+            // soit -- sandbox="" (aucune permission accordée) n'empêche
+            // pas le visionneur PDF natif du navigateur d'afficher le
+            // document, ça bloque juste tout JS/accès à l'origine si le
+            // fichier servi n'était, pour une raison quelconque, pas
+            // vraiment un PDF.
+            sandbox=""
+            className="h-[70vh] w-full rounded-lg border border-dj-bordure"
+            title={nom}
+          />
+        }
       />
     );
   }
