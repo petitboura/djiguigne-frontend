@@ -157,6 +157,33 @@ export function GraphiqueDonnees({ code }: { code: string }) {
   const cleAxeX = Object.keys(chart.data[0])[0];
   const clesSeries = Object.keys(chart.data[0]).filter((c) => c !== cleAxeX);
 
+  // CORRECTIF 2026-07-31 (audit UX) : pour "pie", la convention documentée
+  // en tête de fichier est {name, value} -- mais avant, la clé utilisée
+  // pour la valeur du camembert était choisie par pure POSITION dans
+  // l'objet ("la deuxième clé"), jamais par son nom réel. Si le modèle
+  // inversait l'ordre ({value, name} au lieu de {name, value}) ou
+  // n'incluait qu'une seule clé, le camembert se retrouvait à tracer du
+  // texte comme s'il s'agissait de nombres -- résultat : un camembert
+  // vide ou cassé, sans aucun message pour expliquer pourquoi.
+  // On cherche maintenant la clé "value" par son NOM si elle existe,
+  // avec repli sur la position seulement si absente -- et on vérifie
+  // que les valeurs obtenues sont bien numériques avant de tracer quoi
+  // que ce soit.
+  const cleNomPie = "name" in chart.data[0] ? "name" : cleAxeX;
+  const cleValeurPie = "value" in chart.data[0] ? "value" : clesSeries[0];
+  const pieValide =
+    chart.type !== "pie" ||
+    (cleValeurPie !== undefined && chart.data.every((d) => typeof d[cleValeurPie] === "number"));
+
+  if (chart.type === "pie" && !pieValide) {
+    return (
+      <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
+        <span className="text-[#f87171]">Graphique invalide :</span> un camembert attend des paires{" "}
+        <code className="text-dj-texte">{"{ name, value }"}</code> avec des valeurs numériques.
+      </div>
+    );
+  }
+
   return (
     <div
       ref={conteneurRef}
@@ -198,8 +225,8 @@ export function GraphiqueDonnees({ code }: { code: string }) {
           <PieChart>
             <Pie
               data={chart.data}
-              dataKey={clesSeries[0] || "value"}
-              nameKey={cleAxeX}
+              dataKey={cleValeurPie}
+              nameKey={cleNomPie}
               outerRadius={90}
               label
             >
