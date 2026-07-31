@@ -67,6 +67,28 @@ export default function PageCreerAgent() {
   const [categorie, setCategorie] = useState<Categorie | null>(null);
   const [popupCategorieOuvert, setPopupCategorieOuvert] = useState(false);
 
+  // Ajouté le 2026-07-31 (Bourama : les 5 boutons de la page Produit du
+  // vitrine -- Matières/Métier/Filière/Domaine/Langues africaines --
+  // n'avaient encore aucun champ pour être renseignés à la création.
+  // Tous facultatifs, contrairement à `categorie` ci-dessus qui reste
+  // obligatoire. `matiere` a une liste fixe (voir MATIERES côté backend,
+  // chargée via GET /api/matieres qui indique aussi la disponibilité) ;
+  // les 4 autres sont du texte libre, une seule IA par valeur (même
+  // contrainte UNIQUE en base que `matiere`).
+  const [matiere, setMatiere] = useState("");
+  const [matiereDetail, setMatiereDetail] = useState("");
+  const [matieresListe, setMatieresListe] = useState<{ nom: string; disponible: boolean }[]>([]);
+  const [metier, setMetier] = useState("");
+  const [filiere, setFiliere] = useState("");
+  const [domaine, setDomaine] = useState("");
+  const [langueAfricaine, setLangueAfricaine] = useState("");
+
+  useEffect(() => {
+    appelerApi("/api/matieres")
+      .then((liste) => setMatieresListe(liste ?? []))
+      .catch(() => setMatieresListe([])); // facultatif : un échec ne bloque pas le formulaire
+  }, []);
+
   const [ton, setTon] = useState(TON_OPTIONS[0]);
   const [postureGenerale, setPostureGenerale] = useState("");
   const [limitesGlobales, setLimitesGlobales] = useState("");
@@ -165,6 +187,10 @@ export default function PageCreerAgent() {
       setErreur("Choisis une catégorie pour ton agent.");
       return;
     }
+    if (matiere === "Autre" && !matiereDetail.trim()) {
+      setErreur('Précise la matière dans le champ "Autre".');
+      return;
+    }
 
     setEnvoi(true);
     let idAgentCree: string | null = null;
@@ -191,6 +217,12 @@ export default function PageCreerAgent() {
           description,
           sous_titre: sousTitre,
           categorie_id: categorie?.id,
+          matiere: matiere || null,
+          matiere_detail: matiere === "Autre" ? matiereDetail || null : null,
+          metier: metier || null,
+          filiere: filiere || null,
+          domaine: domaine || null,
+          langue_africaine: langueAfricaine || null,
           profil_utilisateur_schema: profilChamps
             .filter((c) => c.nom.trim())
             .map((c) => ({ nom: c.nom.trim(), description: c.description.trim() })),
@@ -342,6 +374,87 @@ export default function PageCreerAgent() {
                 rows={3}
                 className={champClasse}
               />
+            </div>
+
+            <div className="flex flex-col gap-4 rounded-xl border border-dj-bordure p-4">
+              <p className="text-sm font-medium text-dj-texte">
+                Classification (facultatif)
+              </p>
+              <p className="-mt-2 text-xs text-dj-texte-muet">
+                Sert à faire apparaître ton IA dans les sections de la page
+                Produit du site vitrine. Une seule IA par valeur : dès qu'une
+                valeur est prise, elle n'est plus disponible pour un autre agent.
+              </p>
+
+              <div>
+                <label className={labelClasse}>Matière</label>
+                <select
+                  value={matiere}
+                  onChange={(e) => setMatiere(e.target.value)}
+                  className={champClasse}
+                >
+                  <option value="">Aucune</option>
+                  {matieresListe.map((m) => (
+                    <option key={m.nom} value={m.nom} disabled={!m.disponible && m.nom !== matiere}>
+                      {m.nom}
+                      {!m.disponible && m.nom !== matiere ? " (déjà prise)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {matiere === "Autre" && (
+                  <input
+                    type="text"
+                    value={matiereDetail}
+                    onChange={(e) => setMatiereDetail(e.target.value)}
+                    placeholder="Précise la matière..."
+                    className={`${champClasse} mt-2`}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className={labelClasse}>Métier</label>
+                <input
+                  type="text"
+                  value={metier}
+                  onChange={(e) => setMetier(e.target.value)}
+                  placeholder="Ex : Comptabilité"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Filière</label>
+                <input
+                  type="text"
+                  value={filiere}
+                  onChange={(e) => setFiliere(e.target.value)}
+                  placeholder="Ex : MPSI"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Domaine</label>
+                <input
+                  type="text"
+                  value={domaine}
+                  onChange={(e) => setDomaine(e.target.value)}
+                  placeholder="Ex : Entrepreneuriat"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Langue africaine</label>
+                <input
+                  type="text"
+                  value={langueAfricaine}
+                  onChange={(e) => setLangueAfricaine(e.target.value)}
+                  placeholder="Ex : Bambara"
+                  className={champClasse}
+                />
+              </div>
             </div>
 
             <div>

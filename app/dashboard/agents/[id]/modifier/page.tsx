@@ -36,6 +36,13 @@ type AgentEditable = {
   placeholder_saisie: string;
   actif: boolean;
   categorie_id: string | null;
+  // Ajouté le 2026-07-31, voir la page de création (même commentaire).
+  matiere: string | null;
+  matiere_detail: string | null;
+  metier: string | null;
+  filiere: string | null;
+  domaine: string | null;
+  langue_africaine: string | null;
   profil_utilisateur_schema: { nom: string; description: string }[];
 };
 
@@ -78,6 +85,24 @@ export default function PageModifierAgent() {
   const [actif, setActif] = useState(true);
   const [categorie, setCategorie] = useState<Categorie | null>(null);
   const [popupCategorieOuvert, setPopupCategorieOuvert] = useState(false);
+
+  // Ajouté le 2026-07-31 (voir la page de création pour le contexte
+  // complet -- même logique ici : facultatifs, matiere a une liste fixe
+  // avec disponibilité via GET /api/matieres, les 4 autres en texte
+  // libre).
+  const [matiere, setMatiere] = useState("");
+  const [matiereDetail, setMatiereDetail] = useState("");
+  const [matieresListe, setMatieresListe] = useState<{ nom: string; disponible: boolean }[]>([]);
+  const [metier, setMetier] = useState("");
+  const [filiere, setFiliere] = useState("");
+  const [domaine, setDomaine] = useState("");
+  const [langueAfricaine, setLangueAfricaine] = useState("");
+
+  useEffect(() => {
+    appelerApi("/api/matieres")
+      .then((liste) => setMatieresListe(liste ?? []))
+      .catch(() => setMatieresListe([]));
+  }, []);
 
   // Même fonctionnalité que la page de création (2026-07-21), voir
   // ChampProfilUtilisateur côté api/agents.py.
@@ -135,6 +160,12 @@ export default function PageModifierAgent() {
         setLienNotion(r.notion_page_id || "");
         setTexteLibre(r.texte_libre || "");
         setActif(r.actif);
+        setMatiere(r.matiere || "");
+        setMatiereDetail(r.matiere_detail || "");
+        setMetier(r.metier || "");
+        setFiliere(r.filiere || "");
+        setDomaine(r.domaine || "");
+        setLangueAfricaine(r.langue_africaine || "");
         setProfilChamps(r.profil_utilisateur_schema || []);
         if (r.categorie_id) {
           const idCategorie = r.categorie_id;
@@ -168,6 +199,10 @@ export default function PageModifierAgent() {
 
   async function enregistrer(e: React.FormEvent) {
     e.preventDefault();
+    if (matiere === "Autre" && !matiereDetail.trim()) {
+      setErreur('Précise la matière dans le champ "Autre".');
+      return;
+    }
     setEnregistrement(true);
     setMessage(null);
     setErreur(null);
@@ -186,6 +221,12 @@ export default function PageModifierAgent() {
           placeholder_saisie: placeholderSaisie,
           actif,
           categorie_id: categorie?.id,
+          matiere: matiere || null,
+          matiere_detail: matiere === "Autre" ? matiereDetail || null : null,
+          metier: metier || null,
+          filiere: filiere || null,
+          domaine: domaine || null,
+          langue_africaine: langueAfricaine || null,
           profil_utilisateur_schema: profilChamps
             .filter((c) => c.nom.trim())
             .map((c) => ({ nom: c.nom.trim(), description: c.description.trim() })),
@@ -326,6 +367,86 @@ export default function PageModifierAgent() {
                 rows={3}
                 className={champClasse}
               />
+            </div>
+
+            <div className="flex flex-col gap-4 rounded-xl border border-dj-bordure p-4">
+              <p className="text-sm font-medium text-dj-texte">
+                Classification (facultatif)
+              </p>
+              <p className="-mt-2 text-xs text-dj-texte-muet">
+                Sert à faire apparaître ton IA dans les sections de la page
+                Produit du site vitrine. Une seule IA par valeur.
+              </p>
+
+              <div>
+                <label className={labelClasse}>Matière</label>
+                <select
+                  value={matiere}
+                  onChange={(e) => setMatiere(e.target.value)}
+                  className={champClasse}
+                >
+                  <option value="">Aucune</option>
+                  {matieresListe.map((m) => (
+                    <option key={m.nom} value={m.nom} disabled={!m.disponible && m.nom !== matiere}>
+                      {m.nom}
+                      {!m.disponible && m.nom !== matiere ? " (déjà prise)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {matiere === "Autre" && (
+                  <input
+                    type="text"
+                    value={matiereDetail}
+                    onChange={(e) => setMatiereDetail(e.target.value)}
+                    placeholder="Précise la matière..."
+                    className={`${champClasse} mt-2`}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className={labelClasse}>Métier</label>
+                <input
+                  type="text"
+                  value={metier}
+                  onChange={(e) => setMetier(e.target.value)}
+                  placeholder="Ex : Comptabilité"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Filière</label>
+                <input
+                  type="text"
+                  value={filiere}
+                  onChange={(e) => setFiliere(e.target.value)}
+                  placeholder="Ex : MPSI"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Domaine</label>
+                <input
+                  type="text"
+                  value={domaine}
+                  onChange={(e) => setDomaine(e.target.value)}
+                  placeholder="Ex : Entrepreneuriat"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Langue africaine</label>
+                <input
+                  type="text"
+                  value={langueAfricaine}
+                  onChange={(e) => setLangueAfricaine(e.target.value)}
+                  placeholder="Ex : Bambara"
+                  className={champClasse}
+                />
+              </div>
             </div>
 
             <div>
