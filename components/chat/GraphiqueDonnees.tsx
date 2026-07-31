@@ -45,10 +45,64 @@ type Chart = {
 // dj-surface pour rester lisible hors du thème sombre de l'app), puis
 // exporté en PNG. Différent du bloc `chart` lui-même : celui-ci reste
 // interactif dans le fil, le PNG est un instantané figé téléchargeable.
+// CORRECTIF 2026-07-31 (audit UX, signalé par Bourama en test réel) : la
+// légende (noms des séries/parts, ex. "Banane"/"Poire"/"Pomme") disparaît
+// du PNG téléchargé alors qu'elle est bien visible dans le chat. Cause :
+// recharts rend sa <Legend> comme une liste HTML (<ul>), PAS comme du
+// SVG -- elle vit en dehors du <svg> cloné juste au-dessus, donc jamais
+// capturée par ce clonage. On dessine maintenant la légende nous-mêmes
+// sur le canvas, à partir des libellés/couleurs qu'on connaît déjà côté
+// composant (COULEURS, noms de séries ou de parts) -- indépendant de ce
+// que recharts affiche en HTML.
+function dessinerLegende(
+  ctx: CanvasRenderingContext2D,
+  legende: { libelle: string; couleur: string }[],
+  largeurDisponible: number,
+  yDepart: number
+) {
+  const taillePolice = 12;
+  const tailleSwatch = 10;
+  const espaceSwatchTexte = 5;
+  const espaceEntreItems = 16;
+  const hauteurLigne = 20;
+  ctx.font = `${taillePolice}px Inter, sans-serif`;
+  ctx.textBaseline = "middle";
+
+  // Regroupe les items en lignes qui tiennent dans largeurDisponible
+  // (retour à la ligne simple, façon flex-wrap).
+  const lignes: { libelle: string; couleur: string; largeur: number }[][] = [[]];
+  let largeurLigneCourante = 0;
+  for (const item of legende) {
+    const largeurItem = tailleSwatch + espaceSwatchTexte + ctx.measureText(item.libelle).width + espaceEntreItems;
+    if (largeurLigneCourante + largeurItem > largeurDisponible && lignes[lignes.length - 1].length > 0) {
+      lignes.push([]);
+      largeurLigneCourante = 0;
+    }
+    lignes[lignes.length - 1].push({ ...item, largeur: largeurItem });
+    largeurLigneCourante += largeurItem;
+  }
+
+  lignes.forEach((ligne, indexLigne) => {
+    const largeurTotale = ligne.reduce((total, item) => total + item.largeur, 0) - espaceEntreItems;
+    let x = (largeurDisponible - largeurTotale) / 2;
+    const y = yDepart + indexLigne * hauteurLigne + hauteurLigne / 2;
+    for (const item of ligne) {
+      ctx.fillStyle = item.couleur;
+      ctx.fillRect(x, y - tailleSwatch / 2, tailleSwatch, tailleSwatch);
+      ctx.fillStyle = "#A79A8C";
+      ctx.fillText(item.libelle, x + tailleSwatch + espaceSwatchTexte, y);
+      x += tailleSwatch + espaceSwatchTexte + ctx.measureText(item.libelle).width + espaceEntreItems;
+    }
+  });
+
+  return lignes.length * hauteurLigne;
+}
+
 export function telechargerImage(
   conteneur: HTMLDivElement | null,
   nomFichier: string,
-  onSucces: () => void
+  onSucces: () => void,
+  legende?: { libelle: string; couleur: string }[]
 ) {
   // Deuxième bug corrigé le 27/07 (toujours repéré par Bourama : PNG de
   // 28x28 cette fois) -- exclure seulement les icônes lucide (".lucide")
@@ -79,9 +133,18 @@ export function telechargerImage(
   const img = new Image();
   img.onload = () => {
     const echelle = 2; // export en meilleure résolution que l'écran (rétina)
+    // Estimation généreuse de la place nécessaire pour la légende (une
+    // seule ligne dans la quasi-totalité des cas réels -- jusqu'à 2
+    // lignes courtes). LIMITE ASSUMÉE : une légende avec beaucoup de
+    // séries à libellés longs peut déborder au-delà de cette estimation
+    // fixe (pas de calcul dynamique de la hauteur avant de fixer la
+    // taille du canvas, pour rester simple) -- acceptable pour l'usage
+    // réel actuel (quelques séries/parts par graphique), à revoir si
+    // Bourama rencontre ce cas en pratique.
+    const hauteurLegendeEstimee = legende && legende.length > 0 ? 40 : 0;
     const canvas = document.createElement("canvas");
     canvas.width = width * echelle;
-    canvas.height = height * echelle;
+    canvas.height = (height + hauteurLegendeEstimee) * echelle;
     const ctx = canvas.getContext("2d");
     URL.revokeObjectURL(url);
     if (!ctx) return;
@@ -89,6 +152,9 @@ export function telechargerImage(
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(echelle, echelle);
     ctx.drawImage(img, 0, 0, width, height);
+    if (legende && legende.length > 0) {
+      dessinerLegende(ctx, legende, width, height + 10);
+    }
     canvas.toBlob((blob) => {
       if (!blob) return;
       const lienUrl = URL.createObjectURL(blob);
@@ -184,6 +250,14 @@ export function GraphiqueDonnees({ code }: { code: string }) {
     );
   }
 
+  // Légende à reconstruire nous-mêmes pour l'export PNG (voir
+  // dessinerLegende ci-dessus) : pour un camembert, une part par entrée
+  // de données ; pour ligne/barres, une série par clé (hors axe X).
+  const legendeExport =
+    chart.type === "pie"
+      ? chart.data.map((d, i) => ({ libelle: String(d[cleNomPie]), couleur: COULEURS[i % COULEURS.length] }))
+      : clesSeries.map((cle, i) => ({ libelle: cle, couleur: COULEURS[i % COULEURS.length] }));
+
   return (
     <div
       ref={conteneurRef}
@@ -203,7 +277,8 @@ export function GraphiqueDonnees({ code }: { code: string }) {
               () => {
                 setTelecharge(true);
                 setTimeout(() => setTelecharge(false), 1500);
-              }
+              },
+              legendeExport
             )
           }
           aria-label="Télécharger le graphique en image"
