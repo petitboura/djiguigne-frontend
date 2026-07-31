@@ -250,6 +250,24 @@ export function GraphiqueDonnees({ code }: { code: string }) {
     );
   }
 
+  // CORRECTIF 2026-07-31 (audit UX) : avant, un type non reconnu ("donut",
+  // "area", une faute de frappe du modèle...) retombait silencieusement
+  // sur LineChart -- le "else" final du ternaire ci-dessous attrapait
+  // tout ce qui n'était ni "pie" ni "bar". La personne voyait alors un
+  // graphique different de ce qui avait ete demande (un modele peut
+  // suivre une demande utilisateur trop littéralement -- ex. "graphique
+  // en anneau" -- et écrire un type non supporté dans le JSON), sans
+  // aucune indication que quelque chose s'était mal passé.
+  const TYPES_SUPPORTES = ["line", "bar", "pie"] as const;
+  if (!TYPES_SUPPORTES.includes(chart.type as (typeof TYPES_SUPPORTES)[number])) {
+    return (
+      <div className="my-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 text-xs text-dj-texte-muet">
+        <span className="text-[#f87171]">Graphique invalide :</span> type "{String(chart.type)}" non pris en charge
+        (attendu : line, bar ou pie).
+      </div>
+    );
+  }
+
   // Légende à reconstruire nous-mêmes pour l'export PNG (voir
   // dessinerLegende ci-dessus) : pour un camembert, une part par entrée
   // de données ; pour ligne/barres, une série par clé (hors axe X).
