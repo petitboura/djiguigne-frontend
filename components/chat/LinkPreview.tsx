@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Play } from "lucide-react";
+import { ExternalLink, Play, X } from "lucide-react";
 
 // Aperçu de lien dans le chat -- demande de Bourama (2026-07-20) : "n'importe
 // quel lien génère un aperçu... comme dans n'importe quelle plateforme"
@@ -34,10 +34,39 @@ function idYoutube(href: string): string | null {
 
 type Apercu = { titre: string | null; image: string | null; description: string | null; siteName: string };
 
+// Lecteur YouTube embarqué (31/07, demande Bourama : "ça se lit
+// directement, tel quel" -- plus de sortie vers youtube.com). YouTube
+// autorise explicitement l'intégration via son iframe officiel
+// (contrairement à la quasi-totalité des autres sites, bloqués par
+// X-Frame-Options -- voir la discussion sur les liens externes en
+// général). autoplay=1 : la vignette servait déjà de "aperçu", inutile de
+// forcer un second clic une fois qu'on a choisi de lancer la lecture.
+function LecteurYoutubeInline({ idVideo, onFermer }: { idVideo: string; onFermer: () => void }) {
+  return (
+    <span className="relative block aspect-video w-full overflow-hidden bg-black">
+      <iframe
+        src={`https://www.youtube.com/embed/${idVideo}?autoplay=1`}
+        title="Lecteur YouTube"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="h-full w-full"
+      />
+      <button
+        onClick={onFermer}
+        aria-label="Fermer la vidéo"
+        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black/90"
+      >
+        <X size={15} />
+      </button>
+    </span>
+  );
+}
+
 export function LinkPreview({ href, texteLien, compact }: { href: string; texteLien: string; compact?: boolean }) {
   const [apercu, setApercu] = useState<Apercu | null>(null);
   const [echec, setEchec] = useState(false);
   const [charge, setCharge] = useState(false);
+  const [enLecture, setEnLecture] = useState(false);
   const idVideo = idYoutube(href);
 
   useEffect(() => {
@@ -115,12 +144,21 @@ export function LinkPreview({ href, texteLien, compact }: { href: string; texteL
   }
 
   if (compact) {
+    // Vidéo en lecture (31/07) : remplace la miniature par le lecteur
+    // embarqué, garde le titre en dessous, bouton fermer dans
+    // LecteurYoutubeInline pour revenir à la miniature.
+    if (idVideo && enLecture) {
+      return (
+        <span className="my-2 block w-full max-w-sm animate-dj-fade-in overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface">
+          <LecteurYoutubeInline idVideo={idVideo} onFermer={() => setEnLecture(false)} />
+          <span className="block truncate p-2 text-sm text-dj-texte">{apercu!.titre || texteLien}</span>
+        </span>
+      );
+    }
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="my-2 flex w-full max-w-sm animate-dj-fade-in items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface p-2 no-underline transition-colors hover:border-dj-bordure-forte"
+      <button
+        onClick={() => (idVideo ? setEnLecture(true) : window.open(href, "_blank"))}
+        className="my-2 flex w-full max-w-sm animate-dj-fade-in items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface p-2 text-left transition-colors hover:border-dj-bordure-forte"
       >
         {apercu!.image && (
           <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-dj-surface-haute">
@@ -137,8 +175,8 @@ export function LinkPreview({ href, texteLien, compact }: { href: string; texteL
           <span className="block truncate text-sm text-dj-texte">{apercu!.titre || texteLien}</span>
           <span className="block truncate text-[11px] text-dj-texte-muet">{apercu!.siteName}</span>
         </span>
-        <ExternalLink size={13} className="shrink-0 text-dj-texte-muet" />
-      </a>
+        {!idVideo && <ExternalLink size={13} className="shrink-0 text-dj-texte-muet" />}
+      </button>
     );
   }
 
@@ -149,12 +187,24 @@ export function LinkPreview({ href, texteLien, compact }: { href: string; texteL
   // Réservé aux messages assistant (compact absent/false) -- Bourama veut
   // garder l'ancien format côté utilisateur.
   if (idVideo) {
+    // Vidéo en lecture (31/07, demande Bourama : "ça se lit directement
+    // tel quel") : remplace la miniature par le lecteur embarqué en
+    // pleine largeur, directement dans le fil de la conversation.
+    if (enLecture) {
+      return (
+        <span className="my-2 block w-full max-w-md animate-dj-fade-in overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface">
+          <LecteurYoutubeInline idVideo={idVideo} onFermer={() => setEnLecture(false)} />
+          <span className="block p-3">
+            <span className="block truncate text-sm text-dj-texte">{apercu!.titre || texteLien}</span>
+            <span className="block truncate text-[12px] text-dj-texte-muet">{apercu!.description}</span>
+          </span>
+        </span>
+      );
+    }
     return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="my-2 block w-full max-w-md animate-dj-fade-in overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface no-underline transition-colors hover:border-dj-bordure-forte"
+      <button
+        onClick={() => setEnLecture(true)}
+        className="my-2 block w-full max-w-md animate-dj-fade-in overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface text-left transition-colors hover:border-dj-bordure-forte"
       >
         {apercu!.image && (
           <span className="relative block aspect-video w-full overflow-hidden bg-dj-surface-haute">
@@ -171,7 +221,7 @@ export function LinkPreview({ href, texteLien, compact }: { href: string; texteL
           <span className="block truncate text-sm text-dj-texte">{apercu!.titre || texteLien}</span>
           <span className="block truncate text-[12px] text-dj-texte-muet">{apercu!.description}</span>
         </span>
-      </a>
+      </button>
     );
   }
 
