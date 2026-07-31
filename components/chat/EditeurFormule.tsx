@@ -135,6 +135,47 @@ export function EditeurFormule({
   // de téléphone) plutôt que de continuer à fiabiliser un mode que la lib
   // ne supporte pas correctement.
 
+  // Correctif (2026-07-31, demande Bourama) : le clavier virtuel de
+  // MathLive (voir plus haut) s'affiche maintenant ancré tout en bas de
+  // l'écran, par-dessus le reste de la page -- sur PC surtout, où le
+  // champ de formule peut être plus haut dans la page, rien ne le
+  // remonte automatiquement : il peut rester caché derrière le clavier
+  // qui vient de s'ouvrir par-dessus. Dès que le clavier devient visible
+  // (événement "geometrychange" de MathLive), on fait remonter le champ
+  // à l'écran.
+  useEffect(() => {
+    if (!mathliveInstalle) return;
+    function auChangementGeometrie() {
+      if (window.mathVirtualKeyboard?.visible) {
+        mathfieldRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    }
+    window.mathVirtualKeyboard.addEventListener("geometrychange", auChangementGeometrie);
+    return () => window.mathVirtualKeyboard.removeEventListener("geometrychange", auChangementGeometrie);
+  }, [mathliveInstalle]);
+
+  // Correctif (2026-07-31, demande Bourama) : jusqu'ici, seul un nouveau
+  // clic sur le bouton clavier le refermait -- un clic n'importe où
+  // ailleurs sur la page devait aussi le faire disparaître (comportement
+  // attendu d'un vrai clavier). On ignore les clics à l'intérieur du
+  // panneau du clavier lui-même (".ML__keyboard", injecté dans <body>,
+  // hors de portée de `conteneurRef`) et à l'intérieur du champ de
+  // formule (cliquer dans le champ pour repositionner le curseur ne doit
+  // pas fermer le clavier qu'on est justement en train d'utiliser).
+  useEffect(() => {
+    if (!mathliveInstalle) return;
+    function surClicDocument(e: PointerEvent) {
+      if (!window.mathVirtualKeyboard?.visible) return;
+      const cible = e.target as Node;
+      const panneauClavier = document.querySelector(".ML__keyboard");
+      if (panneauClavier?.contains(cible)) return;
+      if (mathfieldRef.current?.contains(cible)) return;
+      window.mathVirtualKeyboard.hide();
+    }
+    document.addEventListener("pointerdown", surClicDocument);
+    return () => document.removeEventListener("pointerdown", surClicDocument);
+  }, [mathliveInstalle]);
+
   // Le panneau du clavier virtuel de MathLive est injecté au niveau de
   // <body>, pas dans le shadow DOM du <math-field> -- son thème se règle
   // donc là, pas sur le champ lui-même. Retiré au démontage pour ne pas
