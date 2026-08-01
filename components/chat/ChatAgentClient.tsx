@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { ChatIA } from "./ChatIA";
 import { MessageAffiche, nettoyerMessageHistorique } from "./BulleMessage";
 import { SidebarChat, FilConversation } from "./SidebarChat";
@@ -31,6 +32,35 @@ export function ChatAgentClient({
   const [messagesInitiaux, setMessagesInitiaux] = useState<MessageAffiche[]>([]);
   const [nbMessages, setNbMessages] = useState(0);
   useHauteurVisuelle();
+
+  // Ajouté le 2026-08-01 (Bourama) : cliquer une IA depuis la vitrine doit
+  // avoir le même effet que la choisir depuis le sélecteur de l'app
+  // (SelecteurAgent.choisirAgent) -- elle devient le chat par défaut, donc
+  // la prochaine ouverture de l'app y va directement. `retourExterne` sert
+  // ici de marqueur "vient de la vitrine" (voir SectionsProduit.tsx côté
+  // djiguigne-ai) ; sans lui, arriver sur un chat par un autre lien direct
+  // ne touche pas au choix par défaut de l'utilisateur.
+  useEffect(() => {
+    if (!retourExterne) return;
+    let annule = false;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session || annule) return;
+      try {
+        await appelerApi("/api/profiles/me", {
+          method: "PATCH",
+          body: JSON.stringify({ premier_agent_id: agent.id }),
+        });
+      } catch {
+        // Ne bloque jamais l'affichage du chat pour ça.
+      }
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [retourExterne, agent.id]);
 
   function nouvelleConversation() {
     setCle(crypto.randomUUID());
