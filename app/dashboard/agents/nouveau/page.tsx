@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { proposerNotificationsPushUneFois, useNotificationsPush } from "@/lib/useNotificationsPush";
@@ -43,7 +43,21 @@ const NB_LIGNES_COMPORTEMENT = 4;
 type LigneComportement = { type_requete: string; comportement: string };
 
 export default function PageCreerAgent() {
+  return (
+    <Suspense fallback={null}>
+      <FormulaireCreerAgent />
+    </Suspense>
+  );
+}
+
+// useSearchParams() exige un Suspense autour de la page en app router
+// Next.js -- sinon échec au build (même contrainte que la version vitrine,
+// djiguigne-ai/app/[locale]/dashboard/agents/nouveau/page.tsx). Pas de
+// fallback visible : le formulaire est déjà quasi-instantané, un flash de
+// "Chargement..." serait plus gênant qu'utile.
+function FormulaireCreerAgent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
@@ -89,6 +103,26 @@ export default function PageCreerAgent() {
       .then((liste) => setMatieresListe(liste ?? []))
       .catch(() => setMatieresListe([])); // facultatif : un échec ne bloque pas le formulaire
   }, []);
+
+  // Ajouté le 31/07 : présélection de la matière transmise en query param
+  // par le bouton "Devenir créateur" (voir components/BoutonDevenirCreateur.tsx
+  // et components/SelecteurAgent.tsx) -- même principe que la version
+  // vitrine (djiguigne-ai), mais comparée à `matieresListe` chargée
+  // dynamiquement via GET /api/matieres (source de vérité côté frontend,
+  // pas la liste statique MATIERES de la vitrine) plutôt qu'une simple
+  // liste figée : si la valeur transmise ne correspond à aucune matière
+  // connue, elle tombe sur "Autre" avec le texte pré-rempli.
+  useEffect(() => {
+    if (matieresListe.length === 0) return;
+    const matiereParam = searchParams.get("matiere");
+    if (!matiereParam) return;
+    if (matieresListe.some((m) => m.nom === matiereParam)) {
+      setMatiere(matiereParam);
+    } else {
+      setMatiere("Autre");
+      setMatiereDetail(matiereParam);
+    }
+  }, [searchParams, matieresListe]);
 
   const [ton, setTon] = useState(TON_OPTIONS[0]);
   const [postureGenerale, setPostureGenerale] = useState("");

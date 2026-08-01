@@ -7,6 +7,7 @@ import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe } from "lucide-react"
 import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
+import { BoutonDevenirCreateur } from "@/components/BoutonDevenirCreateur";
 
 // Ajouté le 31/07 (Bourama : "je veux que ce soit l'interface d'un chat en
 // premier") -- reprend le principe des 5 boutons de la page Services de la
@@ -138,9 +139,24 @@ export function SelecteurAgent() {
           ) : erreur ? (
             <p className="text-center text-sm text-dj-texte-muet">{erreur}</p>
           ) : !agentsSectionOuverte || agentsSectionOuverte.length === 0 ? (
-            <p className="text-center text-sm text-dj-texte-muet">
-              Aucune IA dans cette catégorie pour le moment.
-            </p>
+            // Message aligné le 31/07 sur components/SectionsProduit.tsx
+            // (djiguigne-ai) : la distinction "bientôt" (catégorie sans
+            // champ en base) vs "vide" (catégorie avec champ mais aucune
+            // IA) a été abandonnée là-bas au profit d'un seul message +
+            // CTA "Devenir créateur", donc on reprend pareil ici plutôt
+            // que de garder l'ancien texte générique.
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-sm text-dj-texte-muet">
+                Il n'y a pas encore d'IA dans cette catégorie, c'est l'occasion de créer la vôtre !
+              </p>
+              <BoutonDevenirCreateur
+                label="Devenir créateur"
+                explicationTitre="Comment ça marche"
+                explicationCorps="Choisis d'abord la matière de ton IA, puis remplis le formulaire de création (identité, comportement, base de connaissance...). Ton IA est publiée dès que tu la crées."
+                continuerLabel="Continuer"
+                annulerLabel="Annuler"
+              />
+            </div>
           ) : (
             <div className="grid w-full gap-3 sm:grid-cols-2">
               {agentsSectionOuverte.map((agent) => (
