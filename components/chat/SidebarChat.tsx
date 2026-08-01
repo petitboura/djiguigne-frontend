@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutDashboard, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { NoteAgent } from "@/components/NoteAgent";
@@ -288,9 +288,24 @@ export function SidebarChat({
           className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
         >
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <LayoutDashboard size={18} />
+            <UserCircle size={18} />
           </span>
           <LibelleRail ouverte={ouverte}>Mon espace</LibelleRail>
+        </Link>
+
+        {/* Ajouté le 31/07 (Bourama : distinct du bouton "Applications" de
+            la barre de saisie -- celui-ci sert à CONNECTER une appli
+            (voir app/dashboard/applications/page.tsx), l'autre à
+            EXÉCUTER une action via une appli déjà connectée, voir
+            BarreDeSaisie.tsx). */}
+        <Link
+          href="/dashboard/applications"
+          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <LayoutGrid size={18} />
+          </span>
+          <LibelleRail ouverte={ouverte}>Applications</LibelleRail>
         </Link>
 
         {connecte && aDesMessages && (
@@ -476,8 +491,16 @@ export function SidebarChat({
             href="/dashboard"
             className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
           >
-            <LayoutDashboard size={16} />
+            <UserCircle size={16} />
             Mon espace
+          </Link>
+
+          <Link
+            href="/dashboard/applications"
+            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+          >
+            <LayoutGrid size={16} />
+            Applications
           </Link>
 
           {connecte && aDesMessages && (
