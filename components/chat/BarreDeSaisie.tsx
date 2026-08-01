@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus } from "lucide-react";
-import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
+import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, pagesNotion, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurFormule } from "./EditeurFormule";
@@ -51,6 +51,15 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "explorer_depot_github", label: "Explorer un dépôt GitHub", Icone: FolderTree, onglet: "action_app", appli: "github" },
   { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode, onglet: "action_app", appli: "github" },
   { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3, onglet: "action_app", appli: "github" },
+  // Notion activé à 100% côté backend (01/08, demande Bourama, voir
+  // registre_outils.py) -- seul notion-search est un vrai outil LLM ici,
+  // les 9 autres outils de lecture (notion-fetch, notion-get-comments...)
+  // et les 10 d'écriture (notion-create-pages...) restent utilisables par
+  // le modèle (au choix du LLM une fois le tool-calling actif) mais n'ont
+  // pas chacun leur propre icône dans cette barre -- seul le point d'entrée
+  // "rechercher" est exposé ici, cohérent avec le sélecteur de page
+  // ci-dessous qui sert à donner un contexte, pas à naviguer tout Notion.
+  { nom: "notion-search", label: "Rechercher dans Notion", Icone: BookOpen, onglet: "action_app", appli: "notion" },
 
   { nom: "exporter_donnees", label: "Exporter des données", Icone: Download, onglet: "utilitaires" },
   { nom: "deployer_site", label: "Déployer un site", Icone: Rocket, onglet: "utilitaires" },
@@ -83,13 +92,15 @@ export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
 
 // Liste "Appli" (2026-07-28) -- pendant symétrique à OUTILS_DISPONIBLES,
 // mais réservée à ce qui nécessite une connexion/authentification
-// utilisateur (OAuth, session tierce...). Une seule entrée pour l'instant
-// (GitHub) -- structure prête à en accueillir d'autres sans retoucher la
-// logique de récence/slot variable ci-dessous. Sert aussi de source pour
-// les en-têtes de groupe (icône + nom) de l'onglet "Action dans l'app"
-// ci-dessus, via le champ `appli` des entrées de OUTILS_DISPONIBLES.
+// utilisateur (OAuth, session tierce...). Notion ajouté le 01/08 (deuxième
+// entrée) -- la structure était déjà prête à en accueillir d'autres sans
+// retoucher la logique de récence/slot variable ci-dessous. Sert aussi de
+// source pour les en-têtes de groupe (icône + nom) de l'onglet "Action
+// dans l'app" ci-dessus, via le champ `appli` des entrées de
+// OUTILS_DISPONIBLES.
 export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
   { nom: "github", label: "GitHub", Icone: Github },
+  { nom: "notion", label: "Notion", Icone: BookOpen },
 ];
 
 // Détection de langage pour un collage de code (2026-07-25, demande de
@@ -345,9 +356,13 @@ export function BarreDeSaisie({
   // que ça survive à un refresh.
   const NB_SLOTS_OUTILS_RECENTS = 3;
   const [outilsRecents, setOutilsRecents] = useState<string[]>([]);
-  // Un seul slot appli -> "github" par défaut puisque c'est la seule appli
-  // disponible pour l'instant (avant cette refonte c'était une icône fixe,
-  // donc on ne veut pas que le slot parte vide au premier chargement).
+  // "github" par défaut (avant cette refonte c'était une icône fixe, donc
+  // on ne veut pas que le slot parte vide au premier chargement) -- reste
+  // pertinent maintenant que Notion existe aussi : ce slot ne s'affiche de
+  // toute façon que si l'agent n'a qu'UNE SEULE appli active (voir
+  // appliSlotUnique), sinon c'est le menu déroulant (appliButtonVisible)
+  // qui prend le relais et enregistrerUtilisationAppli() met à jour ceci
+  // au fil des clics réels.
   const [appliRecente, setAppliRecente] = useState<string | null>("github");
   const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
   const menuAppliRef = useRef<HTMLDivElement>(null);
@@ -450,12 +465,13 @@ export function BarreDeSaisie({
     enregistrerUtilisationOutil(nom);
   }
 
-  // Une seule entrée pour l'instant (github) -- switch prêt à en accueillir
-  // d'autres sans retoucher les slots/le menu.
   function executerActionAppli(nom: string) {
     switch (nom) {
       case "github":
         cliquerGithub();
+        break;
+      case "notion":
+        cliquerNotion();
         break;
     }
     enregistrerUtilisationAppli(nom);
@@ -652,6 +668,74 @@ export function BarreDeSaisie({
       .then((r) => setGithubConnecte(r.connecte))
       .catch(() => setGithubConnecte(false));
   }, []);
+
+  // Connexion Notion (01/08, activation complète demandée par Bourama) --
+  // même pattern que githubConnecte/selecteurOuvert ci-dessus. Le choix du
+  // sélecteur (plutôt que juste activer notion-search) : "Un sélecteur
+  // (façon dépôts GitHub) pour choisir une page/base Notion précise à
+  // insérer dans le champ", décision explicite de Bourama.
+  const [notionConnecte, setNotionConnecte] = useState<boolean | null>(null);
+  const [notionEnCours, setNotionEnCours] = useState(false);
+  const [pagesNotionListe, setPagesNotionListe] = useState<
+    { titre: string; type: "page" | "database"; url: string }[] | null
+  >(null);
+  const [selecteurNotionOuvert, setSelecteurNotionOuvert] = useState(false);
+  const selecteurNotionRef = useRef<HTMLDivElement>(null);
+  const selecteurNotionMobileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selecteurNotionOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (selecteurNotionRef.current?.contains(cible)) return;
+      if (selecteurNotionMobileRef.current?.contains(cible)) return;
+      setSelecteurNotionOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [selecteurNotionOuvert]);
+
+  useEffect(() => {
+    statutConnexion("notion")
+      .then((r) => setNotionConnecte(r.connecte))
+      .catch(() => setNotionConnecte(false));
+  }, []);
+
+  async function cliquerNotion() {
+    if (!notionConnecte) {
+      setNotionEnCours(true);
+      try {
+        const { url } = await demarrerConnexion("notion", agentId);
+        window.location.href = url;
+      } catch (e) {
+        alert(messageErreur(e));
+        setNotionEnCours(false);
+      }
+      return;
+    }
+
+    // Déjà connecté : ouvre/ferme le sélecteur de pages, en chargeant la
+    // liste au premier clic seulement (même logique que cliquerGithub).
+    setSelecteurNotionOuvert((prec) => !prec);
+    if (pagesNotionListe === null) {
+      setNotionEnCours(true);
+      try {
+        const { pages } = await pagesNotion();
+        setPagesNotionListe(pages);
+      } catch (e) {
+        setPagesNotionListe([]);
+        alert(messageErreur(e));
+      } finally {
+        setNotionEnCours(false);
+      }
+    }
+  }
+
+  function choisirPageNotion(url: string) {
+    setTexte((prec) => (prec.trim() ? `${prec} ${url}` : url));
+    setSelecteurNotionOuvert(false);
+    requestAnimationFrame(ajusterHauteurTexte);
+  }
 
   async function cliquerGithub() {
     if (!githubConnecte) {
@@ -1166,6 +1250,61 @@ export function BarreDeSaisie({
               </div>
             )}
 
+            {/* Notion (01/08) -- même traitement à part que GitHub
+                ci-dessus, pour le cas où un agent n'a QUE Notion
+                d'activé (pas GitHub) : sans ce bloc dédié, appliSlotUnique
+                vaudrait "notion" mais rien ne le rendrait jamais, le
+                bouton Appli resterait invisible pour cet agent -- exactement
+                le bug diagnostiqué pour Nucleos. */}
+            {appliSlotUnique?.nom === "notion" && (
+              <div className="relative" ref={selecteurNotionRef}>
+                <button
+                  onClick={() => executerActionAppli("notion")}
+                  disabled={notionEnCours}
+                  aria-label={notionConnecte ? "Choisir une page Notion" : "Connecter Notion"}
+                  title={notionConnecte ? "Choisir une page Notion" : "Connecter Notion"}
+                  className={
+                    notionConnecte
+                      ? "relative text-dj-accent-1 transition-colors"
+                      : "relative text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
+                  }
+                >
+                  <BookOpen size={18} />
+                  {notionConnecte && (
+                    <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-green-500" />
+                  )}
+                </button>
+
+                {selecteurNotionOuvert && (
+                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                    {pagesNotionListe === null && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
+                    )}
+                    {pagesNotionListe?.length === 0 && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
+                    )}
+                    {pagesNotionListe?.map((p) => (
+                      <button
+                        key={p.url}
+                        type="button"
+                        onClick={() => choisirPageNotion(p.url)}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          {p.titre}
+                          {p.type === "database" && (
+                            <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                              base
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Bouton Outils (2026-07-25, multi-sélection depuis le 26/07) --
                 icône FIXE (ne varie jamais) : ouvre la liste complète des
                 outils, y compris les entrées "ui_" ci-dessus.
@@ -1395,6 +1534,45 @@ export function BarreDeSaisie({
                 ))}
               </div>
             </div>
+            )}
+
+            {/* Sélecteur de pages Notion desktop pour le cas MULTI-appli
+                (01/08, ex. Nucleos avec GitHub + Notion tous les deux
+                actifs) -- le bloc appliSlotUnique plus haut ne couvre que
+                le cas où Notion est la SEULE appli active. Ici, cliquer
+                "Notion" dans le menu déroulant juste au-dessus déclenche
+                cliquerNotion() (via executerActionAppli) qui bascule
+                selecteurNotionOuvert -- ce panneau l'affiche, ancré au
+                même endroit que le bouton Appli. Le panneau mobile
+                (md:hidden, plus bas dans le fichier) couvre le petit écran. */}
+            {appliButtonVisible && selecteurNotionOuvert && (
+              <div className="relative hidden md:block" ref={selecteurNotionRef}>
+                <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                  {pagesNotionListe === null && (
+                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
+                  )}
+                  {pagesNotionListe?.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
+                  )}
+                  {pagesNotionListe?.map((p) => (
+                    <button
+                      key={p.url}
+                      type="button"
+                      onClick={() => choisirPageNotion(p.url)}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {p.titre}
+                        {p.type === "database" && (
+                          <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                            base
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
@@ -1851,6 +2029,42 @@ export function BarreDeSaisie({
               {d.description && (
                 <span className="line-clamp-1 text-xs text-dj-texte-muet">{d.description}</span>
               )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Sélecteur de pages Notion mobile (01/08) -- même raison d'être que
+          le sélecteur de dépôts GitHub mobile juste au-dessus : le rendu
+          desktop du panneau (bloc "hidden ... md:block") ne suffit pas sur
+          mobile, où l'entrée "Notion" est tapée depuis le panneau
+          Applications (menuAppliOuvert) plutôt que depuis appliSlotUnique. */}
+      {selecteurNotionOuvert && (
+        <div
+          ref={selecteurNotionMobileRef}
+          className="fixed inset-x-4 bottom-24 z-40 max-h-[60vh] overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl md:hidden"
+        >
+          {pagesNotionListe === null && (
+            <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
+          )}
+          {pagesNotionListe?.length === 0 && (
+            <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
+          )}
+          {pagesNotionListe?.map((p) => (
+            <button
+              key={p.url}
+              type="button"
+              onClick={() => choisirPageNotion(p.url)}
+              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+            >
+              <span className="flex items-center gap-1.5">
+                {p.titre}
+                {p.type === "database" && (
+                  <span className="rounded bg-dj-surface-haute px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                    base
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>

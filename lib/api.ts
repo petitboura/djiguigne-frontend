@@ -388,3 +388,16 @@ export async function depotsGithub() {
     depots: { nom_complet: string; prive: boolean; description: string | null; url: string }[];
   };
 }
+
+/**
+ * Liste les pages/bases Notion visibles par la personne connectée --
+ * voir api/connexions.py:pages_notion, utilisé par le sélecteur de page
+ * dans BarreDeSaisie.tsx. Même correction (2026-07-31) que depotsGithub
+ * ci-dessus : une vraie erreur est levée en cas d'échec.
+ */
+export async function pagesNotion() {
+  const resultat = await appelerApi("/api/connexions/notion/pages");
+  return resultat as {
+    pages: { titre: string; type: "page" | "database"; url: string }[];
+  };
+}
