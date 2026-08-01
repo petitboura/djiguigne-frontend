@@ -44,6 +44,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Chantier SEO/AEO (2026-08-01) : requis pour que Next.js résolve les
+  // URLs relatives (images OG, canonical) en URLs absolues correctes,
+  // au lieu de tomber sur localhost en prod. Piloté par variable
+  // d'environnement pour ne rien casser si l'app change d'hébergement.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://djiguigne.vercel.app"),
   title: "Djiguignè AI",
   description: "Crée ton propre assistant IA, sans coder.",
   // PWA (Bourama, 2026-07-15) : installable sans Play Store/App Store.
