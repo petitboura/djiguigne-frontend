@@ -280,23 +280,70 @@ export function BarreDeSaisie({
   // seul groupe ouvert à la fois).
   const [groupesAppliDeplies, setGroupesAppliDeplies] = useState<string[]>([]);
 
-  // Slots variables (2026-07-28, refonte barre de saisie demandée par
-  // Bourama) -- 3 emplacements "derniers outils utilisés" + 1 emplacement
-  // "dernière appli utilisée", à côté des icônes fixes (pin, ouvrir liste
-  // outils, ouvrir liste appli). Le plus récent en tête de tableau.
-  // Volontairement en mémoire (pas de persistance localStorage) : recommence
-  // à vide à chaque rechargement de page, pas de demande explicite pour
-  // que ça survive à un refresh.
+  // Slots variables (2026-07-28, refonte barre de saisie ; révisé le
+  // 2026-08-01 suite retours Bourama) -- 3 emplacements "derniers
+  // outils/utilitaires utilisés" (desktop) + 1 emplacement "dernière
+  // appli utilisée" (desktop, visible seulement si l'agent a PLUSIEURS
+  // applis actives -- voir appliButtonVisible plus haut ; si une seule
+  // appli, elle reste fixe et ne varie jamais, voir appliSlotUnique,
+  // inchangé) + 1 slot unique mobile qui fusionne les trois catégories.
+  //
+  // Historique UNIQUE {type, nom}[], le plus récent en tête, dont on
+  // dérive tout le reste par filtre à l'affichage :
+  // - type "outil" couvre à la fois le menu Outils ET le bouton
+  //   Utilitaires (les deux appellent enregistrerUtilisationOutil via
+  //   executerActionOutil) -- demande Bourama "les utilitaires sont
+  //   inclus dans les slots variables des outils, donc les trois [3
+  //   slots desktop]".
+  // - type "appli" ne sert que quand appliButtonVisible (>1 appli) ;
+  //   si une seule appli, ce type n'est pas utilisé pour ce slot-là
+  //   (appliSlotUnique fixe reste indépendant), mais reste utile pour
+  //   le slot combiné mobile ci-dessous.
+  //
+  // Persisté dans localStorage (demande Bourama 01/08 : "ils doivent
+  // rester et continuer à varier plutôt que de reprendre à chaque fois
+  // que t'ouvres l'app") -- global au navigateur, pas scindé par agent
+  // (les slots sont de toute façon refiltrés par agent à l'affichage,
+  // donc un outil non autorisé pour l'agent courant est simplement
+  // ignoré sans avoir besoin d'un historique séparé par agent).
+  type RecentSlot = { type: "outil" | "appli"; nom: string };
+  const CLE_LS_RECENTS = "dj_barre_recents_v1";
   const NB_SLOTS_OUTILS_RECENTS = 3;
-  const [outilsRecents, setOutilsRecents] = useState<string[]>([]);
-  // "github" par défaut (avant cette refonte c'était une icône fixe, donc
-  // on ne veut pas que le slot parte vide au premier chargement) -- reste
-  // pertinent maintenant que Notion existe aussi : ce slot ne s'affiche de
-  // toute façon que si l'agent n'a qu'UNE SEULE appli active (voir
-  // appliSlotUnique), sinon c'est le menu déroulant (appliButtonVisible)
-  // qui prend le relais et enregistrerUtilisationAppli() met à jour ceci
-  // au fil des clics réels.
-  const [appliRecente, setAppliRecente] = useState<string | null>("github");
+  const [recentsCombines, setRecentsCombines] = useState<RecentSlot[]>([]);
+
+  useEffect(() => {
+    try {
+      const brut = window.localStorage.getItem(CLE_LS_RECENTS);
+      if (!brut) return;
+      const parsed = JSON.parse(brut);
+      if (Array.isArray(parsed)) setRecentsCombines(parsed);
+    } catch {
+      // localStorage indisponible (navigation privée, quota dépassé...)
+      // -- tant pis, les slots repartent de zéro pour cette session,
+      // ce n'est pas bloquant pour le reste de la barre.
+    }
+  }, []);
+
+  function enregistrerRecent(type: "outil" | "appli", nom: string) {
+    setRecentsCombines((prec) => {
+      const suivant = [{ type, nom }, ...prec.filter((r) => !(r.type === type && r.nom === nom))].slice(0, 10);
+      try {
+        window.localStorage.setItem(CLE_LS_RECENTS, JSON.stringify(suivant));
+      } catch {
+        // idem, non bloquant
+      }
+      return suivant;
+    });
+  }
+
+  // Dérivés utilisés par le rendu (desktop 3 slots outils/utilitaires,
+  // desktop 1 slot appli variable) :
+  const outilsRecents = recentsCombines
+    .filter((r) => r.type === "outil")
+    .map((r) => r.nom)
+    .slice(0, NB_SLOTS_OUTILS_RECENTS);
+  const appliRecente =
+    recentsCombines.find((r) => r.type === "appli")?.nom ?? applisPourAgent[0]?.nom ?? null;
   const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
   const menuAppliRef = useRef<HTMLDivElement>(null);
   const menuAppliMobileRef = useRef<HTMLDivElement>(null);
@@ -340,11 +387,11 @@ export function BarreDeSaisie({
   }, [menuAppliOuvert]);
 
   function enregistrerUtilisationOutil(nom: string) {
-    setOutilsRecents((prec) => [nom, ...prec.filter((n) => n !== nom)].slice(0, NB_SLOTS_OUTILS_RECENTS));
+    enregistrerRecent("outil", nom);
   }
 
   function enregistrerUtilisationAppli(nom: string) {
-    setAppliRecente(nom);
+    enregistrerRecent("appli", nom);
   }
 
   // Accordéon "Action dans l'app" (2026-07-28) -- dépliage multiple, chaque
@@ -1530,6 +1577,32 @@ export function BarreDeSaisie({
             </div>
             )}
 
+            {/* Slot variable "dernière appli utilisée" (2026-08-01, bug
+                signalé par Bourama : appliRecente était calculé mais
+                jamais affiché nulle part). Ne s'affiche QUE quand
+                appliButtonVisible (plusieurs applis actives) -- si une
+                seule appli, elle reste fixe via appliSlotUnique
+                ci-dessus et ne varie jamais, conforme à la règle de
+                Bourama ("apparaît et reste... et ne change pas").
+                Ici au contraire ça varie : dernière appli cliquée,
+                repli sur applisPourAgent[0] tant qu'aucune n'a encore
+                été cliquée (même dérivation que `appliRecente`). */}
+            {appliButtonVisible && appliRecente && (() => {
+              const appli = applisPourAgent.find((a) => a.nom === appliRecente);
+              if (!appli) return null;
+              const Icone = appli.Icone;
+              return (
+                <button
+                  onClick={() => executerActionAppli(appli.nom)}
+                  aria-label={appli.label}
+                  title={appli.label}
+                  className="relative rounded-full p-1 text-dj-texte-muet transition-colors hover:text-dj-texte"
+                >
+                  <Icone size={18} />
+                </button>
+              );
+            })()}
+
             {/* Icône Appli (2026-07-28) -- icône FIXE (ne varie jamais),
                 pendante de l'icône Outils juste au-dessus : ouvre la liste
                 complète des applis (nécessitant une connexion utilisateur),
@@ -1879,68 +1952,92 @@ export function BarreDeSaisie({
             >
               <Mic size={16} />
             </button>
-            {/* Slot variable "dernier outil utilisé" (2026-07-28) -- même
-                tableau `outilsRecents` que desktop, juste 1 seul slot
-                affiché ici au lieu de 3.
-                CORRECTION (2026-07-30, flux 3) : si l'agent a MOINS de 3
-                outils, il n'y a pas de bouton "Outils" dropdown (voir
-                outilsButtonVisible) -- ce slot affiche alors directement
-                le premier outil fixe de l'agent (outilsSlotsFixes), et
-                disparaît complètement si l'agent n'a aucun outil. Sinon
-                (>=3 outils), comportement inchangé : dernier outil
-                cliqué, repli sur le bouton Outils générique tant qu'aucun
-                clic n'a encore eu lieu. */}
+            {/* Slot variable unique mobile (2026-07-28 ; revu 2026-08-01
+                suite retour Bourama : "sur mobile le un slot gère les
+                trois, outils utilitaires, appli" -- ce slot fusionne
+                désormais les 3 catégories via `recentsCombines`
+                (l'historique persisté), pas juste les outils comme
+                avant.
+                Algorithme : on calcule d'abord un "candidat par défaut"
+                (ce qui s'affiche tant qu'aucun clic pertinent n'a
+                encore eu lieu), par ordre de priorité :
+                  1. outilsSlotsFixes[0] (agent à 1-2 outils/utilitaires,
+                     pas de bouton Outils dropdown)
+                  2. appliSlotUnique (agent à exactement 1 appli, fixe,
+                     ne varie jamais -- règle Bourama)
+                  3. icône Outils générique (si outilsButtonVisible)
+                  4. première appli autorisée (si appliButtonVisible,
+                     >1 appli)
+                  5. rien (agent sans outil ni appli)
+                Puis on cherche dans recentsCombines la première entrée
+                encore valide pour cet agent (outil/utilitaire toujours
+                valide s'il est dans outilsPourAgent ; appli valide
+                seulement si appliButtonVisible, car une appli unique
+                ne "varie" pas) -- si trouvée, elle REMPLACE le candidat
+                par défaut (c'est la partie qui "varie"). */}
             {(() => {
-              if (!outilsButtonVisible) {
-                const outil = outilsSlotsFixes[0];
-                if (!outil) return null;
-                const Icone = outil.Icone;
-                const actif = estOutilActif(outil.nom);
+              type Candidat =
+                | { genre: "outil"; nom: string; label: string; Icone: typeof Wrench }
+                | { genre: "appli"; nom: string; label: string; Icone: typeof Github }
+                | { genre: "generique_outils" }
+                | null;
+
+              let candidat: Candidat = null;
+              if (outilsSlotsFixes[0]) {
+                candidat = { genre: "outil", ...outilsSlotsFixes[0] };
+              } else if (appliSlotUnique) {
+                candidat = { genre: "appli", ...appliSlotUnique };
+              } else if (outilsButtonVisible) {
+                candidat = { genre: "generique_outils" };
+              } else if (appliButtonVisible && applisPourAgent[0]) {
+                candidat = { genre: "appli", ...applisPourAgent[0] };
+              }
+
+              const recentValide = recentsCombines.find((r) => {
+                if (r.type === "outil") return outilsPourAgent.some((o) => o.nom === r.nom);
+                return appliButtonVisible && applisPourAgent.some((a) => a.nom === r.nom);
+              });
+              if (recentValide) {
+                if (recentValide.type === "outil") {
+                  const outil = OUTILS_DISPONIBLES.find((o) => o.nom === recentValide.nom);
+                  if (outil) candidat = { genre: "outil", ...outil };
+                } else {
+                  const appli = APPLIS_DISPONIBLES.find((a) => a.nom === recentValide.nom);
+                  if (appli) candidat = { genre: "appli", ...appli };
+                }
+              }
+
+              if (!candidat) return null;
+
+              if (candidat.genre === "generique_outils") {
                 return (
                   <button
-                    onClick={() => executerActionOutil(outil.nom)}
-                    aria-label={outil.label}
-                    title={outil.label}
-                    className={
-                      "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
-                      (actif
-                        ? "bg-dj-surface text-dj-accent-1"
-                        : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
-                    }
+                    onClick={() => setMenuOutilsOuvert(true)}
+                    aria-label="Outils"
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte"
                   >
-                    <Icone size={16} />
+                    <Wrench size={16} />
                   </button>
                 );
               }
-              const recentAutorise = outilsRecents.filter((n) => outilsPourAgent.some((o) => o.nom === n));
-              if (recentAutorise.length > 0) {
-                const outil = OUTILS_DISPONIBLES.find((o) => o.nom === recentAutorise[0]);
-                if (!outil) return null;
-                const Icone = outil.Icone;
-                const actif = estOutilActif(outil.nom);
-                return (
-                  <button
-                    onClick={() => executerActionOutil(outil.nom)}
-                    aria-label={outil.label}
-                    title={outil.label}
-                    className={
-                      "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
-                      (actif
-                        ? "bg-dj-surface text-dj-accent-1"
-                        : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
-                    }
-                  >
-                    <Icone size={16} />
-                  </button>
-                );
-              }
+
+              const Icone = candidat.Icone;
+              const actif = candidat.genre === "outil" ? estOutilActif(candidat.nom) : false;
               return (
                 <button
-                  onClick={() => setMenuOutilsOuvert(true)}
-                  aria-label="Outils"
-                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte"
+                  onClick={() =>
+                    candidat.genre === "outil" ? executerActionOutil(candidat.nom) : executerActionAppli(candidat.nom)
+                  }
+                  aria-label={candidat.label}
+                  title={candidat.label}
+                  className={
+                    "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-colors " +
+                    (actif
+                      ? "bg-dj-surface text-dj-accent-1"
+                      : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte")
+                  }
                 >
-                  <Wrench size={16} />
+                  <Icone size={16} />
                 </button>
               );
             })()}
