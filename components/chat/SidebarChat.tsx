@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutDashboard, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { NoteAgent } from "@/components/NoteAgent";
@@ -278,6 +278,21 @@ export function SidebarChat({
           <LibelleRail ouverte={ouverte}>Changer d'IA</LibelleRail>
         </Link>
 
+        {/* Ajouté le 31/07 (Bourama : "ajoute le bouton mon espace dans le
+            chat") -- même route que "Mon espace" dans la TopBar
+            (app/dashboard/page.tsx), pour y accéder aussi depuis le chat
+            sans repasser par l'accueil (qui redirige maintenant direct
+            vers le chat, voir app/page.tsx). */}
+        <Link
+          href="/dashboard"
+          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <LayoutDashboard size={18} />
+          </span>
+          <LibelleRail ouverte={ouverte}>Mon espace</LibelleRail>
+        </Link>
+
         {connecte && aDesMessages && (
           <button
             onClick={onNouvelleConversation}
@@ -455,6 +470,14 @@ export function SidebarChat({
           >
             <Shuffle size={16} />
             Changer d'IA
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+          >
+            <LayoutDashboard size={16} />
+            Mon espace
           </Link>
 
           {connecte && aDesMessages && (
