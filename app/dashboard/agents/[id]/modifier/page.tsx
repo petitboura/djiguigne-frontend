@@ -44,6 +44,8 @@ type AgentEditable = {
   filiere: string | null;
   domaine: string | null;
   langue_africaine: string | null;
+  // Ajouté le 2026-08-01, voir la page de création (même commentaire).
+  execution: string | null;
   profil_utilisateur_schema: { nom: string; description: string }[];
 };
 
@@ -98,6 +100,7 @@ export default function PageModifierAgent() {
   const [filiere, setFiliere] = useState("");
   const [domaine, setDomaine] = useState("");
   const [langueAfricaine, setLangueAfricaine] = useState("");
+  const [execution, setExecution] = useState("");
 
   useEffect(() => {
     appelerApi("/api/matieres")
@@ -167,6 +170,7 @@ export default function PageModifierAgent() {
         setFiliere(r.filiere || "");
         setDomaine(r.domaine || "");
         setLangueAfricaine(r.langue_africaine || "");
+        setExecution(r.execution || "");
         setProfilChamps(r.profil_utilisateur_schema || []);
         if (r.categorie_id) {
           const idCategorie = r.categorie_id;
@@ -228,6 +232,7 @@ export default function PageModifierAgent() {
           filiere: filiere || null,
           domaine: domaine || null,
           langue_africaine: langueAfricaine || null,
+          execution: execution || null,
           profil_utilisateur_schema: profilChamps
             .filter((c) => c.nom.trim())
             .map((c) => ({ nom: c.nom.trim(), description: c.description.trim() })),
@@ -445,6 +450,17 @@ export default function PageModifierAgent() {
                   value={langueAfricaine}
                   onChange={(e) => setLangueAfricaine(e.target.value)}
                   placeholder="Ex : Bambara"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Exécution</label>
+                <input
+                  type="text"
+                  value={execution}
+                  onChange={(e) => setExecution(e.target.value)}
+                  placeholder="Ex : Automatisation de tâches"
                   className={champClasse}
                 />
               </div>

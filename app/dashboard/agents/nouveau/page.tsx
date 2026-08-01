@@ -97,6 +97,10 @@ function FormulaireCreerAgent() {
   const [filiere, setFiliere] = useState("");
   const [domaine, setDomaine] = useState("");
   const [langueAfricaine, setLangueAfricaine] = useState("");
+  // Ajouté le 2026-08-01 : 6ème catégorie "Exécution" (voir execution
+  // dans djiguigne-backend/api/agents.py) -- même principe que les 4
+  // champs texte libre ci-dessus, manquait encore dans ce formulaire.
+  const [execution, setExecution] = useState("");
 
   useEffect(() => {
     appelerApi("/api/matieres")
@@ -123,6 +127,26 @@ function FormulaireCreerAgent() {
       setMatiereDetail(matiereParam);
     }
   }, [searchParams, matieresListe]);
+
+  // Ajouté le 2026-08-01 : présélection des 5 catégories texte libre
+  // (Métier/Filière/Domaine/Langues africaines/Exécution) transmises en
+  // query param par le popup "Devenir créateur" du vitrine -- manquait
+  // encore ici, seule `matiere` était gérée (voir useEffect ci-dessus).
+  // Contrairement à `matiere`, pas de liste à valider contre : la valeur
+  // du query param est directement le texte du champ.
+  useEffect(() => {
+    const metierParam = searchParams.get("metier");
+    if (metierParam) setMetier(metierParam);
+    const filiereParam = searchParams.get("filiere");
+    if (filiereParam) setFiliere(filiereParam);
+    const domaineParam = searchParams.get("domaine");
+    if (domaineParam) setDomaine(domaineParam);
+    const langueParam = searchParams.get("langue_africaine");
+    if (langueParam) setLangueAfricaine(langueParam);
+    const executionParam = searchParams.get("execution");
+    if (executionParam) setExecution(executionParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [ton, setTon] = useState(TON_OPTIONS[0]);
   const [postureGenerale, setPostureGenerale] = useState("");
@@ -258,6 +282,7 @@ function FormulaireCreerAgent() {
           filiere: filiere || null,
           domaine: domaine || null,
           langue_africaine: langueAfricaine || null,
+          execution: execution || null,
           profil_utilisateur_schema: profilChamps
             .filter((c) => c.nom.trim())
             .map((c) => ({ nom: c.nom.trim(), description: c.description.trim() })),
@@ -487,6 +512,17 @@ function FormulaireCreerAgent() {
                   value={langueAfricaine}
                   onChange={(e) => setLangueAfricaine(e.target.value)}
                   placeholder="Ex : Bambara"
+                  className={champClasse}
+                />
+              </div>
+
+              <div>
+                <label className={labelClasse}>Exécution</label>
+                <input
+                  type="text"
+                  value={execution}
+                  onChange={(e) => setExecution(e.target.value)}
+                  placeholder="Ex : Automatisation de tâches"
                   className={champClasse}
                 />
               </div>
