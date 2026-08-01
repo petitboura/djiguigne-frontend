@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Wrench, Link2 } from "lucide-react";
-import { OUTILS_DISPONIBLES } from "./BarreDeSaisie";
+import { OUTILS_DISPONIBLES } from "@/lib/outils";
 import { SourcesBulle } from "./SourcesBulle";
 
 // Affiche, pour CHAQUE outil utilisé, ce qu'il a concrètement exécuté /

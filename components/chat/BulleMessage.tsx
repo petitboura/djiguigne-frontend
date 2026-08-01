@@ -23,7 +23,7 @@ import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
 import { OutilResultatBulle } from "./OutilResultatBulle";
-import { OUTILS_DISPONIBLES } from "./BarreDeSaisie";
+import { OUTILS_DISPONIBLES } from "@/lib/outils";
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown

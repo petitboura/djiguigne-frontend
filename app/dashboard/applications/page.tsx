@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Github, LayoutGrid } from "lucide-react";
+import { Check, LayoutGrid } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { statutConnexion, demarrerConnexion } from "@/lib/api";
+import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
@@ -17,31 +18,23 @@ import { messageErreur } from "@/lib/erreurs";
 // page qui liste chaque appli, explique ce que l'IA peut y faire, et
 // propose de la connecter si ce n'est pas déjà fait.
 //
-// Reprend APPLIS_DISPONIBLES / OUTILS_DISPONIBLES de BarreDeSaisie.tsx à
-// la main (même liste, dupliquée volontairement plutôt qu'importée --
-// BarreDeSaisie.tsx est un composant "use client" massif avec sa propre
-// logique de barre de saisie, pas fait pour être importé juste pour ces
-// deux constantes). Une seule appli pour l'instant (GitHub) ; utilise le
-// même moteur de connexion générique que BarreDeSaisie.tsx
+// CORRECTION du 01/08 (Bourama : "tu as codé GitHub en dur ou est-ce que
+// ça varie en fonction de quel outil est ajouté ou enlevé ?") -- la
+// première version dupliquait APPLIS_DISPONIBLES à la main ici, donc
+// désynchronisée dès qu'une appli est ajoutée/enlevée côté barre de
+// saisie (ce qui est arrivé entre-temps avec Notion). Importe maintenant
+// APPLIS_DISPONIBLES et OUTILS_DISPONIBLES depuis lib/outils.ts, source
+// unique partagée avec BarreDeSaisie.tsx -- les "capacités" affichées
+// pour chaque appli sont dérivées en filtrant OUTILS_DISPONIBLES par son
+// champ `appli`, jamais recopiées à la main.
+//
+// Utilise le même moteur de connexion générique que BarreDeSaisie.tsx
 // (statutConnexion / demarrerConnexion, voir lib/api.ts et
 // api/connexions.py côté backend).
 //
 // Pas de bouton "Déconnecter" : aucune route de déconnexion n'existe
 // encore côté backend (api/connexions.py n'a que statut/demarrer/finaliser)
 // -- à ajouter plus tard si Bourama le demande.
-
-const APPLICATIONS = [
-  {
-    nom: "github",
-    label: "GitHub",
-    Icone: Github,
-    capacites: [
-      "Explorer un dépôt GitHub",
-      "Lire un fichier du dépôt",
-      "Modifier un fichier du dépôt",
-    ],
-  },
-];
 
 export default function PageApplications() {
   const router = useRouter();
@@ -65,7 +58,7 @@ export default function PageApplications() {
   useEffect(() => {
     if (!session) return;
     Promise.all(
-      APPLICATIONS.map((a) =>
+      APPLIS_DISPONIBLES.map((a) =>
         statutConnexion(a.nom)
           .then((r) => [a.nom, r.connecte] as const)
           .catch(() => [a.nom, false] as const)
@@ -119,8 +112,11 @@ export default function PageApplications() {
         {erreur && <p className="text-sm text-[#F87171]">{erreur}</p>}
 
         <div className="flex flex-col gap-3">
-          {APPLICATIONS.map((appli) => {
+          {APPLIS_DISPONIBLES.map((appli) => {
             const connecte = statuts[appli.nom];
+            const capacites = OUTILS_DISPONIBLES.filter((o) => o.appli === appli.nom).map(
+              (o) => o.label
+            );
             return (
               <div
                 key={appli.nom}
@@ -134,9 +130,11 @@ export default function PageApplications() {
                     <p className="font-display text-base font-bold text-dj-texte">
                       {appli.label}
                     </p>
-                    <p className="mt-1 text-sm text-dj-texte-muet">
-                      Ce que l'IA peut y faire : {appli.capacites.join(", ")}.
-                    </p>
+                    {capacites.length > 0 && (
+                      <p className="mt-1 text-sm text-dj-texte-muet">
+                        Ce que l'IA peut y faire : {capacites.join(", ")}.
+                      </p>
+                    )}
                   </div>
                 </div>
 
