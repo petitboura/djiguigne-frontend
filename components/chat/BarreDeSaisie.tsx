@@ -6,6 +6,7 @@ import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, 
 import { OngletOutil, OUTILS_DISPONIBLES, ONGLETS_OUTILS, APPLIS_DISPONIBLES } from "@/lib/outils";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
+import { EditeurMathsRiche } from "./EditeurMathsRiche";
 import { EditeurFormule } from "./EditeurFormule";
 import { BlocCode } from "./BlocCode";
 import hljs from "highlight.js";
@@ -352,6 +353,8 @@ export function BarreDeSaisie({
         return rechercheForcee;
       case "ui_formule":
         return editeurFormuleOuvert;
+      case "ui_editeur_maths":
+        return editeurMathsRicheOuvert;
       case "ui_dessin":
         return canvasOuvert;
       default:
@@ -369,6 +372,9 @@ export function BarreDeSaisie({
         break;
       case "ui_formule":
         setEditeurFormuleOuvert((v) => !v);
+        break;
+      case "ui_editeur_maths":
+        setEditeurMathsRicheOuvert(true);
         break;
       case "ui_dessin":
         setCanvasOuvert(true);
@@ -434,6 +440,11 @@ export function BarreDeSaisie({
   const [canvasOuvert, setCanvasOuvert] = useState(false);
   // Éditeur de formule maths/chimie (2026-07-25) -- voir EditeurFormule.tsx.
   const [editeurFormuleOuvert, setEditeurFormuleOuvert] = useState(false);
+  // Éditeur maths riche à part (01/08) -- voir EditeurMathsRiche.tsx. Un
+  // seul point de contact avec l'existant : `setTexte` au moment
+  // d'"Insérer dans le message", rien d'autre du textarea/clavier
+  // n'est touché ni partagé (demande explicite de Bourama).
+  const [editeurMathsRicheOuvert, setEditeurMathsRicheOuvert] = useState(false);
   // Insertion live (2026-07-27, demande Bourama : "les symboles s'insèrent
   // automatiquement, pas de bouton insérer/effacer") -- plutôt qu'un clic
   // "Insérer" qui pousse le résultat final d'un coup, on garde la trace de
@@ -2060,6 +2071,21 @@ export function BarreDeSaisie({
             // (aperçu + vision Gemini côté backend, aucun code séparé).
             choisirFichier(fichier);
             setCanvasOuvert(false);
+          }}
+        />
+      )}
+
+      {editeurMathsRicheOuvert && (
+        <EditeurMathsRiche
+          onFermer={() => setEditeurMathsRicheOuvert(false)}
+          onInserer={(texteSerialise) => {
+            // Seul point de contact avec le composer existant : on
+            // rejoint `texte` exactement comme la dictée classique
+            // (demarrerDictee) ou le collage -- rien d'autre du textarea
+            // n'est modifié.
+            setTexte((prec) => (prec.trim() ? `${prec} ${texteSerialise}` : texteSerialise));
+            setEditeurMathsRicheOuvert(false);
+            requestAnimationFrame(ajusterHauteurTexte);
           }}
         />
       )}

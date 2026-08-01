@@ -24,6 +24,7 @@ import {
   Sigma,
   AudioLines,
   Github,
+  Calculator,
 } from "lucide-react";
 
 // Extrait de components/chat/BarreDeSaisie.tsx le 01/08 (Bourama : "est-ce
@@ -89,6 +90,12 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   // interceptent ce préfixe au lieu de pousser vers `outilsForces` (backend).
   { nom: "ui_localisation", label: "Joindre ma position", Icone: MapPin, onglet: "utilitaires" },
   { nom: "ui_formule", label: "Insérer une formule / réaction chimique", Icone: Sigma, onglet: "utilitaires" },
+  // Éditeur riche à part (01/08, demande Bourama : "un vrai éditeur latex
+  // live, comme barre de saisie à part, pas touche au clavier existant")
+  // -- distinct de ui_formule ci-dessus (popup une seule formule) : un
+  // vrai document TipTap mélangeant texte et plusieurs formules live à la
+  // suite, voir components/chat/EditeurMathsRiche.tsx.
+  { nom: "ui_editeur_maths", label: "Éditeur maths live (texte + formules)", Icone: Calculator, onglet: "utilitaires" },
   { nom: "ui_recherche", label: "Forcer une recherche web", Icone: Search, onglet: "utilitaires" },
   { nom: "ui_dessin", label: "Dessiner (géométrie, graphe, croquis)", Icone: PenLine, onglet: "utilitaires" },
   // Retiré de la barre comme bouton dédié le 28/07 (Bourama) : n'était
