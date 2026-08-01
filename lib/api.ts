@@ -390,13 +390,18 @@ export async function depotsGithub() {
 }
 
 /**
- * Liste les pages/bases Notion visibles par la personne connectée --
+ * Cherche des pages/bases Notion visibles par la personne connectée --
  * voir api/connexions.py:pages_notion, utilisé par le sélecteur de page
  * dans BarreDeSaisie.tsx. Même correction (2026-07-31) que depotsGithub
  * ci-dessus : une vraie erreur est levée en cas d'échec.
+ *
+ * CORRECTION (01/08) : contrairement à depotsGithub (listing complet),
+ * ceci passe désormais par l'outil MCP notion-search côté backend, qui
+ * exige un texte de recherche -- sans `q`, le backend renvoie une liste
+ * vide plutôt qu'un listing complet (impossible avec cet outil).
  */
-export async function pagesNotion() {
-  const resultat = await appelerApi("/api/connexions/notion/pages");
+export async function pagesNotion(q: string) {
+  const resultat = await appelerApi(`/api/connexions/notion/pages?q=${encodeURIComponent(q)}`);
   return resultat as {
     pages: { titre: string; type: "page" | "database"; url: string }[];
   };

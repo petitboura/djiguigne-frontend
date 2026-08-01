@@ -26,7 +26,24 @@ import {
   Github,
   Calculator,
   Divide,
+  Paperclip,
+  FilePlus,
+  Move,
+  Copy,
+  Database,
+  Settings2,
+  MessageSquare,
+  MessagesSquare,
+  Clock,
+  Users,
+  UserCog,
+  Table2,
+  LayoutGrid,
+  StickyNote,
+  PanelsTopLeft,
+  SlidersHorizontal,
 } from "lucide-react";
+import { IconeNotion } from "@/components/icons/IconeNotion";
 
 // Extrait de components/chat/BarreDeSaisie.tsx le 01/08 (Bourama : "est-ce
 // que ça varie en fonction de quel outil est ajouté ou enlevé" --
@@ -69,14 +86,33 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "lire_fichier_depot_github", label: "Lire un fichier GitHub", Icone: FileCode, onglet: "action_app", appli: "github" },
   { nom: "modifier_fichier_depot_github", label: "Modifier un fichier GitHub", Icone: Edit3, onglet: "action_app", appli: "github" },
   // Notion activé à 100% côté backend (01/08, demande Bourama, voir
-  // registre_outils.py) -- seul notion-search est un vrai outil LLM ici,
-  // les 9 autres outils de lecture (notion-fetch, notion-get-comments...)
-  // et les 10 d'écriture (notion-create-pages...) restent utilisables par
-  // le modèle (au choix du LLM une fois le tool-calling actif) mais n'ont
-  // pas chacun leur propre icône dans cette barre -- seul le point d'entrée
-  // "rechercher" est exposé ici, cohérent avec le sélecteur de page
-  // ci-dessous qui sert à donner un contexte, pas à naviguer tout Notion.
-  { nom: "notion-search", label: "Rechercher dans Notion", Icone: BookOpen, onglet: "action_app", appli: "notion" },
+  // registre_outils.py) -- une icône PAR outil désormais (01/08, demande
+  // Bourama : "regarde comment pour github ça fonctionne"), même
+  // granularité 1:1 que les 3 entrées GitHub ci-dessus, plutôt qu'un
+  // point d'entrée unique. Sans ça, le bouton Outils ne pouvait jamais
+  // envoyer au LLM que notion-search : une entrée = un vrai nom d'outil
+  // du serveur MCP Notion (voir liste dans core/registre_outils.py),
+  // c'est cette correspondance exacte qui rend l'outil sélectionnable.
+  { nom: "notion-search", label: "Rechercher dans Notion", Icone: IconeNotion, onglet: "action_app", appli: "notion" },
+  { nom: "notion-fetch", label: "Ouvrir une page/base Notion", Icone: FileSearch, onglet: "action_app", appli: "notion" },
+  { nom: "notion-query-data-sources", label: "Interroger une base Notion (SQL)", Icone: Table2, onglet: "action_app", appli: "notion" },
+  { nom: "notion-query-database-view", label: "Interroger une vue Notion", Icone: LayoutGrid, onglet: "action_app", appli: "notion" },
+  { nom: "notion-query-meeting-notes", label: "Chercher dans mes notes de réunion", Icone: StickyNote, onglet: "action_app", appli: "notion" },
+  { nom: "notion-get-comments", label: "Lire les commentaires Notion", Icone: MessagesSquare, onglet: "action_app", appli: "notion" },
+  { nom: "notion-get-async-task", label: "Suivre une tâche Notion en cours", Icone: Clock, onglet: "action_app", appli: "notion" },
+  { nom: "notion-get-teams", label: "Lister les équipes Notion", Icone: Users, onglet: "action_app", appli: "notion" },
+  { nom: "notion-get-users", label: "Lister les utilisateurs Notion", Icone: UserCog, onglet: "action_app", appli: "notion" },
+  { nom: "notion-download-attachment", label: "Télécharger une pièce jointe Notion", Icone: Download, onglet: "action_app", appli: "notion" },
+  { nom: "notion-create-pages", label: "Créer une page Notion", Icone: FilePlus, onglet: "action_app", appli: "notion" },
+  { nom: "notion-update-page", label: "Modifier une page Notion", Icone: Edit3, onglet: "action_app", appli: "notion" },
+  { nom: "notion-move-pages", label: "Déplacer une page Notion", Icone: Move, onglet: "action_app", appli: "notion" },
+  { nom: "notion-duplicate-page", label: "Dupliquer une page Notion", Icone: Copy, onglet: "action_app", appli: "notion" },
+  { nom: "notion-create-database", label: "Créer une base Notion", Icone: Database, onglet: "action_app", appli: "notion" },
+  { nom: "notion-update-data-source", label: "Modifier le schéma d'une base Notion", Icone: Settings2, onglet: "action_app", appli: "notion" },
+  { nom: "notion-create-comment", label: "Commenter dans Notion", Icone: MessageSquare, onglet: "action_app", appli: "notion" },
+  { nom: "notion-create-attachment", label: "Joindre un fichier dans Notion", Icone: Paperclip, onglet: "action_app", appli: "notion" },
+  { nom: "notion-create-view", label: "Créer une vue Notion", Icone: PanelsTopLeft, onglet: "action_app", appli: "notion" },
+  { nom: "notion-update-view", label: "Modifier une vue Notion", Icone: SlidersHorizontal, onglet: "action_app", appli: "notion" },
 
   { nom: "exporter_donnees", label: "Exporter des données", Icone: Download, onglet: "utilitaires" },
   { nom: "deployer_site", label: "Déployer un site", Icone: Rocket, onglet: "utilitaires" },
@@ -132,5 +168,9 @@ export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
 // des applis connectables).
 export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
   { nom: "github", label: "GitHub", Icone: Github },
-  { nom: "notion", label: "Notion", Icone: BookOpen },
+  // BookOpen (icône générique) remplacée par le vrai logo Notion (01/08,
+  // demande Bourama) -- même logique que Github juste au-dessus : le
+  // trait suit la couleur du bouton (text-dj-accent-1 / text-dj-texte-muet),
+  // jamais une couleur de marque figée. Voir components/icons/IconeNotion.tsx.
+  { nom: "notion", label: "Notion", Icone: IconeNotion },
 ];

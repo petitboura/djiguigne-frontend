@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, pagesNotion, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { OngletOutil, OUTILS_DISPONIBLES, ONGLETS_OUTILS, APPLIS_DISPONIBLES } from "@/lib/outils";
+import { IconeNotion } from "@/components/icons/IconeNotion";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
 import { EditeurMathsRiche } from "./EditeurMathsRiche";
@@ -635,6 +636,13 @@ export function BarreDeSaisie({
   const [pagesNotionListe, setPagesNotionListe] = useState<
     { titre: string; type: "page" | "database"; url: string }[] | null
   >(null);
+  // CORRECTION (01/08) : contrairement aux dépôts GitHub (listing complet
+  // via /user/repos), notion-search est une recherche sémantique -- son
+  // paramètre query est OBLIGATOIRE côté outil MCP (voir api/connexions.py).
+  // Un simple "charger au premier clic" comme cliquerGithub ne peut donc
+  // pas marcher : il faut une vraie zone de recherche, avec un texte tapé
+  // par la personne, débouncé avant chaque appel réseau.
+  const [rechercheNotion, setRechercheNotion] = useState("");
   const [selecteurNotionOuvert, setSelecteurNotionOuvert] = useState(false);
   const selecteurNotionRef = useRef<HTMLDivElement>(null);
   const selecteurNotionMobileRef = useRef<HTMLDivElement>(null);
@@ -657,6 +665,28 @@ export function BarreDeSaisie({
       .catch(() => setNotionConnecte(false));
   }, []);
 
+  // Recherche débouncée (400ms) déclenchée par la frappe, uniquement
+  // pendant que le sélecteur est ouvert. Champ vide -> pas d'appel réseau,
+  // liste remise à null (affiche l'invite "tape pour chercher").
+  useEffect(() => {
+    if (!selecteurNotionOuvert) return;
+    if (!rechercheNotion.trim()) {
+      setPagesNotionListe(null);
+      return;
+    }
+    setNotionEnCours(true);
+    const delai = setTimeout(() => {
+      pagesNotion(rechercheNotion)
+        .then(({ pages }) => setPagesNotionListe(pages))
+        .catch((e) => {
+          setPagesNotionListe([]);
+          alert(messageErreur(e));
+        })
+        .finally(() => setNotionEnCours(false));
+    }, 400);
+    return () => clearTimeout(delai);
+  }, [rechercheNotion, selecteurNotionOuvert]);
+
   async function cliquerNotion() {
     if (!notionConnecte) {
       setNotionEnCours(true);
@@ -670,21 +700,10 @@ export function BarreDeSaisie({
       return;
     }
 
-    // Déjà connecté : ouvre/ferme le sélecteur de pages, en chargeant la
-    // liste au premier clic seulement (même logique que cliquerGithub).
+    // Déjà connecté : ouvre/ferme simplement le sélecteur -- le
+    // chargement se fait désormais via la recherche tapée (voir
+    // useEffect ci-dessus), pas au clic.
     setSelecteurNotionOuvert((prec) => !prec);
-    if (pagesNotionListe === null) {
-      setNotionEnCours(true);
-      try {
-        const { pages } = await pagesNotion();
-        setPagesNotionListe(pages);
-      } catch (e) {
-        setPagesNotionListe([]);
-        alert(messageErreur(e));
-      } finally {
-        setNotionEnCours(false);
-      }
-    }
   }
 
   function choisirPageNotion(url: string) {
@@ -1225,37 +1244,50 @@ export function BarreDeSaisie({
                       : "relative text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-60"
                   }
                 >
-                  <BookOpen size={18} />
+                  <IconeNotion size={18} />
                   {notionConnecte && (
                     <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-green-500" />
                   )}
                 </button>
 
                 {selecteurNotionOuvert && (
-                  <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
-                    {pagesNotionListe === null && (
-                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
-                    )}
-                    {pagesNotionListe?.length === 0 && (
-                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
-                    )}
-                    {pagesNotionListe?.map((p) => (
-                      <button
-                        key={p.url}
-                        type="button"
-                        onClick={() => choisirPageNotion(p.url)}
-                        className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          {p.titre}
-                          {p.type === "database" && (
-                            <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
-                              base
-                            </span>
-                          )}
-                        </span>
-                      </button>
-                    ))}
+                  <div className="absolute bottom-full left-0 z-30 mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={rechercheNotion}
+                      onChange={(e) => setRechercheNotion(e.target.value)}
+                      placeholder="Chercher une page ou une base..."
+                      className="mb-1 w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none placeholder:text-dj-texte-muet"
+                    />
+                    <div className="max-h-56 overflow-y-auto">
+                      {!rechercheNotion.trim() && (
+                        <p className="px-3 py-2 text-xs text-dj-texte-muet">Tape pour chercher dans ton Notion.</p>
+                      )}
+                      {rechercheNotion.trim() && notionEnCours && (
+                        <p className="px-3 py-2 text-xs text-dj-texte-muet">Recherche...</p>
+                      )}
+                      {rechercheNotion.trim() && !notionEnCours && pagesNotionListe?.length === 0 && (
+                        <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
+                      )}
+                      {pagesNotionListe?.map((p) => (
+                        <button
+                          key={p.url}
+                          type="button"
+                          onClick={() => choisirPageNotion(p.url)}
+                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {p.titre}
+                            {p.type === "database" && (
+                              <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                                base
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1559,30 +1591,43 @@ export function BarreDeSaisie({
                 (md:hidden, plus bas dans le fichier) couvre le petit écran. */}
             {appliButtonVisible && selecteurNotionOuvert && (
               <div className="relative hidden md:block" ref={selecteurNotionRef}>
-                <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
-                  {pagesNotionListe === null && (
-                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
-                  )}
-                  {pagesNotionListe?.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
-                  )}
-                  {pagesNotionListe?.map((p) => (
-                    <button
-                      key={p.url}
-                      type="button"
-                      onClick={() => choisirPageNotion(p.url)}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        {p.titre}
-                        {p.type === "database" && (
-                          <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
-                            base
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  ))}
+                <div className="absolute bottom-full left-0 z-30 mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={rechercheNotion}
+                    onChange={(e) => setRechercheNotion(e.target.value)}
+                    placeholder="Chercher une page ou une base..."
+                    className="mb-1 w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none placeholder:text-dj-texte-muet"
+                  />
+                  <div className="max-h-56 overflow-y-auto">
+                    {!rechercheNotion.trim() && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Tape pour chercher dans ton Notion.</p>
+                    )}
+                    {rechercheNotion.trim() && notionEnCours && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Recherche...</p>
+                    )}
+                    {rechercheNotion.trim() && !notionEnCours && pagesNotionListe?.length === 0 && (
+                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
+                    )}
+                    {pagesNotionListe?.map((p) => (
+                      <button
+                        key={p.url}
+                        type="button"
+                        onClick={() => choisirPageNotion(p.url)}
+                        className="block w-full rounded-lg px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          {p.titre}
+                          {p.type === "database" && (
+                            <span className="rounded bg-dj-surface px-1.5 py-0.5 text-[10px] text-dj-texte-muet">
+                              base
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -2109,10 +2154,21 @@ export function BarreDeSaisie({
           ref={selecteurNotionMobileRef}
           className="fixed inset-x-4 bottom-24 z-40 max-h-[60vh] overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl md:hidden"
         >
-          {pagesNotionListe === null && (
-            <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes pages Notion...</p>
+          <input
+            type="text"
+            autoFocus
+            value={rechercheNotion}
+            onChange={(e) => setRechercheNotion(e.target.value)}
+            placeholder="Chercher une page ou une base..."
+            className="mb-1 w-full rounded-lg border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-sm text-dj-texte outline-none placeholder:text-dj-texte-muet"
+          />
+          {!rechercheNotion.trim() && (
+            <p className="px-3 py-2 text-xs text-dj-texte-muet">Tape pour chercher dans ton Notion.</p>
           )}
-          {pagesNotionListe?.length === 0 && (
+          {rechercheNotion.trim() && notionEnCours && (
+            <p className="px-3 py-2 text-xs text-dj-texte-muet">Recherche...</p>
+          )}
+          {rechercheNotion.trim() && !notionEnCours && pagesNotionListe?.length === 0 && (
             <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune page trouvée.</p>
           )}
           {pagesNotionListe?.map((p) => (
