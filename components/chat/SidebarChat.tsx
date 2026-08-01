@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { appelerApi } from "@/lib/api";
+import { appelerApi, lireOutilsChatAgent } from "@/lib/api";
+import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
@@ -92,6 +93,45 @@ export function SidebarChat({
   const asideRef = useRef<HTMLElement>(null);
   const boutonBasculeRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
+
+  // Bouton "Applications" du sidebar (2026-08-01, demande Bourama) : ne
+  // doit s'afficher que si le créateur de l'agent a activé au moins une
+  // appli, même logique que appliButtonVisible/appliSlotUnique dans
+  // BarreDeSaisie.tsx (voir outilAutorisePourAgent là-bas). `null` tant
+  // que pas encore chargé -> bouton caché (fail closed), pas de flash.
+  const [applisActivesAgent, setApplisActivesAgent] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!agentId) {
+      setApplisActivesAgent([]);
+      return;
+    }
+    let annule = false;
+    lireOutilsChatAgent(agentId)
+      .then((reponse) => {
+        if (annule) return;
+        // Même logique que outilAutorisePourAgent + outilsPourAgent +
+        // applisPourAgent dans BarreDeSaisie.tsx : un outil "ui_..." est
+        // autorisé s'il est dans actions_locales, sinon s'il est dans
+        // outils ; une appli est autorisée si au moins un de ses outils
+        // (champ `.appli` sur OUTILS_DISPONIBLES) est autorisé.
+        const outilsPourAgent = OUTILS_DISPONIBLES.filter((o) =>
+          o.nom.startsWith("ui_")
+            ? reponse.actions_locales.includes(o.nom)
+            : reponse.outils.includes(o.nom)
+        );
+        const applisPourAgent = APPLIS_DISPONIBLES.filter((a) =>
+          outilsPourAgent.some((o) => o.appli === a.nom)
+        );
+        setApplisActivesAgent(applisPourAgent.map((a) => a.nom));
+      })
+      .catch(() => {
+        if (!annule) setApplisActivesAgent([]);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [agentId]);
+  const boutonApplicationsVisible = (applisActivesAgent?.length ?? 0) > 0;
 
   // Clic en dehors du panneau -> fermeture (2026-07-20, bug trouvé par
   // Bourama en test réel). mousedown plutôt que click : se déclenche
@@ -297,16 +337,23 @@ export function SidebarChat({
             la barre de saisie -- celui-ci sert à CONNECTER une appli
             (voir app/dashboard/applications/page.tsx), l'autre à
             EXÉCUTER une action via une appli déjà connectée, voir
-            BarreDeSaisie.tsx). */}
-        <Link
-          href="/dashboard/applications"
-          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
-        >
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <LayoutGrid size={18} />
-          </span>
-          <LibelleRail ouverte={ouverte}>Applications</LibelleRail>
-        </Link>
+            BarreDeSaisie.tsx).
+            Condition de visibilité ajoutée le 01/08 (Bourama : "qu'il ne
+            s'affiche que quand le créateur de l'agent a activé au moins
+            une appli") -- même logique que appliButtonVisible /
+            appliSlotUnique dans BarreDeSaisie.tsx, calculée plus haut via
+            applisActivesAgent. */}
+        {boutonApplicationsVisible && (
+          <Link
+            href="/dashboard/applications"
+            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <LayoutGrid size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>Applications</LibelleRail>
+          </Link>
+        )}
 
         {connecte && aDesMessages && (
           <button
@@ -495,13 +542,15 @@ export function SidebarChat({
             Mon espace
           </Link>
 
-          <Link
-            href="/dashboard/applications"
-            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-          >
-            <LayoutGrid size={16} />
-            Applications
-          </Link>
+          {boutonApplicationsVisible && (
+            <Link
+              href="/dashboard/applications"
+              className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+            >
+              <LayoutGrid size={16} />
+              Applications
+            </Link>
+          )}
 
           {connecte && aDesMessages && (
             <button
