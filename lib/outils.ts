@@ -25,6 +25,7 @@ import {
   AudioLines,
   Github,
   Calculator,
+  Divide,
 } from "lucide-react";
 
 // Extrait de components/chat/BarreDeSaisie.tsx le 01/08 (Bourama : "est-ce
@@ -55,6 +56,7 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "generer_site_zip", label: "Générer un site (zip)", Icone: Package, onglet: "generer" },
   { nom: "generer_bundle", label: "Générer une archive", Icone: Archive, onglet: "generer" },
   { nom: "generer_image", label: "Générer une image", Icone: IconImage, onglet: "generer" },
+  { nom: "calculer_symbolique", label: "Calcul symbolique (résoudre, dériver, intégrer)", Icone: Divide, onglet: "generer" },
 
   { nom: "tavily_search", label: "Recherche web", Icone: Search, onglet: "rechercher" },
   { nom: "tavily_extract", label: "Extraire une page", Icone: FileSearch, onglet: "rechercher" },
