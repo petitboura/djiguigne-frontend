@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, BookOpen, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, pagesNotion, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { OngletOutil, OUTILS_DISPONIBLES, ONGLETS_OUTILS, APPLIS_DISPONIBLES } from "@/lib/outils";
 import { LecteurMedia } from "./LecteurMedia";
@@ -243,6 +243,12 @@ export function BarreDeSaisie({
   // Une appli (ex. GitHub) est autorisée si au moins une de ses actions
   // (ex. explorer_depot_github) fait partie des outils autorisés.
   const applisPourAgent = APPLIS_DISPONIBLES.filter((a) => outilsPourAgent.some((o) => o.appli === a.nom));
+  // Bouton "Utilitaires" (2026-08-01, demande Bourama : "seront un autre
+  // bouton à part, plus dans outils") -- ex-onglet "utilitaires" du menu
+  // Outils, sorti dans son propre bouton dédié. Même liste/filtre agent
+  // que les autres (outilAutorisePourAgent), juste un sous-ensemble de
+  // outilsPourAgent au lieu d'un onglet parmi d'autres.
+  const outilsUtilitairesPourAgent = outilsPourAgent.filter((o) => o.onglet === "utilitaires");
 
   // Flux 3 : bascules d'affichage adaptatif de la barre selon le nombre
   // d'outils/applis réellement activés pour l'agent.
@@ -257,6 +263,14 @@ export function BarreDeSaisie({
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const menuOutilsMobileRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
+  // Menu du bouton "Utilitaires" (2026-08-01) -- même pattern que
+  // menuOutilsOuvert ci-dessus (clic dehors ferme, multi-sélection
+  // cumulative via estOutilActif/executerActionOutil déjà génériques),
+  // mais pas d'onglets : une seule liste plate (outilsUtilitairesPourAgent).
+  const [menuUtilitairesOuvert, setMenuUtilitairesOuvert] = useState(false);
+  const menuUtilitairesRef = useRef<HTMLDivElement>(null);
+  const menuUtilitairesMobileRef = useRef<HTMLDivElement>(null);
+  const boutonUtilitairesRef = useRef<HTMLButtonElement>(null);
   // Onglets du menu Outils (2026-07-28) -- voir ONGLETS_OUTILS en haut du
   // fichier. "generer" ouvert par défaut au premier affichage.
   const [ongletOutilActif, setOngletOutilActif] = useState<OngletOutil>("generer");
@@ -418,6 +432,20 @@ export function BarreDeSaisie({
     document.addEventListener("mousedown", gererClicExterieur);
     return () => document.removeEventListener("mousedown", gererClicExterieur);
   }, [menuOutilsOuvert]);
+
+  useEffect(() => {
+    if (!menuUtilitairesOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuUtilitairesRef.current?.contains(cible)) return;
+      if (boutonUtilitairesRef.current?.contains(cible)) return;
+      if (menuUtilitairesMobileRef.current?.contains(cible)) return;
+      if (boutonPlusRef.current?.contains(cible)) return;
+      setMenuUtilitairesOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuUtilitairesOuvert]);
   // Collage long -> pièce jointe texte (2026-07-23, demande de Bourama :
   // comportement Claude -- coller un gros pavé de texte ne l'insère pas
   // tel quel dans le champ, ça devient une pièce jointe séparée qu'on
@@ -1414,6 +1442,62 @@ export function BarreDeSaisie({
             </div>
             )}
 
+            {/* Bouton Utilitaires (2026-08-01, demande Bourama : "seront
+                un autre bouton à part, plus dans outils") -- ex-onglet
+                "utilitaires" du menu Outils, sorti dans son propre bouton
+                dédié. MÊME logique de multi-sélection cumulative que le
+                bouton Outils (estOutilActif/executerActionOutil déjà
+                génériques, y compris pour les entrées "ui_" locales) --
+                juste pas d'onglets ici, une seule liste plate. Masqué si
+                l'agent n'a aucune entrée utilitaire autorisée. */}
+            {outilsUtilitairesPourAgent.length > 0 && (
+            <div className="relative">
+              <button
+                ref={boutonUtilitairesRef}
+                onClick={() => setMenuUtilitairesOuvert((v) => !v)}
+                aria-label="Choisir un ou plusieurs utilitaires"
+                title="Choisir un ou plusieurs utilitaires"
+                className={
+                  "relative rounded-full p-1 transition-colors " +
+                  (menuUtilitairesOuvert || outilsUtilitairesPourAgent.some((o) => estOutilActif(o.nom))
+                    ? "bg-dj-accent-1/10 text-dj-accent-1"
+                    : "text-dj-texte-muet hover:text-dj-texte")
+                }
+              >
+                <SlidersHorizontal size={18} />
+              </button>
+              <div
+                ref={menuUtilitairesRef}
+                className={
+                  "absolute bottom-full left-0 z-20 mb-2 max-h-72 w-64 max-w-[calc(100vw-2rem)] origin-bottom-left overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                  (menuUtilitairesOuvert
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-1 scale-95 opacity-0")
+                }
+              >
+                {[...outilsUtilitairesPourAgent]
+                  .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+                  .map(({ nom, label, Icone }) => {
+                    const actif = estOutilActif(nom);
+                    return (
+                      <button
+                        key={nom}
+                        onClick={() => executerActionOutil(nom)}
+                        className={
+                          "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs transition-colors " +
+                          (actif ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte hover:bg-dj-surface-haute")
+                        }
+                      >
+                        <Icone size={14} />
+                        <span className="flex-1">{label}</span>
+                        {actif && <Check size={13} />}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+            )}
+
             {/* Icône Appli (2026-07-28) -- icône FIXE (ne varie jamais),
                 pendante de l'icône Outils juste au-dessus : ouvre la liste
                 complète des applis (nécessitant une connexion utilisateur),
@@ -1639,6 +1723,18 @@ export function BarreDeSaisie({
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
               >
                 <Wrench size={16} /> Outils
+              </button>
+              )}
+              {outilsUtilitairesPourAgent.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuUtilitairesOuvert(true);
+                  setMenuPlusOuvert(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
+              >
+                <SlidersHorizontal size={16} /> Utilitaires
               </button>
               )}
               {appliButtonVisible && (
@@ -1871,6 +1967,47 @@ export function BarreDeSaisie({
           <div className="overflow-y-auto p-1">
             {[...outilsPourAgent]
               .filter((o) => o.onglet === ongletOutilActif)
+              .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+              .map(({ nom, label, Icone }) => {
+                const actif = estOutilActif(nom);
+                return (
+                  <button
+                    key={nom}
+                    onClick={() => executerActionOutil(nom)}
+                    className={
+                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors " +
+                      (actif ? "bg-dj-accent-1/10 text-dj-accent-1" : "text-dj-texte hover:bg-dj-surface-haute")
+                    }
+                  >
+                    <Icone size={16} />
+                    <span className="flex-1">{label}</span>
+                    {actif && <Check size={14} />}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Panneau Utilitaires mobile (2026-08-01) -- même principe que le
+          panneau Outils mobile ci-dessus, sans onglets (liste plate). */}
+      {menuUtilitairesOuvert && (
+        <div
+          ref={menuUtilitairesMobileRef}
+          className="fixed inset-x-4 bottom-24 z-40 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface shadow-xl md:hidden"
+        >
+          <div className="flex items-center justify-between border-b border-dj-bordure px-3 py-2">
+            <span className="text-xs font-medium text-dj-texte-muet">Utilitaires</span>
+            <button
+              onClick={() => setMenuUtilitairesOuvert(false)}
+              aria-label="Fermer"
+              className="flex-shrink-0 text-dj-texte-muet hover:text-dj-texte"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="overflow-y-auto p-1">
+            {[...outilsUtilitairesPourAgent]
               .sort((a, b) => a.label.localeCompare(b.label, "fr"))
               .map(({ nom, label, Icone }) => {
                 const actif = estOutilActif(nom);

@@ -106,11 +106,19 @@ export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Sea
   { nom: "ui_mode_vocal", label: "Mode vocal (bientôt disponible)", Icone: AudioLines, onglet: "utilitaires" },
 ];
 
+// "utilitaires" retiré de cette liste le 01/08 (demande Bourama : "les
+// utilitaires seront un autre bouton à part, plus dans outils") -- ces 9
+// entrées (onglet: "utilitaires" dans OUTILS_DISPONIBLES ci-dessus)
+// n'apparaissent donc plus comme onglet du menu Outils, mais sont
+// rendues par leur propre bouton dédié dans BarreDeSaisie.tsx (filtre
+// direct sur onglet === "utilitaires", pas besoin de les retirer du
+// type OngletOutil ni de OUTILS_DISPONIBLES, qui restent la source
+// unique partagée avec BulleMessage.tsx / OutilResultatBulle.tsx /
+// app/dashboard/applications/page.tsx).
 export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
   { id: "generer", label: "Générer" },
   { id: "rechercher", label: "Rechercher / Explorer" },
   { id: "action_app", label: "Action dans l'app" },
-  { id: "utilitaires", label: "Utilitaires" },
 ];
 
 // Liste "Appli" (2026-07-28) -- pendant symétrique à OUTILS_DISPONIBLES,
