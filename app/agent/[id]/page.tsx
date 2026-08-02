@@ -11,7 +11,7 @@ import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { MisesAJourAgent } from "@/components/MisesAJourAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { JsonLd } from "@/components/JsonLd";
-import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+import { IconeMatrix } from "@/components/icones/IconeMatrix";
 
 // Même cas particulier que dans AgentCard.tsx (02/08, Bourama) : cet agent
 // précis n'a ni photo ni emoji, juste l'icône dessinée.
@@ -197,7 +197,7 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
           <div className="flex flex-col gap-4 p-6">
             <div className="flex items-center gap-3">
               {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
-                <IconeMathMatique className="h-12 w-12 shrink-0 text-dj-accent-1" />
+                <IconeMatrix className="h-12 w-12 shrink-0 text-dj-accent-1" />
               ) : (
                 <span className="text-2xl leading-none">{agent.icone_page}</span>
               )}

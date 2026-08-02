@@ -17,16 +17,20 @@ type AgentPublic = { nom: string; image_vitrine_url: string | null };
 // de l'époque physique) pour cet agent précis.
 const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
-function svgIconeMathMatique(taille: number) {
+function svgIconeMatrix(taille: number) {
   return `<svg width="${taille}" height="${taille}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <rect width="24" height="24" fill="#0b0908" />
     <g fill="none" stroke="#e8934a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="4.2" r="1.4" />
-      <line x1="12" y1="5.6" x2="7.4" y2="19.5" />
-      <line x1="12" y1="5.6" x2="16.6" y2="19.5" />
-      <circle cx="7.4" cy="19.8" r="0.6" fill="#e8934a" stroke="none" />
-      <circle cx="16.6" cy="19.8" r="0.6" fill="#e8934a" stroke="none" />
-      <path d="M5.5 17.5 Q12 22.5 18.5 17.5" stroke-dasharray="1.2 1.6" />
+      <line x1="5" y1="19" x2="5" y2="3.5" />
+      <path d="M3.6 6.2 L5 3.5 L6.4 6.2" />
+      <line x1="5" y1="19" x2="20.5" y2="19" />
+      <path d="M17.8 17.6 L20.5 19 L17.8 20.4" />
+      <line x1="9" y1="18.4" x2="9" y2="19.6" />
+      <line x1="13" y1="18.4" x2="13" y2="19.6" />
+      <line x1="17" y1="18.4" x2="17" y2="19.6" />
+      <line x1="4.4" y1="13" x2="5.6" y2="13" />
+      <line x1="4.4" y1="9" x2="5.6" y2="9" />
+      <path d="M6.5 16 C 9.5 6.5, 12.5 6.5, 14.5 11 S 18.5 19, 20 12.5" />
     </g>
   </svg>`;
 }
@@ -38,7 +42,7 @@ export async function GET(
   const taille = Math.min(Math.max(Number(request.nextUrl.searchParams.get("taille")) || 512, 32), 1024);
 
   if (AGENTS_SANS_IMAGE_VITRINE.has(params.id)) {
-    const tampon = await sharp(Buffer.from(svgIconeMathMatique(taille))).png().toBuffer();
+    const tampon = await sharp(Buffer.from(svgIconeMatrix(taille))).png().toBuffer();
     return new NextResponse(tampon, {
       headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=3600" },
     });

@@ -7,12 +7,13 @@ import Image from "next/image";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { RecadreurImage } from "@/components/RecadreurImage";
 import { messageErreur } from "@/lib/erreurs";
-import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+import { IconeMatrix } from "@/components/icones/IconeMatrix";
 
 // Cas particulier demandé par Bourama (02/08) : l'agent "math-matique" n'a
 // pas de section image vitrine -- ni photo, ni emoji -- mais une icône
-// dessinée à la main (compas, lignes fines, couleur du thème). Volontairement
-// codé en dur pour CET agent précis, pas une règle générale par matière.
+// dessinée à la main (Matrix -- courbe sur repère, lignes fines, couleur du
+// thème, aucun remplissage). Volontairement codé en dur pour CET agent
+// précis, pas une règle générale par matière.
 const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
 // Réutilisé par le feed (D.2), la recherche (D.2) et le portfolio créateur
@@ -295,7 +296,7 @@ export function AgentCard({
               }
             >
               {sansImageVitrine ? (
-                <IconeMathMatique className="h-9 w-9 shrink-0 text-dj-accent-1" />
+                <IconeMatrix className="h-9 w-9 shrink-0 text-dj-accent-1" />
               ) : (
                 <span className="text-lg leading-none">{donnees.icone_page ?? "🤖"}</span>
               )}

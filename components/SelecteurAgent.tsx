@@ -8,7 +8,7 @@ import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
 import { BoutonDevenirCreateur } from "@/components/BoutonDevenirCreateur";
-import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+import { IconeMatrix } from "@/components/icones/IconeMatrix";
 
 // Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama).
 const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
@@ -173,7 +173,7 @@ export function SelecteurAgent() {
                 >
                   <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
                     {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
-                      <IconeMathMatique className="h-6 w-6 text-dj-accent-1" />
+                      <IconeMatrix className="h-6 w-6 text-dj-accent-1" />
                     ) : agent.image_vitrine_url ? (
                       <Image
                         src={agent.image_vitrine_url}

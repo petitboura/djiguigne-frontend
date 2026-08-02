@@ -41,12 +41,16 @@ export default async function OgImageAgent({ params }: { params: { id: string } 
       >
         {iconeDessinee ? (
           <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#e8934a" strokeWidth="1">
-            <circle cx="12" cy="4.2" r="1.4" />
-            <line x1="12" y1="5.6" x2="7.4" y2="19.5" />
-            <line x1="12" y1="5.6" x2="16.6" y2="19.5" />
-            <circle cx="7.4" cy="19.8" r="0.6" fill="#e8934a" stroke="none" />
-            <circle cx="16.6" cy="19.8" r="0.6" fill="#e8934a" stroke="none" />
-            <path d="M5.5 17.5 Q12 22.5 18.5 17.5" strokeDasharray="1.2 1.6" />
+            <line x1="5" y1="19" x2="5" y2="3.5" />
+            <path d="M3.6 6.2 L5 3.5 L6.4 6.2" />
+            <line x1="5" y1="19" x2="20.5" y2="19" />
+            <path d="M17.8 17.6 L20.5 19 L17.8 20.4" />
+            <line x1="9" y1="18.4" x2="9" y2="19.6" />
+            <line x1="13" y1="18.4" x2="13" y2="19.6" />
+            <line x1="17" y1="18.4" x2="17" y2="19.6" />
+            <line x1="4.4" y1="13" x2="5.6" y2="13" />
+            <line x1="4.4" y1="9" x2="5.6" y2="9" />
+            <path d="M6.5 16 C 9.5 6.5, 12.5 6.5, 14.5 11 S 18.5 19, 20 12.5" />
           </svg>
         ) : (
           <div style={{ fontSize: 120, lineHeight: 1 }}>{icone}</div>
