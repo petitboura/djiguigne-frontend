@@ -9,9 +9,9 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeKatex from "rehype-katex";
 import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { formaterHeure } from "@/lib/formatageHeure";
+import dynamic from "next/dynamic";
 import { BlocCode } from "./BlocCode";
 import { Mermaid } from "./Mermaid";
-import { GraphiqueDonnees } from "./GraphiqueDonnees";
 import { CarteMessage } from "./CarteMessage";
 import { SchemaGeometrique } from "./SchemaGeometrique";
 import { WidgetSandbox } from "./WidgetSandbox";
@@ -23,6 +23,15 @@ import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
 import { OutilResultatBulle } from "./OutilResultatBulle";
+
+// Chargé à la demande (pas en haut du bundle du chat) : recharts ne sert
+// que si le message contient effectivement un bloc ```chart, et son
+// ResponsiveContainer ne rend rien d'utile côté serveur de toute façon
+// (mesures de pixels réelles nécessaires) -- ssr:false assumé.
+const GraphiqueDonnees = dynamic(() => import("./GraphiqueDonnees").then((m) => m.GraphiqueDonnees), {
+  ssr: false,
+  loading: () => <div className="text-sm text-dj-muted px-1 py-2">Construction du graphique…</div>,
+});
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
 // contenu source d'un bloc de code (```lang ... ```) tel que ReactMarkdown

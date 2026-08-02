@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FileCode } from "lucide-react";
-import hljs from "highlight.js";
+import hljs from "@/lib/coloration";
 import { BlocExpansible } from "./BlocExpansible";
 
 // Extensions de code reconnues -> langage highlight.js. Un fichier de

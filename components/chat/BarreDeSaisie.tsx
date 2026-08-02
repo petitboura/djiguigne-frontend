@@ -7,12 +7,28 @@ import { OngletOutil, OUTILS_DISPONIBLES, ONGLETS_OUTILS, APPLIS_DISPONIBLES } f
 import { IconeNotion } from "@/components/icons/IconeNotion";
 import { LecteurMedia } from "./LecteurMedia";
 import { CanvasDessin } from "./CanvasDessin";
-import { EditeurMathsRiche } from "./EditeurMathsRiche";
-import { EditeurFormule } from "./EditeurFormule";
+import dynamic from "next/dynamic";
 import { BlocCode } from "./BlocCode";
-import hljs from "highlight.js";
+import hljs from "@/lib/coloration";
 import katex from "katex";
 import { messageErreur } from "@/lib/erreurs";
+
+// EditeurMathsRiche (tiptap + mathlive) et EditeurFormule (mathlive) ne
+// montent que quand leur modale respective s'ouvre (voir
+// editeurMathsRicheOuvert/editeurFormuleOuvert plus bas) -- next/dynamic
+// les sort du bundle initial de la barre de saisie, chargées uniquement
+// au clic sur les boutons correspondants. katex, lui, reste en import
+// statique ci-dessus : rendreFormuleKatex() (aperçu LaTeX en direct
+// pendant la frappe, plus bas) l'appelle de façon synchrone à chaque
+// rendu du texte -- le rendre lazy demanderait de refondre ce chemin en
+// asynchrone, risqué sur une fonctionnalité aussi visible/fréquente pour
+// un gain modeste (katex est plus léger que tiptap+mathlive).
+const EditeurMathsRiche = dynamic(() => import("./EditeurMathsRiche").then((m) => m.EditeurMathsRiche), {
+  ssr: false,
+});
+const EditeurFormule = dynamic(() => import("./EditeurFormule").then((m) => m.EditeurFormule), {
+  ssr: false,
+});
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
 export type LocalisationJointe = { latitude: number; longitude: number } | null;

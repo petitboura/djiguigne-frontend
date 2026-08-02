@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Copy, Check, Download, Maximize2, Minimize2, X } from "lucide-react";
-import hljs from "highlight.js";
+import hljs from "@/lib/coloration";
 
 // Rendu des blocs ```lang ... ``` "code réel" du markdown (les langages
 // spéciaux -- mermaid/chart/carte/html -- sont interceptés un niveau plus

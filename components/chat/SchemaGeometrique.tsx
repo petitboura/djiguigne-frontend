@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Download, Check } from "lucide-react";
-import { telechargerImage } from "./GraphiqueDonnees";
+import { telechargerImage } from "@/lib/telechargerImageGraphique";
 
 // Rend un bloc ```geometrie du markdown -- même famille que ```chart
 // (GraphiqueDonnees.tsx) et ```carte (CarteMessage.tsx), ajouté le 27/07
