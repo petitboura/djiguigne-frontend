@@ -111,6 +111,15 @@ export interface MessageAffiche {
   // l'utilisateur ne juge pas la qualité habituelle de la plateforme
   // là-dessus.
   qualiteReduite?: boolean;
+  // Ajoute le 02/08/2026 (Bourama : "on va ajouter Claude, GPT et
+  // DeepSeek" -- feature modeles premium, voir core/fournisseurs_llm.py).
+  // LABEL lisible (ex: "Claude Sonnet 5"), pas le modele_id technique --
+  // deja resolu cote ChatIA.tsx via la liste modelesDisponibles de
+  // l'agent. undefined/null = pas affiche du tout : NI pour les reponses
+  // Groq/Gemini par defaut (jamais montrees a l'utilisateur, demande
+  // explicite de Bourama "les autres non"), NI pour un vieux message
+  // d'avant cette feature (colonne modele NULL en base).
+  modele?: string | null;
   // Ajouté 2026-07-26 (bug trouvé par Bourama : le raisonnement et les
   // sources disparaissaient dès qu'on posait la question suivante --
   // avant ce fix, ils vivaient uniquement dans un state séparé de
@@ -614,6 +623,10 @@ export function BulleMessage({
             modèle principal). La qualité peut être inférieure à la normale.
           </span>
         </div>
+      )}
+
+      {!estUtilisateur && message.modele && (
+        <div className="mt-1 text-[12px] text-dj-texte-muet">Répondu par {message.modele}</div>
       )}
 
       {/* Heure : uniquement sous le message utilisateur (correction du

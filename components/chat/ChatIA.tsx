@@ -27,6 +27,8 @@ export function ChatIA({
   conversationId,
   messagesInitiaux = [],
   onMessagesChange,
+  modelesDisponibles = [],
+  modeleChoisi = null,
 }: {
   agentId: string;
   nomAgent: string;
@@ -35,7 +37,16 @@ export function ChatIA({
   conversationId: string;
   messagesInitiaux?: MessageAffiche[];
   onMessagesChange?: (nbMessages: number) => void;
+  // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) : liste
+  // vide = agent sans abonnement premium debloque, BarreDeSaisie
+  // n'affiche alors AUCUN selecteur (comportement identique a avant
+  // cette feature). `modeleChoisi` = preference par defaut du createur
+  // (AgentEditable.modele_choisi cote backend), simple valeur initiale --
+  // l'utilisateur peut la changer pour la session via le selecteur.
+  modelesDisponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
+  modeleChoisi?: string | null;
 }) {
+  const [modeleSelectionne, setModeleSelectionne] = useState<string | null>(modeleChoisi);
   const [messages, setMessages] = useState<MessageAffiche[]>(messagesInitiaux);
   // Correctif mobile (2026-07-30, demande Bourama) : aucun scroll auto
   // n'existait avant -- sur desktop le "scroll anchoring" natif du
@@ -109,6 +120,13 @@ export function ChatIA({
         return copie;
       });
     } else if (evenement.type === "meta") {
+      // `evenement.modele` = modele_id brut (voir core/main.py --
+      // _sauvegarder_echange renvoie desormais ce champ pour TOUTE
+      // reponse, Groq/Gemini par defaut inclus). On ne resout un label
+      // affichable QUE s'il correspond a un modele premium connu de CET
+      // agent (modelesDisponibles) -- un id Groq/Gemini interne ne
+      // matche jamais rien ici et reste donc invisible, comme demande.
+      const modeleLabel = modelesDisponibles.find((m) => m.modele_id === evenement.modele)?.label ?? null;
       majMessages((prec) => {
         const copie = [...prec];
         const iAssistant = copie.length - 1;
@@ -118,6 +136,7 @@ export function ChatIA({
           id: evenement.message_id_assistant ?? copie[iAssistant].id,
           created_at: evenement.created_at_assistant ?? copie[iAssistant].created_at,
           qualiteReduite: evenement.modele_qualite_reduite === true,
+          modele: modeleLabel,
         };
         if (iUser >= 0) copie[iUser] = { ...copie[iUser], id: evenement.message_id_user };
         return copie;
@@ -366,6 +385,11 @@ export function ChatIA({
           // Bouton "Aucun" (31/07, demande Bourama) -- voir
           // ignorerSuggestionOutils ci-dessous.
           ignorer_suggestion_outils: ignorerRouteurOutils,
+          // Selecteur de modele premium (02/08/2026) -- null tant que
+          // l'agent n'a rien debloque ou que l'utilisateur n'a pas
+          // change le defaut, voir modeleSelectionne plus haut. Revalide
+          // cote backend avant d'etre honore (api/chat.py:_resoudre_modele_force).
+          modele: modeleSelectionne,
         },
         (evenement) => traiterEvenement(evenement)
       );
@@ -578,7 +602,14 @@ export function ChatIA({
           s'additionne, ne le remplace pas (viewport-fit=cover posé dans
           app/layout.tsx rend cette variable non nulle sur iPhone). */}
       <div className="px-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1.5rem)]">
-        <BarreDeSaisie onEnvoyer={envoyerMessage} desactive={genEnCours} agentId={agentId} />
+        <BarreDeSaisie
+          onEnvoyer={envoyerMessage}
+          desactive={genEnCours}
+          agentId={agentId}
+          modelesDisponibles={modelesDisponibles}
+          modeleSelectionne={modeleSelectionne}
+          onModeleChange={setModeleSelectionne}
+        />
       </div>
 
       {popupFeedback && (

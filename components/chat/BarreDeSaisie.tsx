@@ -176,6 +176,9 @@ export function BarreDeSaisie({
   onEnvoyer,
   desactive,
   agentId,
+  modelesDisponibles = [],
+  modeleSelectionne = null,
+  onModeleChange,
 }: {
   onEnvoyer: (
     texte: string,
@@ -188,6 +191,17 @@ export function BarreDeSaisie({
   ) => void;
   desactive?: boolean;
   agentId?: string;
+  // Selecteur de modele premium (02/08/2026, voir ChatIA.tsx et
+  // core/fournisseurs_llm.py) -- liste vide = agent sans abonnement
+  // premium debloque, AUCUN bouton affiche (comportement identique a
+  // avant cette feature, jamais de selecteur pour un agent qui n'a rien
+  // debloque). Controle par le PARENT (ChatIA.tsx) plutot qu'en state
+  // local ici, contrairement a rechercheForcee/outilsForces -- la valeur
+  // doit survivre au closure de envoyerMessage sans passer par
+  // onEnvoyer (deja tres charge), voir ChatIA.tsx:modeleSelectionne.
+  modelesDisponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
+  modeleSelectionne?: string | null;
+  onModeleChange?: (modeleId: string | null) => void;
 }) {
   const [texte, setTexte] = useState("");
   const [longueur, setLongueur] = useState<LongueurReponse>("moyenne");
@@ -1558,6 +1572,7 @@ export function BarreDeSaisie({
               </div>
             )}
 
+
             {/* Bouton Outils (2026-07-25, multi-sélection depuis le 26/07) --
                 icône FIXE (ne varie jamais) : ouvre la liste complète des
                 outils, y compris les entrées "ui_" ci-dessus.
@@ -1886,6 +1901,29 @@ export function BarreDeSaisie({
                   {contenuSelecteurNotion("bg-dj-surface", "bg-dj-surface")}
                 </div>
               </div>
+            )}
+
+            {/* Sélecteur de modèle premium (02/08/2026, voir capture
+                Bourama : "Sonnet 5   Moyen ⌄" dans la barre de saisie
+                desktop) -- même style que le sélecteur Courte/Moyenne/
+                Longue juste après, masqué si l'agent n'a aucun modèle
+                premium débloqué (voir ChatIA.tsx et
+                core/fournisseurs_llm.py). "Auto" = pas de préférence,
+                cascade Groq/Gemini habituelle. */}
+            {modelesDisponibles.length > 0 && (
+              <select
+                value={modeleSelectionne ?? ""}
+                onChange={(e) => onModeleChange?.(e.target.value || null)}
+                aria-label="Choisir le modèle"
+                className="rounded-md bg-transparent text-xs text-dj-texte-muet outline-none"
+              >
+                <option value="">Auto</option>
+                {modelesDisponibles.map((m) => (
+                  <option key={m.modele_id} value={m.modele_id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
             )}
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),

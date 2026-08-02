@@ -20,6 +20,12 @@ type AgentDetailPublic = {
   icone_page: string;
   titre_accueil: string;
   sous_titre_accueil: string;
+  // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) -- deja
+  // renvoyes par le backend (api/agents.py:AgentDetailPublic), juste
+  // ajoutes ici pour que ce type local (utilise pour le SSR de cette
+  // page) les laisse passer jusqu'a ChatAgentClient.
+  modeles_disponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
+  modele_choisi?: string | null;
 };
 
 async function chargerAgent(id: string): Promise<AgentDetailPublic | null> {

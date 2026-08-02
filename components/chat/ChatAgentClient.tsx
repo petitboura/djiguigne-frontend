@@ -25,6 +25,12 @@ export function ChatAgentClient({
     icone_page: string;
     titre_accueil: string;
     sous_titre_accueil: string;
+    // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) --
+    // renvoyes par GET /api/agents/{id} (AgentDetailPublic), optionnels
+    // pour rester compatibles avec tout appelant qui ne les fournirait
+    // pas encore (voir app/agent/[id]/chat/page.tsx).
+    modeles_disponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
+    modele_choisi?: string | null;
   };
   retourExterne?: string;
 }) {
@@ -131,6 +137,8 @@ export function ChatAgentClient({
           conversationId={cle}
           messagesInitiaux={messagesInitiaux}
           onMessagesChange={setNbMessages}
+          modelesDisponibles={agent.modeles_disponibles}
+          modeleChoisi={agent.modele_choisi}
         />
       </div>
     </div>

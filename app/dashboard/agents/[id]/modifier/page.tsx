@@ -11,6 +11,7 @@ import { ChampImage } from "@/components/ChampImage";
 import { PopupCategories, chargerCategories, type Categorie } from "@/components/PopupCategories";
 import { DroitsAgent } from "@/components/DroitsAgent";
 import { ProactiviteAgent } from "@/components/ProactiviteAgent";
+import { ModelesPremiumAgent } from "@/components/ModelesPremiumAgent";
 import { messageErreur } from "@/lib/erreurs";
 
 // Étape "modifier un agent" (2026-07-12, demande de Bourama : "on ne peut
@@ -691,6 +692,11 @@ export default function PageModifierAgent() {
         <section className="mt-10 border-t border-dj-bordure pt-8">
           <h2 className="text-lg font-bold mb-4">Proactivité</h2>
           <ProactiviteAgent agentId={agentId} />
+        </section>
+
+        <section className="mt-10 border-t border-dj-bordure pt-8">
+          <h2 className="text-lg font-bold mb-4">Modèles premium</h2>
+          <ModelesPremiumAgent agentId={agentId} />
         </section>
 
         <section className="mt-10 flex flex-col gap-4">
