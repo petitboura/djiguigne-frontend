@@ -406,3 +406,36 @@ export async function pagesNotion(q: string) {
     pages: { titre: string; type: "page" | "database"; url: string }[];
   };
 }
+
+/**
+ * Interroge le contenu d'une base Notion (02/08, demande Bourama : "on va
+ * ajouter" query-data-sources/query-database-view) -- `url` est l'URL de la
+ * base choisie dans le sélecteur (résultat de pagesNotion, type
+ * "database"), `q` le texte tapé sur le 2e écran de requête. Voir
+ * api/connexions.py:lignes_base_notion pour le detail (fetch de la base ->
+ * data source URL -> SQL, filtre par `q` fait côté backend en Python, pas
+ * une vraie clause SQL dynamique).
+ */
+export async function lignesBaseNotion(url: string, q: string) {
+  const resultat = await appelerApi(
+    `/api/connexions/notion/bases/lignes?url=${encodeURIComponent(url)}&q=${encodeURIComponent(q)}`
+  );
+  return resultat as {
+    lignes: { titre: string; url: string | null; proprietes: Record<string, unknown> }[];
+  };
+}
+
+/**
+ * Crée une page Notion standalone (02/08, demande Bourama : titre + zone de
+ * texte pour le contenu, pas de choix de parent dans cette itération). Voir
+ * api/connexions.py:creer_page_notion -- appel MCP direct, pas de passage
+ * par la confirmation OUTILS_SENSIBLES (le clic "Créer" du formulaire en
+ * tient lieu).
+ */
+export async function creerPageNotion(titre: string, contenu: string) {
+  const resultat = await appelerApi(`/api/connexions/notion/pages`, {
+    method: "POST",
+    body: JSON.stringify({ titre, contenu }),
+  });
+  return resultat as { url: string };
+}
