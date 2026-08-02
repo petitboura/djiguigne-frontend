@@ -10,16 +10,23 @@ import { NotificationsPushCloche } from "@/components/NotificationsPushCloche";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
 
 // Nav de la PLATEFORME, volontairement différente du Header de
-// djiguigne-frontend (pas de services/about/blog/contact). "Mon espace" pointe vers
-// /dashboard, pas encore construit (Étape D.5) : le lien existe déjà pour
-// ne pas avoir à retoucher ce composant plus tard, Next.js affichera son
-// 404 par défaut tant que la page n'existe pas.
+// djiguigne-frontend (pas de services/about/blog/contact).
+//
+// "Mon espace" pointe vers /dashboard/espace depuis le 01/08 (demande
+// Bourama : nouvelle page -- Historique + Bibliothèque + Appli
+// connectées -- remplace l'ancienne /dashboard dans la navigation.
+// L'ancienne page /dashboard N'EST PAS supprimée ("ne le supprime pas,
+// juste désactive-le"), juste retirée d'ici et de SidebarChat.tsx ;
+// reste joignable par lien direct pour qui a l'URL.
 export function TopBar() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
   const pathname = usePathname();
   // Corrigé le 2026-07-13 (Bourama : "'Mon espace' reste éteint même
   // quand on est dedans") : aucun état actif n'était géré, le lien
-  // gardait la même apparence peu importe la page courante.
+  // gardait la même apparence peu importe la page courante. Toujours
+  // large (tout /dashboard/*, pas juste /dashboard/espace) : les autres
+  // pages du dashboard (applications, modifier un agent...) restent
+  // sous cette même rubrique de nav.
   const dansMonEspace = pathname?.startsWith("/dashboard");
 
   useEffect(() => {
@@ -51,7 +58,7 @@ export function TopBar() {
             <NotificationsCloche />
             <NotificationsPushCloche />
             <Link
-              href="/dashboard"
+              href="/dashboard/espace"
               className={
                 dansMonEspace
                   ? "rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02]"

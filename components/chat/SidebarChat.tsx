@@ -319,12 +319,11 @@ export function SidebarChat({
         </Link>
 
         {/* Ajouté le 31/07 (Bourama : "ajoute le bouton mon espace dans le
-            chat") -- même route que "Mon espace" dans la TopBar
-            (app/dashboard/page.tsx), pour y accéder aussi depuis le chat
-            sans repasser par l'accueil (qui redirige maintenant direct
-            vers le chat, voir app/page.tsx). */}
+            chat") -- même route que "Mon espace" dans la TopBar. Pointe
+            vers /dashboard/espace depuis le 01/08 (nouvelle page, voir
+            TopBar.tsx pour le détail). */}
         <Link
-          href="/dashboard"
+          href="/dashboard/espace"
           className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
         >
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
@@ -535,7 +534,7 @@ export function SidebarChat({
           </Link>
 
           <Link
-            href="/dashboard"
+            href="/dashboard/espace"
             className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
           >
             <UserCircle size={16} />

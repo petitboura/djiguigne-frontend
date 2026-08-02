@@ -238,6 +238,41 @@ export async function ajouterFichierBibliotheque(
 }
 
 /**
+ * Upload vers la bibliothèque PERSONNELLE de l'utilisateur connecté
+ * (2026-08-01, nouvelle section "Mon espace" -- voir
+ * api/bibliotheque_utilisateur.py:uploader_document). Même mécanique que
+ * ajouterFichierBibliotheque ci-dessus, sans agentId : ces documents ne
+ * sont liés à aucun agent, consultables depuis n'importe quelle
+ * conversation via l'outil consulter_bibliotheque.
+ */
+export async function ajouterFichierBibliothequePersonnelle(fichier: File, description: string, titre?: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("Connecte-toi pour envoyer un fichier.");
+  }
+
+  const corps = new FormData();
+  corps.append("fichier", fichier);
+  if (titre?.trim()) corps.append("titre", titre.trim());
+  corps.append("description", description);
+
+  const reponse = await fetch(`${API_URL}/api/bibliotheque`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: corps,
+  });
+
+  if (!reponse.ok) {
+    throw await construireErreurApi(reponse, "/api/bibliotheque");
+  }
+
+  return reponse.json();
+}
+
+/**
  * Upload d'une image jointe à un message de chat -- voir
  * components/chat/ChatIA.tsx:envoyerMessage côté appelant. Réutilise
  * appelerApiFichier (même mécanique FormData) sur le nouvel endpoint dédié
