@@ -23,13 +23,15 @@ import { ApplisConnectees } from "@/components/ApplisConnectees";
  *   ajouterFichiersBibliothequePersonnelle) + liste + suppression.
  *   Documents personnels, consultables par n'importe quelle IA dans
  *   n'importe quelle conversation via l'outil consulter_bibliotheque.
- *   Corrigé le 01/08 (Bourama : "chaque upload y reste") : cette liste
- *   remonte TOUT ce qui a été uploadé au niveau utilisateur, y compris
- *   depuis n'importe quel chat (pas seulement ce qui est ajouté ici) --
- *   voir api/uploads.py, ces routes enregistrent déjà niveau="utilisateur"
- *   depuis le 22/07 ; ce qui manquait, c'était l'INDEXATION pour la
- *   recherche (voir core/bibliotheque_rag.py), pas l'apparition dans
- *   cette liste, déjà correcte.
+ *   REVERT du 01/08 (Bourama : "les trucs uploadés dans les chats ne
+ *   font pas partie [de cette liste], il n'y a que les fichiers que TU
+ *   as uploadés qui y sont") : un fichier envoyé en pièce jointe dans
+ *   une conversation N'APPARAÎT JAMAIS ici, quel qu'il soit (image,
+ *   document, audio, vidéo) -- seuls les fichiers ajoutés explicitement
+ *   via le bouton "Ajouter" ci-dessous en font partie. Distinction
+ *   faite côté backend par la colonne `origine` (voir migration
+ *   fichiers_uploades_origine et api/bibliotheque_utilisateur.py:lister),
+ *   pas ici : cette page affiche simplement ce que l'API renvoie.
  * - Appli connectées : réutilise components/ApplisConnectees.tsx.
  */
 
@@ -154,8 +156,7 @@ export default function PageMonEspace() {
           <div className="flex flex-col gap-4">
             <p className="text-sm text-dj-texte-muet">
               Les documents ajoutés ici sont personnels : toi seul y as accès, et n&apos;importe
-              laquelle de tes IA peut aller les consulter pendant une conversation. Cette liste
-              reprend aussi tout ce que tu as déjà envoyé dans n&apos;importe quel chat.
+              laquelle de tes IA peut aller les consulter pendant une conversation.
             </p>
 
             {fichiers === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
