@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { appelerApi, ajouterFichiersBibliothequePersonnelle } from "@/lib/api";
+import {
+  appelerApi,
+  ajouterFichiersBibliothequePersonnelle,
+  ajouterLienBibliothequePersonnelle,
+  ajouterTexteBibliothequePersonnelle,
+} from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
@@ -13,27 +18,28 @@ import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 
 /**
- * Page "Mon espace" (2026-08-01, demande Bourama). Revue le même jour en
- * ONGLETS (pas de scroll entre sections, une seule affichée à la fois) --
- * corrige la première version qui empilait les 3 sections verticalement.
+ * Page "Mon espace" (2026-08-01, demande Bourama).
  *
- * - Historique : réutilise HistoriqueConversations tel quel.
- * - Bibliothèque : upload MULTIPLE (plusieurs fichiers d'un coup, sans
- *   description obligatoire par fichier -- voir
- *   ajouterFichiersBibliothequePersonnelle) + liste + suppression.
- *   Documents personnels, consultables par n'importe quelle IA dans
- *   n'importe quelle conversation via l'outil consulter_bibliotheque.
- *   REVERT du 01/08 (Bourama : "les trucs uploadés dans les chats ne
- *   font pas partie [de cette liste], il n'y a que les fichiers que TU
- *   as uploadés qui y sont") : un fichier envoyé en pièce jointe dans
- *   une conversation N'APPARAÎT JAMAIS ici, quel qu'il soit (image,
- *   document, audio, vidéo) -- seuls les fichiers ajoutés explicitement
- *   via le bouton "Ajouter" ci-dessous en font partie. Distinction
- *   faite côté backend par la colonne `origine` (voir migration
- *   fichiers_uploades_origine et api/bibliotheque_utilisateur.py:lister),
- *   pas ici : cette page affiche simplement ce que l'API renvoie.
- * - Appli connectées : réutilise components/ApplisConnectees.tsx.
+ * Bibliothèque revue le même jour (2e passe, "ajoute le cas des liens et
+ * du texte... pas de filtre au moment de l'upload... auto la détection
+ * du type... séparé en sous-onglet") :
+ * - UNE SEULE zone d'ajout : fichiers (plusieurs à la fois, sélecteur
+ *   classique) + une simple case où on colle/tape un lien OU un texte --
+ *   le type est détecté automatiquement (URL_REGEX ci-dessous), rien à
+ *   choisir avant d'ajouter. Tout peut être envoyé ensemble en un clic.
+ * - Une fois ajouté, la liste se répartit en sous-onglets (Tous /
+ *   Fichiers / Liens / Texte) déduits de type_mime -- pas de nouvelle
+ *   colonne côté base, "text/uri-list" = lien (voir enregistrer_lien),
+ *   "text/plain" = texte (voir /api/bibliotheque/texte), le reste =
+ *   fichier.
+ *
+ * REVERT du 01/08 (1ère passe, Bourama : "les trucs uploadés dans les
+ * chats ne font pas partie [de cette liste]") : reste vrai ici, la liste
+ * ne remonte que ce qui est ajouté depuis cette page (voir origine côté
+ * backend, api/bibliotheque_utilisateur.py:lister).
  */
+
+const URL_REGEX = /^https?:\/\/\S+$/i;
 
 type FichierBiblio = {
   id: string;
@@ -45,6 +51,7 @@ type FichierBiblio = {
 };
 
 type Onglet = "historique" | "bibliotheque" | "applis";
+type SousOngletBiblio = "tous" | "fichiers" | "liens" | "texte";
 
 const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
   { id: "historique", label: "Historique", Icone: History },
@@ -52,15 +59,30 @@ const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
   { id: "applis", label: "Appli connectées", Icone: LayoutGrid },
 ];
 
+const SOUS_ONGLETS: { id: SousOngletBiblio; label: string }[] = [
+  { id: "tous", label: "Tous" },
+  { id: "fichiers", label: "Fichiers" },
+  { id: "liens", label: "Liens" },
+  { id: "texte", label: "Texte" },
+];
+
+function typeDe(f: FichierBiblio): SousOngletBiblio {
+  if (f.type_mime === "text/uri-list") return "liens";
+  if (f.type_mime === "text/plain") return "texte";
+  return "fichiers";
+}
+
 export default function PageMonEspace() {
   const router = useRouter();
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
   const [onglet, setOnglet] = useState<Onglet>("historique");
+  const [sousOnglet, setSousOnglet] = useState<SousOngletBiblio>("tous");
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
+  const [texteOuLien, setTexteOuLien] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [erreursEnvoi, setErreursEnvoi] = useState<{ nom: string; erreur: string }[]>([]);
 
@@ -86,14 +108,36 @@ export default function PageMonEspace() {
       .catch(() => setFichiers([]));
   }
 
+  const fichiersAffiches = useMemo(() => {
+    if (!fichiers) return null;
+    if (sousOnglet === "tous") return fichiers;
+    return fichiers.filter((f) => typeDe(f) === sousOnglet);
+  }, [fichiers, sousOnglet]);
+
   async function ajouter() {
-    if (nouveauxFichiers.length === 0) return;
+    const texte = texteOuLien.trim();
+    if (nouveauxFichiers.length === 0 && !texte) return;
+
     setEnvoi(true);
     setErreursEnvoi([]);
     try {
-      const erreurs = await ajouterFichiersBibliothequePersonnelle(nouveauxFichiers);
+      const erreurs = nouveauxFichiers.length > 0 ? await ajouterFichiersBibliothequePersonnelle(nouveauxFichiers) : [];
+
+      if (texte) {
+        try {
+          if (URL_REGEX.test(texte)) {
+            await ajouterLienBibliothequePersonnelle(texte);
+          } else {
+            await ajouterTexteBibliothequePersonnelle(texte);
+          }
+        } catch (e) {
+          erreurs.push({ nom: texte, erreur: messageErreur(e) });
+        }
+      }
+
       setErreursEnvoi(erreurs);
       setNouveauxFichiers([]);
+      setTexteOuLien("");
       chargerFichiers();
     } finally {
       setEnvoi(false);
@@ -159,35 +203,37 @@ export default function PageMonEspace() {
               laquelle de tes IA peut aller les consulter pendant une conversation.
             </p>
 
-            {fichiers === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
-            {fichiers?.length === 0 && (
-              <p className="text-sm text-dj-texte-muet">Aucun document dans ta bibliothèque.</p>
-            )}
-            {fichiers && fichiers.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {fichiers.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex items-center justify-between rounded-xl border border-dj-bordure bg-dj-surface px-4 py-3"
-                  >
-                    <a
-                      href={f.url_publique}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-dj-accent-1 hover:text-dj-accent-2"
-                    >
-                      {f.description || f.nom_fichier}
-                    </a>
-                    <button
-                      onClick={() => supprimer(f.id, f.description || f.nom_fichier)}
-                      className="text-xs text-dj-texte-muet transition-colors hover:text-[#F87171]"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                ))}
+            {/* Ajout unifié : fichiers + lien/texte détecté auto, en un seul clic */}
+            <div className="flex flex-col gap-3 rounded-2xl border border-dj-bordure bg-dj-surface p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="text"
+                  value={texteOuLien}
+                  onChange={(e) => setTexteOuLien(e.target.value)}
+                  placeholder="Colle un lien, ou écris/colle un texte…"
+                  className="flex-1 rounded-full border border-dj-bordure bg-dj-fond px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte"
+                />
+                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte">
+                  <Paperclip size={14} />
+                  {nouveauxFichiers.length > 0 ? `${nouveauxFichiers.length} fichier(s)` : "Joindre des fichiers"}
+                  <input
+                    type="file"
+                    multiple
+                    accept="application/pdf,image/jpeg,image/png,image/webp,audio/mpeg,audio/wav,audio/ogg,video/mp4,video/webm,video/quicktime"
+                    onChange={(e) => setNouveauxFichiers(Array.from(e.target.files ?? []))}
+                    className="hidden"
+                  />
+                </label>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={ajouter}
+                disabled={(nouveauxFichiers.length === 0 && !texteOuLien.trim()) || envoi}
+                className="self-end rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+              >
+                {envoi ? "Envoi…" : "Ajouter"}
+              </button>
+            </div>
 
             {erreursEnvoi.length > 0 && (
               <div className="flex flex-col gap-1 rounded-xl border border-[#F87171]/40 bg-[#F87171]/5 px-4 py-3">
@@ -199,27 +245,57 @@ export default function PageMonEspace() {
               </div>
             )}
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                type="file"
-                multiple
-                accept="application/pdf,image/jpeg,image/png,image/webp,audio/mpeg,audio/wav,audio/ogg,video/mp4,video/webm,video/quicktime"
-                onChange={(e) => setNouveauxFichiers(Array.from(e.target.files ?? []))}
-                className="text-sm text-dj-texte file:mr-3 file:rounded-full file:border file:border-dj-bordure file:bg-dj-surface-haute file:px-4 file:py-2 file:text-xs file:text-dj-texte hover:file:border-dj-bordure-forte"
-              />
-              <button
-                type="button"
-                onClick={ajouter}
-                disabled={nouveauxFichiers.length === 0 || envoi}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
-              >
-                {envoi
-                  ? "Envoi…"
-                  : nouveauxFichiers.length > 1
-                    ? `Ajouter (${nouveauxFichiers.length})`
-                    : "Ajouter"}
-              </button>
+            <div className="flex gap-1 text-xs">
+              {SOUS_ONGLETS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSousOnglet(s.id)}
+                  className={
+                    "rounded-full px-3 py-1.5 font-semibold transition-colors " +
+                    (sousOnglet === s.id
+                      ? "bg-dj-surface-haute text-dj-texte"
+                      : "text-dj-texte-muet hover:text-dj-texte")
+                  }
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
+
+            {fichiersAffiches === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {fichiersAffiches?.length === 0 && (
+              <p className="text-sm text-dj-texte-muet">Rien ici pour l&apos;instant.</p>
+            )}
+            {fichiersAffiches && fichiersAffiches.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {fichiersAffiches.map((f) => {
+                  const type = typeDe(f);
+                  const Icone = type === "liens" ? IconLien : type === "texte" ? FileText : Paperclip;
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-4 py-3"
+                    >
+                      <a
+                        href={f.url_publique}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-w-0 items-center gap-2 text-sm text-dj-accent-1 hover:text-dj-accent-2"
+                      >
+                        <Icone size={14} className="flex-shrink-0" />
+                        <span className="truncate">{f.description || f.nom_fichier}</span>
+                      </a>
+                      <button
+                        onClick={() => supprimer(f.id, f.description || f.nom_fichier)}
+                        className="flex-shrink-0 text-xs text-dj-texte-muet transition-colors hover:text-[#F87171]"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

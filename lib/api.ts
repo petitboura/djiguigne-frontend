@@ -273,6 +273,28 @@ export async function ajouterFichierBibliothequePersonnelle(fichier: File, descr
 }
 
 /**
+ * Ajoute un lien ou une note de texte à la bibliothèque personnelle
+ * (2026-08-01, demande Bourama : "ajoute le cas des liens et du texte",
+ * "pas de filtre au moment de l'upload" -- voir espace/page.tsx pour la
+ * détection automatique du type). Deux fonctions séparées car les
+ * payloads backend diffèrent (voir api/bibliotheque_utilisateur.py :
+ * /lien attend {url, titre}, /texte attend {contenu, titre}).
+ */
+export async function ajouterLienBibliothequePersonnelle(url: string, titre?: string) {
+  return appelerApi("/api/bibliotheque/lien", {
+    method: "POST",
+    body: JSON.stringify({ url, titre: titre?.trim() || null }),
+  });
+}
+
+export async function ajouterTexteBibliothequePersonnelle(contenu: string, titre?: string) {
+  return appelerApi("/api/bibliotheque/texte", {
+    method: "POST",
+    body: JSON.stringify({ contenu, titre: titre?.trim() || null }),
+  });
+}
+
+/**
  * Upload de PLUSIEURS fichiers d'un coup vers la bibliothèque personnelle
  * (2026-08-01, demande Bourama : "plusieurs upload à la fois") -- simple
  * boucle séquentielle sur ajouterFichierBibliothequePersonnelle (pas de
