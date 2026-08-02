@@ -114,7 +114,7 @@ export async function generateMetadata({
     title: specialite ? `${agent.nom} — IA spécialisée en ${specialite}` : `${agent.nom} — Djiguignè AI`,
     description,
     alternates: { canonical: `/agent/${agent.id}` },
-    openGraph: agent.image_vitrine_url
+    openGraph: agent.image_vitrine_url && !AGENTS_SANS_IMAGE_VITRINE.has(agent.id)
       ? { images: [{ url: agent.image_vitrine_url }] }
       : undefined,
   };
@@ -138,7 +138,9 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
           ...(specialite ? { applicationSubCategory: specialite } : {}),
           description:
             agent.description || (specialite ? `IA spécialisée en ${specialite}.` : undefined),
-          ...(agent.image_vitrine_url ? { image: agent.image_vitrine_url } : {}),
+          ...(agent.image_vitrine_url && !AGENTS_SANS_IMAGE_VITRINE.has(agent.id)
+            ? { image: agent.image_vitrine_url }
+            : {}),
           offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
           provider: { "@type": "Organization", name: "Djiguignè AI" },
           // Uniquement si au moins un avis existe -- ne jamais déclarer

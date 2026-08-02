@@ -8,6 +8,10 @@ import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
 import { BoutonDevenirCreateur } from "@/components/BoutonDevenirCreateur";
+import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+
+// Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama).
+const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
 // Ajouté le 31/07 (Bourama : "je veux que ce soit l'interface d'un chat en
 // premier") -- reprend le principe des 5 boutons de la page Services de la
@@ -168,7 +172,9 @@ export function SelecteurAgent() {
                   className="group flex items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface p-3 text-left transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute disabled:opacity-50"
                 >
                   <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
-                    {agent.image_vitrine_url ? (
+                    {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
+                      <IconeMathMatique className="h-6 w-6 text-dj-accent-1" />
+                    ) : agent.image_vitrine_url ? (
                       <Image
                         src={agent.image_vitrine_url}
                         alt=""
