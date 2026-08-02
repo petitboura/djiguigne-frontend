@@ -495,7 +495,7 @@ export function SidebarChat({
             TOUJOURS vers djiguigne.com, peu importe l'agent ou la
             provenance du chat. */}
         <Link
-          href="https://djiguigne.com"
+          href="https://djiguigne-ai.vercel.app"
           title="Retour à la vitrine"
           className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
         >
@@ -677,7 +677,7 @@ export function SidebarChat({
               de sortir et revenir à la vitrine") -- voir le commentaire
               équivalent dans le rail desktop ci-dessus. */}
           <Link
-            href="https://djiguigne.com"
+            href="https://djiguigne-ai.vercel.app"
             className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
           >
             <Image src="/logo.png" alt="" width={18} height={18} />
