@@ -9,6 +9,13 @@ import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
 import { messageErreur } from "@/lib/erreurs";
+import { IconeMatrix } from "@/components/icones/IconeMatrix";
+
+// Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama) :
+// l'écran d'accueil de cet agent affichait 🎓 (stocké dans le champ
+// titre_accueil en base) -- retiré du texte côté Supabase, remplacé ici
+// par l'icône dessinée devant le titre.
+const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
 // Page de chat qui remplace chat.py (Streamlit). Consomme la
 // nouvelle route /api/chat (api/chat.py) en streaming, au lieu d'appeler
@@ -514,7 +521,12 @@ export function ChatIA({
         {messages.length === 0 && (
           titreAccueil ? (
             <div className="mb-4 mt-6">
-              <h1 className="font-display text-2xl font-bold tracking-[-0.01em] text-dj-texte">{titreAccueil}</h1>
+              <div className="flex items-center gap-2">
+                {AGENTS_SANS_IMAGE_VITRINE.has(agentId) && (
+                  <IconeMatrix className="h-6 w-6 shrink-0 text-dj-accent-1" />
+                )}
+                <h1 className="font-display text-2xl font-bold tracking-[-0.01em] text-dj-texte">{titreAccueil}</h1>
+              </div>
               {sousTitreAccueil && <p className="mt-1 text-sm text-dj-texte-muet">{sousTitreAccueil}</p>}
             </div>
           ) : (
