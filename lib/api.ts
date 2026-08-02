@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { ErreurApi } from "./erreurs";
+import { ErreurApi, messageErreur } from "./erreurs";
 
 // URL du backend FastAPI (voir api/main.py). En local pendant le dev :
 // http://localhost:8000. Une fois déployé sur Railway : l'URL publique de
@@ -270,6 +270,26 @@ export async function ajouterFichierBibliothequePersonnelle(fichier: File, descr
   }
 
   return reponse.json();
+}
+
+/**
+ * Upload de PLUSIEURS fichiers d'un coup vers la bibliothèque personnelle
+ * (2026-08-01, demande Bourama : "plusieurs upload à la fois") -- simple
+ * boucle séquentielle sur ajouterFichierBibliothequePersonnelle (pas de
+ * endpoint bulk dédié côté backend, inutile pour ce volume). Si un
+ * fichier échoue, les autres continuent quand même ; l'appelant reçoit
+ * la liste des erreurs (vide si tout est passé) pour les afficher.
+ */
+export async function ajouterFichiersBibliothequePersonnelle(fichiers: File[]) {
+  const erreurs: { nom: string; erreur: string }[] = [];
+  for (const fichier of fichiers) {
+    try {
+      await ajouterFichierBibliothequePersonnelle(fichier, "", "");
+    } catch (e) {
+      erreurs.push({ nom: fichier.name, erreur: messageErreur(e) });
+    }
+  }
+  return erreurs;
 }
 
 /**

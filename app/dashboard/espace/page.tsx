@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Library, History, LayoutGrid } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { appelerApi } from "@/lib/api";
-import { ajouterFichierBibliothequePersonnelle } from "@/lib/api";
+import { appelerApi, ajouterFichiersBibliothequePersonnelle } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
@@ -14,20 +13,24 @@ import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 
 /**
- * Nouvelle page "Mon espace" (2026-08-01, demande Bourama : remplace
- * /dashboard -- désactivée du menu, PAS supprimée, voir TopBar.tsx /
- * SidebarChat.tsx). Trois sections, rien du profil (avatar/bio/IA
- * créées/Amis/Analytique) qui vivait sur l'ancienne page :
- * - Historique : réutilise HistoriqueConversations tel quel (IA
- *   utilisées / conversations passées).
- * - Bibliothèque : upload/liste/suppression de documents PERSONNELS
- *   (niveau="utilisateur", voir api/bibliotheque_utilisateur.py côté
- *   backend) -- consultables par n'importe laquelle des IA de
- *   l'utilisateur, dans n'importe quelle conversation, via l'outil
- *   consulter_bibliotheque (manuel pour l'activer sur un message, comme
- *   les autres outils -- voir lib/outils.ts).
- * - Appli connectées : réutilise components/ApplisConnectees.tsx, même
- *   contenu que /dashboard/applications.
+ * Page "Mon espace" (2026-08-01, demande Bourama). Revue le même jour en
+ * ONGLETS (pas de scroll entre sections, une seule affichée à la fois) --
+ * corrige la première version qui empilait les 3 sections verticalement.
+ *
+ * - Historique : réutilise HistoriqueConversations tel quel.
+ * - Bibliothèque : upload MULTIPLE (plusieurs fichiers d'un coup, sans
+ *   description obligatoire par fichier -- voir
+ *   ajouterFichiersBibliothequePersonnelle) + liste + suppression.
+ *   Documents personnels, consultables par n'importe quelle IA dans
+ *   n'importe quelle conversation via l'outil consulter_bibliotheque.
+ *   Corrigé le 01/08 (Bourama : "chaque upload y reste") : cette liste
+ *   remonte TOUT ce qui a été uploadé au niveau utilisateur, y compris
+ *   depuis n'importe quel chat (pas seulement ce qui est ajouté ici) --
+ *   voir api/uploads.py, ces routes enregistrent déjà niveau="utilisateur"
+ *   depuis le 22/07 ; ce qui manquait, c'était l'INDEXATION pour la
+ *   recherche (voir core/bibliotheque_rag.py), pas l'apparition dans
+ *   cette liste, déjà correcte.
+ * - Appli connectées : réutilise components/ApplisConnectees.tsx.
  */
 
 type FichierBiblio = {
@@ -39,18 +42,25 @@ type FichierBiblio = {
   created_at: string;
 };
 
+type Onglet = "historique" | "bibliotheque" | "applis";
+
+const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
+  { id: "historique", label: "Historique", Icone: History },
+  { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
+  { id: "applis", label: "Appli connectées", Icone: LayoutGrid },
+];
+
 export default function PageMonEspace() {
   const router = useRouter();
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
+  const [onglet, setOnglet] = useState<Onglet>("historique");
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
-  const [nouveauFichier, setNouveauFichier] = useState<File | null>(null);
-  const [titre, setTitre] = useState("");
-  const [description, setDescription] = useState("");
+  const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
   const [envoi, setEnvoi] = useState(false);
-  const [erreurBiblio, setErreurBiblio] = useState<string | null>(null);
+  const [erreursEnvoi, setErreursEnvoi] = useState<{ nom: string; erreur: string }[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -75,17 +85,14 @@ export default function PageMonEspace() {
   }
 
   async function ajouter() {
-    if (!nouveauFichier || !description.trim()) return;
+    if (nouveauxFichiers.length === 0) return;
     setEnvoi(true);
-    setErreurBiblio(null);
+    setErreursEnvoi([]);
     try {
-      await ajouterFichierBibliothequePersonnelle(nouveauFichier, description.trim(), titre.trim());
-      setNouveauFichier(null);
-      setTitre("");
-      setDescription("");
+      const erreurs = await ajouterFichiersBibliothequePersonnelle(nouveauxFichiers);
+      setErreursEnvoi(erreurs);
+      setNouveauxFichiers([]);
       chargerFichiers();
-    } catch (e) {
-      setErreurBiblio(messageErreur(e));
     } finally {
       setEnvoi(false);
     }
@@ -115,110 +122,107 @@ export default function PageMonEspace() {
   return (
     <>
       <TopBar />
-      <main className="mx-auto flex max-w-2xl flex-col gap-12 px-5 py-10">
+      <main className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10">
         <div className="flex items-center gap-3">
           <BoutonRetour />
           <BoutonAccueil />
         </div>
 
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-dj-texte">Mon espace</h1>
+        <h1 className="font-display text-2xl font-extrabold text-dj-texte">Mon espace</h1>
+
+        <div className="flex gap-2 border-b border-dj-bordure">
+          {ONGLETS.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => setOnglet(o.id)}
+              className={
+                "flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors " +
+                (onglet === o.id
+                  ? "border-dj-accent-1 text-dj-texte"
+                  : "border-transparent text-dj-texte-muet hover:text-dj-texte")
+              }
+            >
+              <o.Icone size={16} />
+              {o.label}
+            </button>
+          ))}
         </div>
 
-        {/* Historique */}
-        <section className="flex flex-col gap-4">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-dj-texte">
-            <History size={20} className="text-dj-accent-1" />
-            Historique
-          </h2>
-          <HistoriqueConversations />
-        </section>
+        {onglet === "historique" && <HistoriqueConversations />}
 
-        {/* Bibliothèque */}
-        <section className="flex flex-col gap-4">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-dj-texte">
-            <Library size={20} className="text-dj-accent-1" />
-            Bibliothèque
-          </h2>
-          <p className="text-sm text-dj-texte-muet">
-            Les documents ajoutés ici sont personnels : toi seul y as accès, et n&apos;importe
-            laquelle de tes IA peut aller les consulter pendant une conversation.
-          </p>
+        {onglet === "bibliotheque" && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-dj-texte-muet">
+              Les documents ajoutés ici sont personnels : toi seul y as accès, et n&apos;importe
+              laquelle de tes IA peut aller les consulter pendant une conversation. Cette liste
+              reprend aussi tout ce que tu as déjà envoyé dans n&apos;importe quel chat.
+            </p>
 
-          {erreurBiblio && <p className="text-sm text-[#F87171]">{erreurBiblio}</p>}
-
-          {fichiers === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
-          {fichiers?.length === 0 && (
-            <p className="text-sm text-dj-texte-muet">Aucun document dans ta bibliothèque.</p>
-          )}
-          {fichiers && fichiers.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {fichiers.map((f) => (
-                <div
-                  key={f.id}
-                  className="flex items-center justify-between rounded-xl border border-dj-bordure bg-dj-surface px-4 py-3"
-                >
-                  <a
-                    href={f.url_publique}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-dj-accent-1 hover:text-dj-accent-2"
+            {fichiers === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {fichiers?.length === 0 && (
+              <p className="text-sm text-dj-texte-muet">Aucun document dans ta bibliothèque.</p>
+            )}
+            {fichiers && fichiers.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {fichiers.map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between rounded-xl border border-dj-bordure bg-dj-surface px-4 py-3"
                   >
-                    {f.description || f.nom_fichier}
-                  </a>
-                  <button
-                    onClick={() => supprimer(f.id, f.description || f.nom_fichier)}
-                    className="text-xs text-dj-texte-muet transition-colors hover:text-[#F87171]"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                    <a
+                      href={f.url_publique}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-dj-accent-1 hover:text-dj-accent-2"
+                    >
+                      {f.description || f.nom_fichier}
+                    </a>
+                    <button
+                      onClick={() => supprimer(f.id, f.description || f.nom_fichier)}
+                      className="text-xs text-dj-texte-muet transition-colors hover:text-[#F87171]"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <div className="flex flex-col gap-3">
-            <textarea
-              placeholder="Description (obligatoire) : de quoi parle ce document ?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="rounded-2xl border border-dj-bordure bg-dj-surface px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte"
-            />
+            {erreursEnvoi.length > 0 && (
+              <div className="flex flex-col gap-1 rounded-xl border border-[#F87171]/40 bg-[#F87171]/5 px-4 py-3">
+                {erreursEnvoi.map((e) => (
+                  <p key={e.nom} className="text-sm text-[#F87171]">
+                    {e.nom} : {e.erreur}
+                  </p>
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
-                type="text"
-                placeholder="Titre (optionnel)"
-                value={titre}
-                onChange={(e) => setTitre(e.target.value)}
-                className="rounded-full border border-dj-bordure bg-dj-surface px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte sm:w-1/3"
-              />
-              <input
                 type="file"
+                multiple
                 accept="application/pdf,image/jpeg,image/png,image/webp,audio/mpeg,audio/wav,audio/ogg,video/mp4,video/webm,video/quicktime"
-                onChange={(e) => setNouveauFichier(e.target.files?.[0] ?? null)}
+                onChange={(e) => setNouveauxFichiers(Array.from(e.target.files ?? []))}
                 className="text-sm text-dj-texte file:mr-3 file:rounded-full file:border file:border-dj-bordure file:bg-dj-surface-haute file:px-4 file:py-2 file:text-xs file:text-dj-texte hover:file:border-dj-bordure-forte"
               />
               <button
                 type="button"
                 onClick={ajouter}
-                disabled={!nouveauFichier || !description.trim() || envoi}
+                disabled={nouveauxFichiers.length === 0 || envoi}
                 className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
               >
-                {envoi ? "Envoi…" : "Ajouter"}
+                {envoi
+                  ? "Envoi…"
+                  : nouveauxFichiers.length > 1
+                    ? `Ajouter (${nouveauxFichiers.length})`
+                    : "Ajouter"}
               </button>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* Appli connectées */}
-        <section className="flex flex-col gap-4">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-dj-texte">
-            <LayoutGrid size={20} className="text-dj-accent-1" />
-            Appli connectées
-          </h2>
-          <ApplisConnectees />
-        </section>
+        {onglet === "applis" && <ApplisConnectees />}
       </main>
     </>
   );
