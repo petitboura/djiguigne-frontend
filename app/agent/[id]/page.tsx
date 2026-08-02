@@ -10,7 +10,6 @@ import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { MisesAJourAgent } from "@/components/MisesAJourAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
-import { BoutonProfilCreateur } from "@/components/BoutonProfilCreateur";
 import { JsonLd } from "@/components/JsonLd";
 import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
 
@@ -217,7 +216,6 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
 
             <div className="flex flex-wrap items-center gap-3">
               <BoutonUtiliser agentId={agent.id} />
-              <BoutonProfilCreateur ownerId={agent.owner_id} />
               <BoutonPartager chemin={`/agent/${agent.id}`} titre={agent.nom} />
             </div>
 
