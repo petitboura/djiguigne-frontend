@@ -12,6 +12,11 @@ import { MisesAJourAgent } from "@/components/MisesAJourAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { BoutonProfilCreateur } from "@/components/BoutonProfilCreateur";
 import { JsonLd } from "@/components/JsonLd";
+import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+
+// Même cas particulier que dans AgentCard.tsx (02/08, Bourama) : cet agent
+// précis n'a ni photo ni emoji, juste l'icône dessinée.
+const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
 // Étape D.3 (pivot social) : page agent publique (/agent/[id], "id" sert
 // de slug). Server Component pour le SSR (règle SEO/AEO/GEO
@@ -171,24 +176,30 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface">
-          <div className="relative flex aspect-[16/9] items-center justify-center bg-dj-surface-haute">
-            {agent.image_vitrine_url ? (
-              <Image
-                src={agent.image_vitrine_url}
-                alt={agent.nom}
-                fill
-                className="object-cover"
-                sizes="(min-width: 768px) 768px, 100vw"
-                priority
-              />
-            ) : (
-              <span className="text-6xl">{agent.icone_page}</span>
-            )}
-          </div>
+          {!AGENTS_SANS_IMAGE_VITRINE.has(agent.id) && (
+            <div className="relative flex aspect-[16/9] items-center justify-center bg-dj-surface-haute">
+              {agent.image_vitrine_url ? (
+                <Image
+                  src={agent.image_vitrine_url}
+                  alt={agent.nom}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 768px, 100vw"
+                  priority
+                />
+              ) : (
+                <span className="text-6xl">{agent.icone_page}</span>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-4 p-6">
             <div className="flex items-center gap-3">
-              <span className="text-2xl leading-none">{agent.icone_page}</span>
+              {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
+                <IconeMathMatique className="h-12 w-12 shrink-0 text-dj-accent-1" />
+              ) : (
+                <span className="text-2xl leading-none">{agent.icone_page}</span>
+              )}
               <h1 className="font-display text-2xl font-bold text-dj-texte">{agent.nom}</h1>
             </div>
 

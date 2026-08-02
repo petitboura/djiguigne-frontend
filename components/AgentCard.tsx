@@ -7,6 +7,13 @@ import Image from "next/image";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { RecadreurImage } from "@/components/RecadreurImage";
 import { messageErreur } from "@/lib/erreurs";
+import { IconeMathMatique } from "@/components/icones/IconeMathMatique";
+
+// Cas particulier demandé par Bourama (02/08) : l'agent "math-matique" n'a
+// pas de section image vitrine -- ni photo, ni emoji -- mais une icône
+// dessinée à la main (compas, lignes fines, couleur du thème). Volontairement
+// codé en dur pour CET agent précis, pas une règle générale par matière.
+const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 
 // Réutilisé par le feed (D.2), la recherche (D.2) et le portfolio créateur
 // (D.4) — un seul endroit à faire évoluer si l'apparence d'une carte agent
@@ -143,8 +150,14 @@ export function AgentCard({
     }
   }
 
+  // Uniquement côté public (pas en mode `editable`/dashboard) : le bloc
+  // contient aussi le bouton Public/Privé, qui doit rester accessible au
+  // créateur même sans image vitrine.
+  const sansImageVitrine = !editable && AGENTS_SANS_IMAGE_VITRINE.has(agent.id);
+
   const contenu = (
     <>
+      {!sansImageVitrine && (
       <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-dj-surface-haute">
         {donnees.image_vitrine_url ? (
           <>
@@ -232,6 +245,7 @@ export function AgentCard({
           </button>
         )}
       </div>
+      )}
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-center gap-2">
@@ -280,7 +294,11 @@ export function AgentCard({
                   : "flex items-center gap-1"
               }
             >
-              <span className="text-lg leading-none">{donnees.icone_page ?? "🤖"}</span>
+              {sansImageVitrine ? (
+                <IconeMathMatique className="h-9 w-9 shrink-0 text-dj-accent-1" />
+              ) : (
+                <span className="text-lg leading-none">{donnees.icone_page ?? "🤖"}</span>
+              )}
               {editable && (
                 <svg
                   width="10"

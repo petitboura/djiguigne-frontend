@@ -338,10 +338,18 @@ export function BarreDeSaisie({
 
   // Dérivés utilisés par le rendu (desktop 3 slots outils/utilitaires,
   // desktop 1 slot appli variable) :
-  const outilsRecents = recentsCombines
-    .filter((r) => r.type === "outil")
-    .map((r) => r.nom)
-    .slice(0, NB_SLOTS_OUTILS_RECENTS);
+  // Slot fixe (02/08, demande Bourama) : le clavier LaTeX (ui_formule)
+  // reste toujours affiché en premier, pour tout le monde, dès l'ouverture
+  // de l'appli -- il ne dépend plus de l'historique. Les autres slots
+  // restent dynamiques ("derniers outils utilisés"), sans jamais dupliquer
+  // ui_formule s'il apparaît aussi dans l'historique récent.
+  const OUTIL_SLOT_FIXE = "ui_formule";
+  const outilsRecents = [
+    OUTIL_SLOT_FIXE,
+    ...recentsCombines
+      .filter((r) => r.type === "outil" && r.nom !== OUTIL_SLOT_FIXE)
+      .map((r) => r.nom),
+  ].slice(0, NB_SLOTS_OUTILS_RECENTS);
   const appliRecente =
     recentsCombines.find((r) => r.type === "appli")?.nom ?? applisPourAgent[0]?.nom ?? null;
   const [menuAppliOuvert, setMenuAppliOuvert] = useState(false);
