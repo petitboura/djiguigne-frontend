@@ -31,6 +31,24 @@ const EditeurFormule = dynamic(() => import("./EditeurFormule").then((m) => m.Ed
 });
 
 export type LongueurReponse = "courte" | "moyenne" | "longue";
+
+// Regroupement du selecteur de modele premium par distributeur (02/08/2026,
+// voir ModelesPremiumAgent.tsx cote dashboard pour le meme mapping) --
+// ordre d'affichage volontairement identique a la hierarchie backend
+// (core/fournisseurs_llm.py:ORDRE_DISTRIBUTEURS).
+const ORDRE_DISTRIBUTEURS_AFFICHAGE = ["claude", "gpt", "gemini", "deepseek"];
+const LABELS_DISTRIBUTEUR: Record<string, string> = {
+  claude: "Claude",
+  gpt: "GPT",
+  gemini: "Gemini",
+  deepseek: "DeepSeek",
+};
+
+const LABELS_LONGUEUR: Record<LongueurReponse, string> = {
+  courte: "Courte",
+  moyenne: "Moyenne",
+  longue: "Longue",
+};
 export type LocalisationJointe = { latitude: number; longitude: number } | null;
 
 // Listes OUTILS_DISPONIBLES / ONGLETS_OUTILS / APPLIS_DISPONIBLES
@@ -291,6 +309,17 @@ export function BarreDeSaisie({
   const appliSlotUnique = applisPourAgent.length === 1 ? applisPourAgent[0] : null;
 
   const [menuOutilsOuvert, setMenuOutilsOuvert] = useState(false);
+  // Menus custom pour les selecteurs modele premium / longueur de reponse
+  // (02/08/2026, Bourama : "ce style d'affichage n'est pas propre a ma
+  // plateforme" -- <select> natif remplace par le meme pattern
+  // bouton+panneau flottant que menuAppliOuvert juste en dessous, pour
+  // rester coherent avec le reste de l'UI).
+  const [menuModeleOuvert, setMenuModeleOuvert] = useState(false);
+  const boutonModeleRef = useRef<HTMLButtonElement>(null);
+  const menuModeleRef = useRef<HTMLDivElement>(null);
+  const [menuLongueurOuvert, setMenuLongueurOuvert] = useState(false);
+  const boutonLongueurRef = useRef<HTMLButtonElement>(null);
+  const menuLongueurRef = useRef<HTMLDivElement>(null);
   const menuOutilsRef = useRef<HTMLDivElement>(null);
   const menuOutilsMobileRef = useRef<HTMLDivElement>(null);
   const boutonOutilsRef = useRef<HTMLButtonElement>(null);
@@ -423,6 +452,30 @@ export function BarreDeSaisie({
     document.addEventListener("mousedown", gererClicExterieur);
     return () => document.removeEventListener("mousedown", gererClicExterieur);
   }, [menuAppliOuvert]);
+
+  useEffect(() => {
+    if (!menuModeleOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuModeleRef.current?.contains(cible)) return;
+      if (boutonModeleRef.current?.contains(cible)) return;
+      setMenuModeleOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuModeleOuvert]);
+
+  useEffect(() => {
+    if (!menuLongueurOuvert) return;
+    function gererClicExterieur(e: MouseEvent) {
+      const cible = e.target as Node;
+      if (menuLongueurRef.current?.contains(cible)) return;
+      if (boutonLongueurRef.current?.contains(cible)) return;
+      setMenuLongueurOuvert(false);
+    }
+    document.addEventListener("mousedown", gererClicExterieur);
+    return () => document.removeEventListener("mousedown", gererClicExterieur);
+  }, [menuLongueurOuvert]);
 
   function enregistrerUtilisationOutil(nom: string) {
     enregistrerRecent("outil", nom);
@@ -1905,38 +1958,130 @@ export function BarreDeSaisie({
 
             {/* Sélecteur de modèle premium (02/08/2026, voir capture
                 Bourama : "Sonnet 5   Moyen ⌄" dans la barre de saisie
-                desktop) -- même style que le sélecteur Courte/Moyenne/
-                Longue juste après, masqué si l'agent n'a aucun modèle
-                premium débloqué (voir ChatIA.tsx et
+                desktop, puis "ce style d'affichage n'est pas propre à ma
+                plateforme" -- select natif remplacé par le même pattern
+                bouton+panneau flottant que le menu Appli plus haut,
+                regroupé par distributeur). Masqué si l'agent n'a aucun
+                modèle premium débloqué (voir ChatIA.tsx et
                 core/fournisseurs_llm.py). "Auto" = pas de préférence,
                 cascade Groq/Gemini habituelle. */}
             {modelesDisponibles.length > 0 && (
-              <select
-                value={modeleSelectionne ?? ""}
-                onChange={(e) => onModeleChange?.(e.target.value || null)}
-                aria-label="Choisir le modèle"
-                className="rounded-md bg-transparent text-xs text-dj-texte-muet outline-none"
-              >
-                <option value="">Auto</option>
-                {modelesDisponibles.map((m) => (
-                  <option key={m.modele_id} value={m.modele_id}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  ref={boutonModeleRef}
+                  type="button"
+                  onClick={() => setMenuModeleOuvert((v) => !v)}
+                  aria-label="Choisir le modèle"
+                  className={
+                    "flex items-center gap-0.5 rounded-md px-1 py-0.5 text-xs transition-colors " +
+                    (menuModeleOuvert ? "text-dj-accent-1" : "text-dj-texte-muet hover:text-dj-texte")
+                  }
+                >
+                  {modelesDisponibles.find((m) => m.modele_id === modeleSelectionne)?.label ?? "Auto"}
+                  <ChevronDown size={12} />
+                </button>
+                <div
+                  ref={menuModeleRef}
+                  className={
+                    "absolute bottom-full right-0 z-20 mb-2 max-h-80 w-56 origin-bottom-right overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                    (menuModeleOuvert
+                      ? "translate-y-0 scale-100 opacity-100"
+                      : "pointer-events-none translate-y-1 scale-95 opacity-0")
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onModeleChange?.(null);
+                      setMenuModeleOuvert(false);
+                    }}
+                    className={
+                      "flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs transition-colors hover:bg-dj-surface-haute " +
+                      (!modeleSelectionne ? "text-dj-accent-1" : "text-dj-texte")
+                    }
+                  >
+                    Auto
+                    {!modeleSelectionne && <Check size={13} />}
+                  </button>
+                  {ORDRE_DISTRIBUTEURS_AFFICHAGE.filter((d) =>
+                    modelesDisponibles.some((m) => m.distributeur === d)
+                  ).map((distributeur) => (
+                    <div key={distributeur} className="mt-1">
+                      <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-dj-texte-muet">
+                        {LABELS_DISTRIBUTEUR[distributeur] ?? distributeur}
+                      </div>
+                      {modelesDisponibles
+                        .filter((m) => m.distributeur === distributeur)
+                        .map((m) => (
+                          <button
+                            key={m.modele_id}
+                            type="button"
+                            onClick={() => {
+                              onModeleChange?.(m.modele_id);
+                              setMenuModeleOuvert(false);
+                            }}
+                            className={
+                              "flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs transition-colors hover:bg-dj-surface-haute " +
+                              (modeleSelectionne === m.modele_id ? "text-dj-accent-1" : "text-dj-texte")
+                            }
+                          >
+                            {m.label}
+                            {modeleSelectionne === m.modele_id && <Check size={13} />}
+                          </button>
+                        ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Sélecteur Courte/Moyenne/Longue (remplace "Sonnet 5/Moyen"),
-                modifiable à chaque message -- section 3.3. */}
-            <select
-              value={longueur}
-              onChange={(e) => setLongueur(e.target.value as LongueurReponse)}
-              className="rounded-md bg-transparent text-xs text-dj-texte-muet outline-none"
-            >
-              <option value="courte">Courte</option>
-              <option value="moyenne">Moyenne</option>
-              <option value="longue">Longue</option>
-            </select>
+                modifiable à chaque message -- section 3.3. Même pattern
+                bouton+panneau que le sélecteur de modèle juste au-dessus
+                (02/08/2026, select natif retiré pour rester cohérent avec
+                le style de la plateforme). */}
+            <div className="relative">
+              <button
+                ref={boutonLongueurRef}
+                type="button"
+                onClick={() => setMenuLongueurOuvert((v) => !v)}
+                aria-label="Choisir la longueur de réponse"
+                className={
+                  "flex items-center gap-0.5 rounded-md px-1 py-0.5 text-xs transition-colors " +
+                  (menuLongueurOuvert ? "text-dj-accent-1" : "text-dj-texte-muet hover:text-dj-texte")
+                }
+              >
+                {LABELS_LONGUEUR[longueur]}
+                <ChevronDown size={12} />
+              </button>
+              <div
+                ref={menuLongueurRef}
+                className={
+                  "absolute bottom-full right-0 z-20 mb-2 w-40 origin-bottom-right overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-lg transition-all duration-150 ease-out " +
+                  (menuLongueurOuvert
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none translate-y-1 scale-95 opacity-0")
+                }
+              >
+                {(["courte", "moyenne", "longue"] as LongueurReponse[]).map((valeur) => (
+                  <button
+                    key={valeur}
+                    type="button"
+                    onClick={() => {
+                      setLongueur(valeur);
+                      setMenuLongueurOuvert(false);
+                    }}
+                    className={
+                      "flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-xs transition-colors hover:bg-dj-surface-haute " +
+                      (longueur === valeur ? "text-dj-accent-1" : "text-dj-texte")
+                    }
+                  >
+                    {LABELS_LONGUEUR[valeur]}
+                    {longueur === valeur && <Check size={13} />}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <button
               type="button"

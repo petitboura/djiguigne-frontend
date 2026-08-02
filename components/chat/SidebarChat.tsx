@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -485,6 +486,24 @@ export function SidebarChat({
           </span>
           <LibelleRail ouverte={ouverte}>{copie ? "Copié !" : "Partager"}</LibelleRail>
         </button>
+
+        {/* Ajouté le 02/08 (Bourama : "piégée dans le chat, aucun moyen de
+            sortir et revenir à la vitrine") -- distinct du bouton
+            "Retour au site"/"Retour à l'agent" plus haut, qui dépend de
+            retourExterne (présent seulement si on est arrivé depuis un
+            lien de la vitrine avec ?retour=...). Celui-ci renvoie
+            TOUJOURS vers djiguigne.com, peu importe l'agent ou la
+            provenance du chat. */}
+        <Link
+          href="https://djiguigne-ai.vercel.app"
+          title="Retour à la vitrine"
+          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <Image src="/logo.png" alt="" width={20} height={20} />
+          </span>
+          <LibelleRail ouverte={ouverte}>Retour à la vitrine</LibelleRail>
+        </Link>
       </div>
 
       {/* CORRIGÉ le 22/07/2026 (Bourama : "sursaute au lieu de glisser") :
@@ -653,6 +672,17 @@ export function SidebarChat({
             <Share2 size={16} />
             {copie ? "Copié !" : "Partager"}
           </button>
+
+          {/* Ajouté le 02/08 (Bourama : "piégée dans le chat, aucun moyen
+              de sortir et revenir à la vitrine") -- voir le commentaire
+              équivalent dans le rail desktop ci-dessus. */}
+          <Link
+            href="https://djiguigne-ai.vercel.app"
+            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+          >
+            <Image src="/logo.png" alt="" width={18} height={18} />
+            Retour à la vitrine
+          </Link>
         </aside>
       </div>
     </>
