@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
@@ -16,6 +16,7 @@ import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
+import { MaMemoire } from "@/components/MaMemoire";
 
 /**
  * Page "Mon espace" (2026-08-01, demande Bourama).
@@ -50,12 +51,13 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "historique" | "bibliotheque" | "applis";
+type Onglet = "historique" | "bibliotheque" | "memoire" | "applis";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
   { id: "historique", label: "Historique", Icone: History },
   { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
+  { id: "memoire", label: "Ma mémoire", Icone: Brain },
   { id: "applis", label: "Appli connectées", Icone: LayoutGrid },
 ];
 
@@ -310,6 +312,8 @@ export default function PageMonEspace() {
             )}
           </div>
         )}
+
+        {onglet === "memoire" && <MaMemoire />}
 
         {onglet === "applis" && <ApplisConnectees />}
       </main>
