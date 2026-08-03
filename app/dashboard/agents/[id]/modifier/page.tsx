@@ -103,6 +103,11 @@ export default function PageModifierAgent() {
   const [langueAfricaine, setLangueAfricaine] = useState("");
   const [execution, setExecution] = useState("");
 
+  // Un seul des 6 champs de classification actif à la fois (02/08, demande
+  // Bourama) -- même logique que dashboard/agents/nouveau/page.tsx.
+  const classificationChoisie: "matiere" | "metier" | "filiere" | "domaine" | "langue_africaine" | "execution" | null =
+    matiere ? "matiere" : metier ? "metier" : filiere ? "filiere" : domaine ? "domaine" : langueAfricaine ? "langue_africaine" : execution ? "execution" : null;
+
   useEffect(() => {
     appelerApi("/api/matieres")
       .then((liste) => setMatieresListe(liste ?? []))
@@ -382,15 +387,28 @@ export default function PageModifierAgent() {
               </p>
               <p className="-mt-2 text-xs text-dj-texte-muet">
                 Sert à faire apparaître ton IA dans les sections de la page
-                Produit du site vitrine. Une seule IA par valeur.
+                Produit du site vitrine. Une seule IA par valeur. Une seule
+                catégorie à la fois par agent (demande de Bourama, 02/08) :
+                en choisir une vide et désactive les autres.
               </p>
 
               <div>
                 <label className={labelClasse}>Matière</label>
                 <select
                   value={matiere}
-                  onChange={(e) => setMatiere(e.target.value)}
-                  className={champClasse}
+                  onChange={(e) => {
+                    setMatiere(e.target.value);
+                    if (e.target.value) {
+                      setMatiereDetail("");
+                      setMetier("");
+                      setFiliere("");
+                      setDomaine("");
+                      setLangueAfricaine("");
+                      setExecution("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "matiere"}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   <option value="">Aucune</option>
                   {matieresListe.map((m) => (
@@ -416,9 +434,20 @@ export default function PageModifierAgent() {
                 <input
                   type="text"
                   value={metier}
-                  onChange={(e) => setMetier(e.target.value)}
+                  onChange={(e) => {
+                    setMetier(e.target.value);
+                    if (e.target.value) {
+                      setMatiere("");
+                      setMatiereDetail("");
+                      setFiliere("");
+                      setDomaine("");
+                      setLangueAfricaine("");
+                      setExecution("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "metier"}
                   placeholder="Ex : Comptabilité"
-                  className={champClasse}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 />
               </div>
 
@@ -427,9 +456,20 @@ export default function PageModifierAgent() {
                 <input
                   type="text"
                   value={filiere}
-                  onChange={(e) => setFiliere(e.target.value)}
+                  onChange={(e) => {
+                    setFiliere(e.target.value);
+                    if (e.target.value) {
+                      setMatiere("");
+                      setMatiereDetail("");
+                      setMetier("");
+                      setDomaine("");
+                      setLangueAfricaine("");
+                      setExecution("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "filiere"}
                   placeholder="Ex : MPSI"
-                  className={champClasse}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 />
               </div>
 
@@ -438,9 +478,20 @@ export default function PageModifierAgent() {
                 <input
                   type="text"
                   value={domaine}
-                  onChange={(e) => setDomaine(e.target.value)}
+                  onChange={(e) => {
+                    setDomaine(e.target.value);
+                    if (e.target.value) {
+                      setMatiere("");
+                      setMatiereDetail("");
+                      setMetier("");
+                      setFiliere("");
+                      setLangueAfricaine("");
+                      setExecution("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "domaine"}
                   placeholder="Ex : Entrepreneuriat"
-                  className={champClasse}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 />
               </div>
 
@@ -449,9 +500,20 @@ export default function PageModifierAgent() {
                 <input
                   type="text"
                   value={langueAfricaine}
-                  onChange={(e) => setLangueAfricaine(e.target.value)}
+                  onChange={(e) => {
+                    setLangueAfricaine(e.target.value);
+                    if (e.target.value) {
+                      setMatiere("");
+                      setMatiereDetail("");
+                      setMetier("");
+                      setFiliere("");
+                      setDomaine("");
+                      setExecution("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "langue_africaine"}
                   placeholder="Ex : Bambara"
-                  className={champClasse}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 />
               </div>
 
@@ -460,9 +522,20 @@ export default function PageModifierAgent() {
                 <input
                   type="text"
                   value={execution}
-                  onChange={(e) => setExecution(e.target.value)}
+                  onChange={(e) => {
+                    setExecution(e.target.value);
+                    if (e.target.value) {
+                      setMatiere("");
+                      setMatiereDetail("");
+                      setMetier("");
+                      setFiliere("");
+                      setDomaine("");
+                      setLangueAfricaine("");
+                    }
+                  }}
+                  disabled={classificationChoisie !== null && classificationChoisie !== "execution"}
                   placeholder="Ex : Automatisation de tâches"
-                  className={champClasse}
+                  className={`${champClasse} disabled:cursor-not-allowed disabled:opacity-40`}
                 />
               </div>
             </div>
