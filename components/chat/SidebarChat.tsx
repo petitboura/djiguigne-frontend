@@ -502,7 +502,11 @@ export function SidebarChat({
           <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
             <Image src="/logo.png" alt="" width={20} height={20} />
           </span>
-          <LibelleRail ouverte={ouverte}>Retour à la vitrine</LibelleRail>
+          <LibelleRail ouverte={ouverte}>
+            <span className="font-display font-bold tracking-tight">
+              Djiguignè <span className="text-dj-accent-1">AI</span>
+            </span>
+          </LibelleRail>
         </Link>
       </div>
 
@@ -678,10 +682,13 @@ export function SidebarChat({
               équivalent dans le rail desktop ci-dessus. */}
           <Link
             href="https://djiguigne-ai.vercel.app"
-            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+            title="Retour à la vitrine"
+            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure px-4 py-2.5 text-sm transition-colors hover:bg-dj-surface"
           >
             <Image src="/logo.png" alt="" width={18} height={18} />
-            Retour à la vitrine
+            <span className="font-display font-bold tracking-tight text-dj-texte">
+              Djiguignè <span className="text-dj-accent-1">AI</span>
+            </span>
           </Link>
         </aside>
       </div>
