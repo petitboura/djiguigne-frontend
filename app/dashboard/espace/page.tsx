@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
@@ -51,7 +51,7 @@ type FichierBiblio = {
 };
 
 type Onglet = "historique" | "bibliotheque" | "applis";
-type SousOngletBiblio = "tous" | "fichiers" | "liens" | "texte";
+type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
   { id: "historique", label: "Historique", Icone: History },
@@ -61,7 +61,10 @@ const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
 
 const SOUS_ONGLETS: { id: SousOngletBiblio; label: string }[] = [
   { id: "tous", label: "Tous" },
-  { id: "fichiers", label: "Fichiers" },
+  { id: "documents", label: "Documents" },
+  { id: "images", label: "Images" },
+  { id: "audio", label: "Audio" },
+  { id: "videos", label: "Vidéos" },
   { id: "liens", label: "Liens" },
   { id: "texte", label: "Texte" },
 ];
@@ -69,7 +72,10 @@ const SOUS_ONGLETS: { id: SousOngletBiblio; label: string }[] = [
 function typeDe(f: FichierBiblio): SousOngletBiblio {
   if (f.type_mime === "text/uri-list") return "liens";
   if (f.type_mime === "text/plain") return "texte";
-  return "fichiers";
+  if (f.type_mime.startsWith("image/")) return "images";
+  if (f.type_mime.startsWith("audio/")) return "audio";
+  if (f.type_mime.startsWith("video/")) return "videos";
+  return "documents";
 }
 
 export default function PageMonEspace() {
@@ -270,7 +276,13 @@ export default function PageMonEspace() {
               <div className="flex flex-col gap-2">
                 {fichiersAffiches.map((f) => {
                   const type = typeDe(f);
-                  const Icone = type === "liens" ? IconLien : type === "texte" ? FileText : Paperclip;
+                  const Icone =
+                    type === "liens" ? IconLien
+                    : type === "texte" ? FileText
+                    : type === "images" ? IconImage
+                    : type === "audio" ? IconAudio
+                    : type === "videos" ? IconVideo
+                    : Paperclip;
                   return (
                     <div
                       key={f.id}
