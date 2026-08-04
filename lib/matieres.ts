@@ -4,6 +4,7 @@
 // libre) gérée séparément par chaque appelant.
 export const MATIERES = [
   "Informatique",
+  "Mathématiques",
   "Physique",
   "Économie",
   "Chimie",

@@ -13,6 +13,7 @@ import { DroitsAgent } from "@/components/DroitsAgent";
 import { ProactiviteAgent } from "@/components/ProactiviteAgent";
 import { ModelesPremiumAgent } from "@/components/ModelesPremiumAgent";
 import { messageErreur } from "@/lib/erreurs";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 // Étape "modifier un agent" (2026-07-12, demande de Bourama : "on ne peut
 // pas modifier ces agents créés" — gros morceau manquant depuis le début
@@ -31,6 +32,12 @@ type AgentEditable = {
   icone_page: string;
   system_prompt: string;
   notion_page_id: string | null;
+  // Ajouté le 2026-08-03 : jusqu'ici, sauvegarder un lien Notion n'indexait
+  // rien avant le prochain passage du cron (3h du matin), sans que rien ne
+  // le signale. Voir AgentEditable côté backend (api/agents.py).
+  notion_index_statut: "jamais" | "en_cours" | "ok" | "erreur";
+  notion_index_message: string | null;
+  notion_index_maj_le: string | null;
   texte_libre: string;
   image_vitrine_url: string | null;
   description: string;
@@ -83,6 +90,11 @@ export default function PageModifierAgent() {
   const [placeholderSaisie, setPlaceholderSaisie] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [lienNotion, setLienNotion] = useState("");
+  // Ajouté le 2026-08-03 : voir AgentEditable côté backend. "jamais" =
+  // rien à afficher (aucun lien n'a jamais été indexé).
+  const [notionIndexStatut, setNotionIndexStatut] =
+    useState<AgentEditable["notion_index_statut"]>("jamais");
+  const [notionIndexMessage, setNotionIndexMessage] = useState<string | null>(null);
   const [texteLibre, setTexteLibre] = useState("");
   // Même correctif que la page de création (2026-07-12, Bourama).
   const [pleinEcranTexteLibre, setPleinEcranTexteLibre] = useState(false);
@@ -168,6 +180,8 @@ export default function PageModifierAgent() {
         setPlaceholderSaisie(r.placeholder_saisie || "");
         setSystemPrompt(r.system_prompt || "");
         setLienNotion(r.notion_page_id || "");
+        setNotionIndexStatut(r.notion_index_statut || "jamais");
+        setNotionIndexMessage(r.notion_index_message || null);
         setTexteLibre(r.texte_libre || "");
         setActif(r.actif);
         setMatiere(r.matiere || "");
@@ -195,6 +209,24 @@ export default function PageModifierAgent() {
     chargerBibliotheque();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, agentId]);
+
+  // Tant que l'indexation Notion tourne en arrière-plan côté backend
+  // (voir _indexer_notion_arriere_plan, api/agents.py), on réinterroge la
+  // fiche d'édition pour refléter le vrai statut sans que le créateur ait
+  // à recharger la page. S'arrête tout seul dès que ce n'est plus
+  // "en_cours".
+  useEffect(() => {
+    if (notionIndexStatut !== "en_cours" || !agentId) return;
+    const intervalle = setInterval(() => {
+      appelerApi(`/api/agents/${agentId}/edition`)
+        .then((r: AgentEditable) => {
+          setNotionIndexStatut(r.notion_index_statut || "jamais");
+          setNotionIndexMessage(r.notion_index_message || null);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(intervalle);
+  }, [notionIndexStatut, agentId]);
 
   function chargerDocuments() {
     appelerApi(`/api/agents/${agentId}/documents`)
@@ -245,6 +277,16 @@ export default function PageModifierAgent() {
         }),
       });
       setMessage("IA mise à jour.");
+      // Reflète tout de suite ce que le backend vient de faire (voir PATCH
+      // /api/agents/{id} : passe en "en_cours" en synchrone dès qu'un lien
+      // Notion non vide est envoyé), sans attendre le premier polling.
+      if (lienNotion.trim()) {
+        setNotionIndexStatut("en_cours");
+        setNotionIndexMessage(null);
+      } else {
+        setNotionIndexStatut("jamais");
+        setNotionIndexMessage(null);
+      }
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -632,6 +674,27 @@ export default function PageModifierAgent() {
                 placeholder="https://www.notion.so/..."
                 className={champClasse}
               />
+              {notionIndexStatut === "en_cours" && (
+                <div className="mt-1.5 flex animate-dj-fade-in items-center gap-2 text-[13px] text-dj-texte-muet transition-all duration-300">
+                  <Loader2 size={14} className="animate-spin text-dj-accent-1" />
+                  <span>Ajout du contenu Notion en cours...</span>
+                </div>
+              )}
+              {notionIndexStatut === "ok" && (
+                <div className="mt-1.5 flex animate-dj-fade-in items-center gap-2 text-[13px] text-dj-succes transition-all duration-300">
+                  <CheckCircle2 size={14} />
+                  <span>Contenu Notion ajouté à la mémoire de l&apos;IA.</span>
+                </div>
+              )}
+              {notionIndexStatut === "erreur" && (
+                <div className="mt-1.5 flex animate-dj-fade-in items-center gap-2 text-[13px] text-red-500 transition-all duration-300">
+                  <XCircle size={14} />
+                  <span>
+                    {notionIndexMessage ||
+                      "Le contenu Notion n'a pas pu être ajouté. Réessaie plus tard."}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
