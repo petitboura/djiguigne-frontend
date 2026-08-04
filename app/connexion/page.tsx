@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { connecterOuInscrire } from "@/lib/authFallback";
+import { appelerApi } from "@/lib/api";
 import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { ChampTelephone } from "@/components/ChampTelephone";
 import { BoutonRetour } from "@/components/BoutonRetour";
@@ -43,7 +44,15 @@ export default function PageConnexion() {
       return;
     }
 
-    router.push("/");
+    // Établissement/enseignant/étudiant -> atterrit sur son espace dédié
+    // (tâche F, 2026-08-05) au lieu du feed public. Best-effort : un échec
+    // ici (compte sans rôle, requête ratée) garde le comportement d'avant.
+    try {
+      const r: { role: string | null } = await appelerApi("/api/roles/moi");
+      router.push(r.role ? "/dashboard/espace-role" : "/");
+    } catch {
+      router.push("/");
+    }
   }
 
   return (

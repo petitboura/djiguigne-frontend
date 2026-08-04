@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { appelerApi } from "@/lib/api";
 import { NotificationsCloche } from "@/components/NotificationsCloche";
 import { NotificationsPushCloche } from "@/components/NotificationsPushCloche";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
@@ -18,8 +19,16 @@ import { BoutonInstaller } from "@/components/BoutonInstaller";
 // L'ancienne page /dashboard N'EST PAS supprimée ("ne le supprime pas,
 // juste désactive-le"), juste retirée d'ici et de SidebarChat.tsx ;
 // reste joignable par lien direct pour qui a l'URL.
+//
+// MISE À JOUR 2026-08-05 (tâche F) : "Mon espace" devient sensible au
+// rôle -- un établissement/enseignant/étudiant est envoyé vers
+// /dashboard/espace-role (onglets Mon IA + Contacts) au lieu de
+// /dashboard/espace (Bibliothèque/Mémoire/Historique, réservé aux
+// créateurs standard). Un compte sans rôle (role === null, la grande
+// majorité) garde le comportement inchangé.
 export function TopBar() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
+  const [monRole, setMonRole] = useState<string | null>(null);
   const pathname = usePathname();
   // Corrigé le 2026-07-13 (Bourama : "'Mon espace' reste éteint même
   // quand on est dedans") : aucun état actif n'était géré, le lien
@@ -28,6 +37,7 @@ export function TopBar() {
   // pages du dashboard (applications, modifier un agent...) restent
   // sous cette même rubrique de nav.
   const dansMonEspace = pathname?.startsWith("/dashboard");
+  const lienMonEspace = monRole ? "/dashboard/espace-role" : "/dashboard/espace";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -38,6 +48,18 @@ export function TopBar() {
     });
     return () => ecoute.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!email) {
+      setMonRole(null);
+      return;
+    }
+    // Best-effort : un échec (pas de session encore prête côté API, etc.)
+    // laisse simplement le lien sur son comportement par défaut.
+    appelerApi("/api/roles/moi")
+      .then((r: { role: string | null }) => setMonRole(r.role))
+      .catch(() => setMonRole(null));
+  }, [email]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-dj-bordure bg-dj-fond/85 backdrop-blur">
@@ -58,7 +80,7 @@ export function TopBar() {
             <NotificationsCloche />
             <NotificationsPushCloche />
             <Link
-              href="/dashboard/espace"
+              href={lienMonEspace}
               className={
                 dansMonEspace
                   ? "rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02]"

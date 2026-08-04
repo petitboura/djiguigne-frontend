@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { inscrireOuConnecter } from "@/lib/authFallback";
+import { appelerApi } from "@/lib/api";
 import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { ChampTelephone } from "@/components/ChampTelephone";
 import { BoutonRetour } from "@/components/BoutonRetour";
@@ -49,7 +50,17 @@ export default function PageInscription() {
     }
 
     setEnCours(false);
-    router.push("/");
+
+    // Best-effort (tâche F, 2026-08-05) : ce parcours est le compte
+    // standard, mais un rôle peut déjà exister (ex. compte recréé après
+    // un rattachement fait ailleurs) -- au cas où, on respecte quand même
+    // l'espace dédié plutôt que le feed public.
+    try {
+      const r: { role: string | null } = await appelerApi("/api/roles/moi");
+      router.push(r.role ? "/dashboard/espace-role" : "/");
+    } catch {
+      router.push("/");
+    }
   }
 
   return (
