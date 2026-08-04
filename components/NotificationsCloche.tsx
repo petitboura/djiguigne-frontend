@@ -16,7 +16,15 @@ import { PleinEcran } from "@/components/PleinEcran";
 
 type NotificationItem = {
   id: number;
-  type: "follow" | "comment" | "rating" | "categorie_manquante" | "agent_update" | "feedback";
+  type:
+    | "follow"
+    | "comment"
+    | "rating"
+    | "categorie_manquante"
+    | "agent_update"
+    | "feedback"
+    | "message_direct"
+    | "annonce_etablissement";
   lu: boolean;
   created_at: string | null;
   acteur_id: string;
@@ -34,6 +42,14 @@ type NotificationItem = {
   feedback_question: string | null;
   feedback_reponse: string | null;
   update_id: number | null;
+  // Ajouté le 2026-08-04 pour "message_direct" (acteur_nom = expéditeur)
+  // et "annonce_etablissement" (acteur_nom = établissement) -- voir
+  // api/notifications.py.
+  message_id: number | null;
+  message_contenu: string | null;
+  message_reponse_a: number | null;
+  annonce_id: number | null;
+  annonce_contenu: string | null;
 };
 
 type NotificationsReponse = {
@@ -97,6 +113,22 @@ function IconeType({ type }: { type: NotificationItem["type"] }) {
       </svg>
     );
   }
+  if (type === "message_direct") {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 6h18v12H3V6Z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="m3 6 9 7 9-7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (type === "annonce_etablissement") {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 10v4h3l5 4V6L6 10H3Z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8L6.7 20.1l1-6L3.4 9.9l6-.9L12 3.5Z" />
@@ -111,6 +143,8 @@ function texteNotification(n: NotificationItem) {
   if (n.type === "categorie_manquante")
     return `Choisis une catégorie pour ${n.agent_nom ?? "ton IA"}.`;
   if (n.type === "agent_update") return `${nom} a publié une mise à jour sur ${n.agent_nom ?? "une IA"}.`;
+  if (n.type === "message_direct") return `${nom} t'a envoyé un message.`;
+  if (n.type === "annonce_etablissement") return `${nom} a publié une annonce.`;
   if (n.type === "feedback") {
     // 6 variantes (2026-07-21, demande de Bourama) : jamais de nom
     // d'utilisateur ici, contrairement aux autres types de notification.
@@ -126,6 +160,17 @@ function texteNotification(n: NotificationItem) {
 
 function feedbackADesDetails(n: NotificationItem) {
   return n.type === "feedback" && Boolean(n.feedback_commentaire || n.feedback_contexte);
+}
+
+// message_direct/annonce_etablissement (2026-08-04) : toujours un détail
+// à ouvrir -- le contenu ne tient pas dans la ligne de liste, et
+// message_direct permet en plus une réponse rapide (voir PopupDetailMessage).
+function messageADesDetails(n: NotificationItem) {
+  return n.type === "message_direct";
+}
+
+function annonceADesDetails(n: NotificationItem) {
+  return n.type === "annonce_etablissement";
 }
 
 function lienNotification(n: NotificationItem) {
@@ -147,10 +192,14 @@ function LigneNotification({
   n,
   onOuvrir,
   onDetailFeedback,
+  onDetailMessage,
+  onDetailAnnonce,
 }: {
   n: NotificationItem;
   onOuvrir: (n: NotificationItem) => void;
   onDetailFeedback: (n: NotificationItem) => void;
+  onDetailMessage: (n: NotificationItem) => void;
+  onDetailAnnonce: (n: NotificationItem) => void;
 }) {
   const lien = lienNotification(n);
   const contenu = (
@@ -193,6 +242,36 @@ function LigneNotification({
     );
   }
 
+  if (messageADesDetails(n)) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          onOuvrir(n);
+          onDetailMessage(n);
+        }}
+        className="block w-full text-left"
+      >
+        {contenu}
+      </button>
+    );
+  }
+
+  if (annonceADesDetails(n)) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          onOuvrir(n);
+          onDetailAnnonce(n);
+        }}
+        className="block w-full text-left"
+      >
+        {contenu}
+      </button>
+    );
+  }
+
   return (
     <button type="button" onClick={() => onOuvrir(n)} className="block w-full text-left">
       {contenu}
@@ -208,6 +287,10 @@ export function NotificationsCloche() {
   // Détail d'un feedback (2026-07-21) : ouvert par LigneNotification quand
   // la notification a un commentaire et/ou un contexte à montrer.
   const [detailFeedback, setDetailFeedback] = useState<NotificationItem | null>(null);
+  // Détail d'un message direct / d'une annonce établissement (2026-08-04,
+  // tâche B) : même principe que detailFeedback ci-dessus.
+  const [detailMessage, setDetailMessage] = useState<NotificationItem | null>(null);
+  const [detailAnnonce, setDetailAnnonce] = useState<NotificationItem | null>(null);
 
   function charger() {
     appelerApi("/api/notifications?limite=20")
@@ -301,7 +384,7 @@ export function NotificationsCloche() {
               )}
               {notifications?.map((n, i) => (
                 <div key={n.id} className={i > 0 ? "border-t border-dj-bordure" : ""}>
-                  <LigneNotification n={n} onOuvrir={marquerLue} onDetailFeedback={setDetailFeedback} />
+                  <LigneNotification n={n} onOuvrir={marquerLue} onDetailFeedback={setDetailFeedback} onDetailMessage={setDetailMessage} onDetailAnnonce={setDetailAnnonce} />
                 </div>
               ))}
             </div>
@@ -343,12 +426,20 @@ export function NotificationsCloche() {
         )}
         {notifications?.map((n, i) => (
           <div key={n.id} className={i > 0 ? "border-t border-dj-bordure" : ""}>
-            <LigneNotification n={n} onOuvrir={marquerLue} onDetailFeedback={setDetailFeedback} />
+            <LigneNotification n={n} onOuvrir={marquerLue} onDetailFeedback={setDetailFeedback} onDetailMessage={setDetailMessage} onDetailAnnonce={setDetailAnnonce} />
           </div>
         ))}
       </PleinEcran>
 
       {detailFeedback && <PopupDetailFeedback n={detailFeedback} onFermer={() => setDetailFeedback(null)} />}
+      {detailMessage && (
+        <PopupDetailMessage
+          n={detailMessage}
+          onFermer={() => setDetailMessage(null)}
+          onReponseEnvoyee={charger}
+        />
+      )}
+      {detailAnnonce && <PopupDetailAnnonce n={detailAnnonce} onFermer={() => setDetailAnnonce(null)} />}
     </div>
   );
 }
@@ -426,6 +517,93 @@ function PopupDetailFeedback({ n, onFermer }: { n: NotificationItem; onFermer: (
         {!n.feedback_commentaire && !n.feedback_question && !n.feedback_reponse && (
           <p className="text-sm text-dj-texte-muet">Aucun détail supplémentaire pour ce retour.</p>
         )}
+      </div>
+    </PleinEcran>
+  );
+}
+
+// message_direct (2026-08-04, tâche B) : contenu du message + réponse
+// rapide -- POST /api/roles/messages avec reponse_a=n.message_id vers
+// n.acteur_id (l'expéditeur original devient le destinataire de la
+// réponse). onReponseEnvoyee recharge la liste pour refléter l'échange.
+function PopupDetailMessage({
+  n,
+  onFermer,
+  onReponseEnvoyee,
+}: {
+  n: NotificationItem;
+  onFermer: () => void;
+  onReponseEnvoyee: () => void;
+}) {
+  const [reponse, setReponse] = useState("");
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const [envoye, setEnvoye] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  async function envoyerReponse() {
+    if (!reponse.trim()) return;
+    setEnvoiEnCours(true);
+    setErreur(null);
+    try {
+      await appelerApi("/api/roles/messages", {
+        method: "POST",
+        body: JSON.stringify({
+          destinataire_id: n.acteur_id,
+          contenu: reponse.trim(),
+          reponse_a: n.message_id,
+        }),
+      });
+      setEnvoye(true);
+      setReponse("");
+      onReponseEnvoyee();
+    } catch {
+      setErreur("Impossible d'envoyer la réponse. Réessaie.");
+    } finally {
+      setEnvoiEnCours(false);
+    }
+  }
+
+  return (
+    <PleinEcran ouvert onFermer={onFermer} titre={`Message de ${n.acteur_nom || "quelqu'un"}`}>
+      <div className="space-y-3 p-4">
+        <p className="rounded-lg bg-dj-surface-haute px-3 py-2 text-sm text-dj-texte">
+          {n.message_contenu}
+        </p>
+
+        <div>
+          <textarea
+            value={reponse}
+            onChange={(e) => setReponse(e.target.value)}
+            placeholder="Répondre..."
+            rows={3}
+            className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte"
+          />
+          {erreur && <p className="mt-1 text-xs text-red-500">{erreur}</p>}
+          {envoye && <p className="mt-1 text-xs text-dj-texte-muet">Réponse envoyée.</p>}
+          <button
+            type="button"
+            onClick={envoyerReponse}
+            disabled={envoiEnCours || !reponse.trim()}
+            className="mt-2 rounded-full bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02] disabled:opacity-50"
+          >
+            {envoiEnCours ? "Envoi..." : "Répondre"}
+          </button>
+        </div>
+      </div>
+    </PleinEcran>
+  );
+}
+
+// annonce_etablissement (2026-08-04, tâche B) : lecture seule, diffusée
+// par l'établissement à tous ses rattachés -- pas de réponse rapide ici
+// (contrairement à message_direct), voir migration 2026_08_04.
+function PopupDetailAnnonce({ n, onFermer }: { n: NotificationItem; onFermer: () => void }) {
+  return (
+    <PleinEcran ouvert onFermer={onFermer} titre={`Annonce de ${n.acteur_nom || "ton établissement"}`}>
+      <div className="p-4">
+        <p className="rounded-lg bg-dj-surface-haute px-3 py-2 text-sm text-dj-texte">
+          {n.annonce_contenu}
+        </p>
       </div>
     </PleinEcran>
   );
