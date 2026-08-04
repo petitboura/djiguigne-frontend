@@ -245,6 +245,21 @@ export function AgentCard({
             {envoiActif ? "…" : estActif ? "Public" : "Privé"}
           </button>
         )}
+
+        {/* "Tester" (2026-08-04, demande Bourama) : accès direct au chat de
+            l'IA depuis "Mon espace", sans repasser par la vitrine
+            /agent/{id}. Utile pour les IA modèles établissement/enseignant
+            (non publiables) qu'il garde ici pour prévisualiser le
+            comportement. */}
+        {editable && (
+          <Link
+            href={`/agent/${agent.id}/chat`}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-2 right-2 z-10 rounded-full border border-dj-bordure bg-dj-fond/80 px-3 py-1 text-xs font-medium text-dj-texte-muet hover:text-dj-texte"
+          >
+            Tester
+          </Link>
+        )}
       </div>
       )}
 
