@@ -238,6 +238,41 @@ export async function ajouterFichierBibliotheque(
 }
 
 /**
+ * Diffusion en masse d'un document par un établissement (2026-08-05,
+ * partie D du reste-à-faire hiérarchie de rôles) -- voir
+ * api/roles.py:diffuser_document. Même mécanique FormData que
+ * ajouterFichierBibliotheque, sur l'endpoint dédié qui répète l'ajout
+ * pour chaque enseignant + étudiant de l'établissement plutôt qu'un seul
+ * agent. Retourne {diffuse_a, total_cibles, echecs}.
+ */
+export async function diffuserDocumentEtablissement(fichier: File, description: string, titre?: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("Connecte-toi pour envoyer un fichier.");
+  }
+
+  const corps = new FormData();
+  corps.append("fichier", fichier);
+  if (titre?.trim()) corps.append("titre", titre.trim());
+  corps.append("description", description);
+
+  const reponse = await fetch(`${API_URL}/api/roles/documents/diffuser`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: corps,
+  });
+
+  if (!reponse.ok) {
+    throw await construireErreurApi(reponse, "/api/roles/documents/diffuser");
+  }
+
+  return reponse.json();
+}
+
+/**
  * Upload vers la bibliothèque PERSONNELLE de l'utilisateur connecté
  * (2026-08-01, nouvelle section "Mon espace" -- voir
  * api/bibliotheque_utilisateur.py:uploader_document). Même mécanique que

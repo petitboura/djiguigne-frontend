@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { appelerApi } from "@/lib/api";
+import { appelerApi, diffuserDocumentEtablissement } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
@@ -86,6 +86,18 @@ export default function PageEquipe() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
+  // Diffusion de documents (2026-08-05, partie D) : établissement -> tous
+  // ses enseignants + tous les étudiants de ces enseignants, en un seul
+  // envoi (voir POST /api/roles/documents/diffuser côté backend).
+  const [fichierDiffusion, setFichierDiffusion] = useState<File | null>(null);
+  const [descriptionDiffusion, setDescriptionDiffusion] = useState("");
+  const [diffusionEnCours, setDiffusionEnCours] = useState(false);
+  const [resultatDiffusion, setResultatDiffusion] = useState<{
+    diffuse_a: number;
+    total_cibles: number;
+    echecs: string[];
+  } | null>(null);
+
   useEffect(() => {
     appelerApi("/api/roles/moi")
       .then(async (r: MonRole) => {
@@ -134,6 +146,23 @@ export default function PageEquipe() {
       setConfirmation("Annonce envoyée à toute ton équipe.");
     } catch (e) {
       setErreur(messageErreur(e));
+    }
+  }
+
+  async function diffuserDocument() {
+    if (!fichierDiffusion || !descriptionDiffusion.trim()) return;
+    setErreur(null);
+    setResultatDiffusion(null);
+    setDiffusionEnCours(true);
+    try {
+      const resultat = await diffuserDocumentEtablissement(fichierDiffusion, descriptionDiffusion.trim());
+      setResultatDiffusion(resultat);
+      setFichierDiffusion(null);
+      setDescriptionDiffusion("");
+    } catch (e) {
+      setErreur(messageErreur(e));
+    } finally {
+      setDiffusionEnCours(false);
     }
   }
 
@@ -251,6 +280,43 @@ export default function PageEquipe() {
                       className="mt-2 rounded-full bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
                     >
                       Envoyer l'annonce
+                    </button>
+                  </section>
+                )}
+
+                {monRole?.role === "etablissement" && (
+                  <section className="mt-4 rounded-2xl border border-dj-bordure bg-dj-surface p-5">
+                    <h2 className="font-display text-base font-semibold text-dj-texte">
+                      Diffuser un document
+                    </h2>
+                    <p className="mt-1 text-xs text-dj-texte-muet">
+                      Ajouté d'un coup à la bibliothèque de tes enseignants et de leurs étudiants.
+                    </p>
+                    <input
+                      type="file"
+                      onChange={(e) => setFichierDiffusion(e.target.files?.[0] ?? null)}
+                      className="mt-2 block w-full text-sm text-dj-texte-muet file:mr-3 file:rounded-full file:border-0 file:bg-dj-surface-haute file:px-3 file:py-1.5 file:text-xs file:text-dj-texte"
+                    />
+                    <input
+                      value={descriptionDiffusion}
+                      onChange={(e) => setDescriptionDiffusion(e.target.value)}
+                      placeholder="Description (pour que l'IA sache le retrouver)"
+                      className="mt-2 w-full rounded-lg border border-dj-bordure bg-dj-surface-haute px-3 py-2 text-sm text-dj-texte outline-none focus:border-dj-accent-1"
+                    />
+                    {resultatDiffusion && (
+                      <p className="mt-2 animate-dj-fade-in-rapide text-sm text-dj-accent-1">
+                        Diffusé à {resultatDiffusion.diffuse_a}/{resultatDiffusion.total_cibles} personnes.
+                        {resultatDiffusion.echecs.length > 0 && (
+                          <> Échec pour : {resultatDiffusion.echecs.join(", ")}.</>
+                        )}
+                      </p>
+                    )}
+                    <button
+                      onClick={diffuserDocument}
+                      disabled={!fichierDiffusion || !descriptionDiffusion.trim() || diffusionEnCours}
+                      className="mt-2 rounded-full bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
+                    >
+                      {diffusionEnCours ? "Diffusion…" : "Diffuser à tout le monde"}
                     </button>
                   </section>
                 )}
