@@ -1,3 +1,7 @@
+// DÉSACTIVÉ — 2026-08-05
+// Ne pas réutiliser ni réactiver tant que Bourama ne le dit pas
+// explicitement. Raison : déjà une redirection vers espace-role, elle
+// aussi désactivée. Voir SECTIONS_DESACTIVEES.md.
 "use client";
 
 import { useEffect } from "react";

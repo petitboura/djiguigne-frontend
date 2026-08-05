@@ -1,3 +1,8 @@
+// DÉSACTIVÉ — 2026-08-05
+// Ne pas réutiliser ni réactiver tant que Bourama ne le dit pas
+// explicitement. Raison : plus aucun lien actif ne mène ici (l'unique
+// lien venait de l'ancien tableau de bord /dashboard/page.tsx, déjà
+// désactivé). Voir SECTIONS_DESACTIVEES.md.
 "use client";
 
 import { useEffect, useState } from "react";

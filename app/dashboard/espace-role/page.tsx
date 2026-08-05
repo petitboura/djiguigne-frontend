@@ -1,3 +1,9 @@
+// DÉSACTIVÉ — 2026-08-05
+// Ne pas réutiliser ni réactiver tant que Bourama ne le dit pas
+// explicitement. Raison : le système de rôle établissement/enseignant/
+// étudiant n'est plus utilisé. Plus aucun lien actif (TopBar,
+// connexion, inscription) ne mène ici ; le fichier reste en place,
+// injoignable désormais que par URL directe. Voir SECTIONS_DESACTIVEES.md.
 "use client";
 
 import { useEffect, useState } from "react";

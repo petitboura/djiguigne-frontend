@@ -1,3 +1,12 @@
+// DÉSACTIVÉ — 2026-08-05
+// Ne pas réutiliser ni réactiver tant que Bourama ne le dit pas
+// explicitement. Raison : plus aucun lien actif ne mène ici (l'ancien
+// tableau de bord et les composants CreateurCard/BoutonProfilCreateur
+// sont déjà désactivés ou inutilisés ; la fonctionnalité "suivre" n'est
+// plus utilisable, donc plus de nouvelles notifications "follow" non
+// plus). Reste joignable par lien direct pour qui a l'URL, et par une
+// éventuelle ancienne notification "follow" déjà reçue. Voir
+// SECTIONS_DESACTIVEES.md.
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
