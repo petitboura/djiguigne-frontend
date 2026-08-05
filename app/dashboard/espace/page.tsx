@@ -134,7 +134,8 @@ export default function PageMonEspace() {
     const dynamiques: { id: Onglet; label: string; Icone: typeof History }[] = [];
     if (agentsAdministres && agentsAdministres.length > 0) {
       dynamiques.push({ id: "administrer", label: "Administrer", Icone: ShieldCheck });
-    } else if (estCreateur) {
+    }
+    if (estCreateur) {
       dynamiques.push({ id: "mesIA", label: "Mes IA", Icone: Bot });
     }
     return [...dynamiques, ...ONGLETS_FIXES];
