@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot } from "lucide-react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
@@ -17,6 +18,8 @@ import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 import { MaMemoire } from "@/components/MaMemoire";
+import { AgentCard, type AgentResume } from "@/components/AgentCard";
+import { BoutonPartager } from "@/components/BoutonPartager";
 
 /**
  * Page "Mon espace" (2026-08-01, demande Bourama).
@@ -51,10 +54,11 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "historique" | "bibliotheque" | "memoire" | "applis";
+type Onglet = "mesIA" | "historique" | "bibliotheque" | "memoire" | "applis";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
+  { id: "mesIA", label: "Mes IA", Icone: Bot },
   { id: "historique", label: "Historique", Icone: History },
   { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
   { id: "memoire", label: "Ma mémoire", Icone: Brain },
@@ -85,8 +89,10 @@ export default function PageMonEspace() {
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
-  const [onglet, setOnglet] = useState<Onglet>("historique");
+  const [onglet, setOnglet] = useState<Onglet>("mesIA");
   const [sousOnglet, setSousOnglet] = useState<SousOngletBiblio>("tous");
+
+  const [agents, setAgents] = useState<AgentResume[] | null>(null);
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
@@ -107,8 +113,17 @@ export default function PageMonEspace() {
   useEffect(() => {
     if (!session) return;
     chargerFichiers();
+    chargerAgents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  function chargerAgents() {
+    // GET /api/profiles/{user_id} : même endpoint que l'ancien /dashboard
+    // (portfolio public + Mon espace), .agents suffit ici.
+    appelerApi(`/api/profiles/${session!.user.id}`)
+      .then((r: { agents: AgentResume[] }) => setAgents(r.agents ?? []))
+      .catch(() => setAgents([]));
+  }
 
   function chargerFichiers() {
     appelerApi("/api/bibliotheque")
@@ -201,6 +216,43 @@ export default function PageMonEspace() {
             </button>
           ))}
         </div>
+
+        {onglet === "mesIA" && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-dj-texte-muet">Les IA que tu as créées.</p>
+              <Link
+                href="/dashboard/agents/nouveau"
+                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              >
+                + Créer une IA
+              </Link>
+            </div>
+
+            {agents === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {agents && agents.length === 0 && (
+              <p className="text-sm text-dj-texte-muet">Aucune IA créée pour l&apos;instant.</p>
+            )}
+            {agents && agents.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {agents.map((agent) => (
+                  <div key={agent.id} className="flex flex-col gap-2">
+                    <AgentCard agent={agent} editable />
+                    <div className="flex items-center gap-3">
+                      <BoutonPartager chemin={`/agent/${agent.id}`} titre={agent.nom} libelle="Partager" />
+                      <Link
+                        href={`/dashboard/agents/${agent.id}/admin`}
+                        className="text-sm text-dj-texte-muet transition-colors hover:text-dj-texte"
+                      >
+                        Administrer
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {onglet === "historique" && <HistoriqueConversations />}
 
