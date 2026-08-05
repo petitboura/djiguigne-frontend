@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
@@ -54,11 +54,11 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "mesIA" | "historique" | "bibliotheque" | "memoire" | "applis";
+type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
-const ONGLETS: { id: Onglet; label: string; Icone: typeof History }[] = [
-  { id: "mesIA", label: "Mes IA", Icone: Bot },
+// Onglets fixes, toujours affichés.
+const ONGLETS_FIXES: { id: Onglet; label: string; Icone: typeof History }[] = [
   { id: "historique", label: "Historique", Icone: History },
   { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
   { id: "memoire", label: "Ma mémoire", Icone: Brain },
@@ -89,11 +89,23 @@ export default function PageMonEspace() {
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
-  const [onglet, setOnglet] = useState<Onglet>("historique");
+  const [onglet, setOnglet] = useState<Onglet | null>(null);
   const [sousOnglet, setSousOnglet] = useState<SousOngletBiblio>("tous");
 
   const [agents, setAgents] = useState<AgentResume[] | null>(null);
-  const [estCreateur, setEstCreateur] = useState<boolean | null>(null);
+
+  // "Mon espace" (2026-08-05, demande Bourama) : soit "Administrer" (si
+  // administrateur d'au moins une IA -- priorité), soit "Mes IA" (si
+  // créateur), soit aucun des deux. Les deux statuts sont pour
+  // l'instant activés manuellement par Bourama en base (voir
+  // api/profiles.py : profiles.est_createur, table
+  // agents_administrateurs) -- rien dans la plateforme ne permet encore
+  // à quelqu'un de devenir créateur ou administrateur par lui-même.
+  // Champs lus directement sur la réponse de GET /api/profiles/{id}
+  // (déjà appelé par chargerAgents ci-dessous) -- pas d'appel réseau
+  // séparé.
+  const [estCreateur, setEstCreateur] = useState(false);
+  const [agentsAdministres, setAgentsAdministres] = useState<AgentResume[] | null>(null);
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
@@ -118,26 +130,51 @@ export default function PageMonEspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  const ongletsAffiches = useMemo(() => {
+    const dynamiques: { id: Onglet; label: string; Icone: typeof History }[] = [];
+    if (agentsAdministres && agentsAdministres.length > 0) {
+      dynamiques.push({ id: "administrer", label: "Administrer", Icone: ShieldCheck });
+    } else if (estCreateur) {
+      dynamiques.push({ id: "mesIA", label: "Mes IA", Icone: Bot });
+    }
+    return [...dynamiques, ...ONGLETS_FIXES];
+  }, [estCreateur, agentsAdministres]);
+
+  useEffect(() => {
+    // Choisit/rebascule sur le bon onglet par défaut dès qu'on sait ce
+    // qu'il y a à afficher -- que ce soit au premier chargement (onglet
+    // encore null) ou dès que le statut créateur/administrateur arrive
+    // après coup (évite de rester coincé sur "Historique" si le compte
+    // est en fait créateur ou administrateur).
+    if (agentsAdministres === null) return; // chargement pas fini
+    if (onglet !== null && onglet !== "historique") return;
+    setOnglet(ongletsAffiches[0]?.id ?? "historique");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentsAdministres, estCreateur]);
+
   function chargerAgents() {
     // GET /api/profiles/{user_id} : même endpoint que l'ancien /dashboard
-    // (portfolio public + Mon espace), .agents suffit ici. est_createur
-    // (05/08, Bourama : "n'importe qui peut plus être créateur") pilote
-    // l'affichage de l'onglet "Mes IA" -- valeur réelle uniquement pour
-    // le propriétaire du profil (voir api/profiles.py).
+    // (portfolio public + Mon espace). Fournit aussi est_createur et
+    // agents_administres (2026-08-05, privés, propriétaire uniquement)
+    // -- un seul appel pour tout "Mon espace".
     appelerApi(`/api/profiles/${session!.user.id}`)
-      .then((r: { agents: AgentResume[]; est_createur: boolean }) => {
-        setAgents(r.agents ?? []);
-        setEstCreateur(!!r.est_createur);
-      })
+      .then(
+        (r: {
+          agents: AgentResume[];
+          est_createur?: boolean;
+          agents_administres?: AgentResume[];
+        }) => {
+          setAgents(r.agents ?? []);
+          setEstCreateur(!!r.est_createur);
+          setAgentsAdministres(r.agents_administres ?? []);
+        }
+      )
       .catch(() => {
         setAgents([]);
         setEstCreateur(false);
+        setAgentsAdministres([]);
       });
   }
-
-  useEffect(() => {
-    if (estCreateur) setOnglet("mesIA");
-  }, [estCreateur]);
 
   function chargerFichiers() {
     appelerApi("/api/bibliotheque")
@@ -214,7 +251,7 @@ export default function PageMonEspace() {
         <h1 className="font-display text-2xl font-extrabold text-dj-texte">Mon espace</h1>
 
         <div className="flex gap-2 border-b border-dj-bordure">
-          {ONGLETS.filter((o) => o.id !== "mesIA" || estCreateur).map((o) => (
+          {ongletsAffiches.map((o) => (
             <button
               key={o.id}
               onClick={() => setOnglet(o.id)}
@@ -261,6 +298,34 @@ export default function PageMonEspace() {
                         Administrer
                       </Link>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {onglet === "administrer" && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-dj-texte-muet">
+              Les IA dont on t&apos;a confié l&apos;administration.
+            </p>
+
+            {agentsAdministres === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {agentsAdministres && agentsAdministres.length === 0 && (
+              <p className="text-sm text-dj-texte-muet">Aucune IA à administrer pour l&apos;instant.</p>
+            )}
+            {agentsAdministres && agentsAdministres.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {agentsAdministres.map((agent) => (
+                  <div key={agent.id} className="flex flex-col gap-2">
+                    <AgentCard agent={agent} />
+                    <Link
+                      href={`/dashboard/agents/${agent.id}/admin`}
+                      className="text-sm text-dj-texte-muet transition-colors hover:text-dj-texte"
+                    >
+                      Administrer
+                    </Link>
                   </div>
                 ))}
               </div>
