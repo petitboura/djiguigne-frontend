@@ -370,6 +370,12 @@ export default function PageDashboard() {
                       titre={agent.nom}
                       libelle="Partager"
                     />
+                    <Link
+                      href={`/dashboard/agents/${agent.id}/admin`}
+                      className="text-sm text-dj-texte-muet transition-colors hover:text-dj-texte"
+                    >
+                      Administrer
+                    </Link>
                   </div>
                 </div>
               ))}
