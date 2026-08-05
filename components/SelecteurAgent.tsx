@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import Image from "next/image";
-import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, ChevronDown } from "lucide-react";
+import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, ChevronDown, Loader2 } from "lucide-react";
 import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
@@ -134,7 +134,7 @@ export function SelecteurAgent() {
 
       {!ouverte ? (
         // --- Rien de sélectionné : liste empilée classique ---
-        <div className="flex w-full max-w-xs flex-col gap-3">
+        <div className="flex w-full max-w-xs flex-col gap-3 animate-dj-fade-up">
           {SECTIONS.map((cle) => {
             const { libelle, icon } = CONFIG_SECTIONS[cle];
             return (
@@ -155,7 +155,7 @@ export function SelecteurAgent() {
         // --- Une catégorie sélectionnée : barre latérale (PC) / bouton +
         // tiroir (mobile) à côté des résultats, même redesign que la
         // vitrine (SectionsProduit.tsx, 01/08) ---
-        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="flex w-full flex-col gap-4 animate-dj-fade-up sm:flex-row sm:items-start sm:gap-6">
           {/* Barre latérale PC -- rétractable (icônes seules) */}
           <div
             className={
@@ -271,7 +271,10 @@ export function SelecteurAgent() {
           {/* Résultats */}
           <div className="w-full flex-1">
             {chargement ? (
-              <p className="text-center text-sm text-dj-texte-muet sm:text-left">Chargement…</p>
+              <div className="flex items-center justify-center gap-2 text-sm text-dj-texte-muet animate-dj-fade-in-rapide sm:justify-start">
+                <Loader2 size={16} className="animate-spin text-dj-accent-1" />
+                Chargement…
+              </div>
             ) : erreur ? (
               <p className="text-center text-sm text-dj-texte-muet sm:text-left">{erreur}</p>
             ) : !agentsSectionOuverte || agentsSectionOuverte.length === 0 ? (
@@ -322,7 +325,10 @@ export function SelecteurAgent() {
                       )}
                     </span>
                     {choixEnCours === agent.id && (
-                      <span className="ml-auto shrink-0 text-xs text-dj-texte-muet">Ouverture…</span>
+                      <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs text-dj-texte-muet animate-dj-fade-in-rapide">
+                        <Loader2 size={12} className="animate-spin text-dj-accent-1" />
+                        Ouverture…
+                      </span>
                     )}
                   </button>
                 ))}
