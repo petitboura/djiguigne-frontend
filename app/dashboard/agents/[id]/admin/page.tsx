@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, appelerApiFichier, ajouterFichierBibliotheque } from "@/lib/api";
 import { TopBar } from "@/components/TopBar";
@@ -228,9 +229,17 @@ export default function PageAdminAgent() {
       <TopBar />
 
       <main className="mx-auto max-w-2xl px-5 py-10">
-        <div className="mb-5 flex gap-2">
-          <BoutonRetour />
-          <BoutonAccueil />
+        <div className="mb-5 flex items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <BoutonRetour />
+            <BoutonAccueil />
+          </div>
+          <Link
+            href={`/agent/${agentId}/chat`}
+            className="rounded-full border border-dj-bordure px-4 py-2 text-xs font-medium text-dj-texte-muet transition-colors hover:border-dj-bordure-forte hover:text-dj-texte"
+          >
+            Tester
+          </Link>
         </div>
         <h1 className="font-display text-2xl font-bold text-dj-texte">Administrer {nom}</h1>
 
