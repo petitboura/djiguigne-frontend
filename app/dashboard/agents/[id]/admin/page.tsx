@@ -23,6 +23,7 @@ import { messageErreur } from "@/lib/erreurs";
 type AgentEditable = {
   nom: string;
   system_prompt: string;
+  texte_libre: string;
 };
 
 type DocumentIndexe = { nom_stockage: string; nom_affiche: string; url: string };
@@ -51,6 +52,11 @@ export default function PageAdminAgent() {
   const [messageComportement, setMessageComportement] = useState<string | null>(null);
   const [erreurComportement, setErreurComportement] = useState<string | null>(null);
 
+  const [texteLibre, setTexteLibre] = useState("");
+  const [enregistrementTexteLibre, setEnregistrementTexteLibre] = useState(false);
+  const [messageTexteLibre, setMessageTexteLibre] = useState<string | null>(null);
+  const [erreurTexteLibre, setErreurTexteLibre] = useState<string | null>(null);
+
   const [documents, setDocuments] = useState<DocumentIndexe[] | null>(null);
   const [nouveauPdf, setNouveauPdf] = useState<File | null>(null);
   const [envoiPdf, setEnvoiPdf] = useState(false);
@@ -78,6 +84,7 @@ export default function PageAdminAgent() {
       .then((r: AgentEditable) => {
         setNom(r.nom);
         setSystemPrompt(r.system_prompt || "");
+        setTexteLibre(r.texte_libre || "");
       })
       .catch((e) => setErreurChargement(messageErreur(e)))
       .finally(() => setChargement(false));
@@ -116,6 +123,24 @@ export default function PageAdminAgent() {
       setErreurComportement(messageErreur(e));
     } finally {
       setEnregistrement(false);
+    }
+  }
+
+  async function enregistrerTexteLibre(e: React.FormEvent) {
+    e.preventDefault();
+    setEnregistrementTexteLibre(true);
+    setMessageTexteLibre(null);
+    setErreurTexteLibre(null);
+    try {
+      await appelerApi(`/api/agents/${agentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ texte_libre: texteLibre }),
+      });
+      setMessageTexteLibre("Connaissance libre mise à jour.");
+    } catch (e) {
+      setErreurTexteLibre(messageErreur(e));
+    } finally {
+      setEnregistrementTexteLibre(false);
     }
   }
 
@@ -242,8 +267,38 @@ export default function PageAdminAgent() {
         <section className="mt-8 flex flex-col gap-4 rounded-2xl border border-dj-bordure bg-dj-surface p-6">
           <h2 className="font-display text-base font-bold text-dj-texte">Base de connaissance</h2>
           <p className="text-xs text-dj-texte-muet">
-            Documents PDF que l&apos;IA utilise pour répondre (recherche dans le contenu).
+            Tout ce que l&apos;IA sait et utilise pour répondre : texte libre et/ou documents PDF.
           </p>
+
+          <form onSubmit={enregistrerTexteLibre} className="flex flex-col gap-3">
+            <label className={labelClasse}>Texte libre</label>
+            <p className="-mt-2 text-xs text-dj-texte-muet">
+              Connaissance étendue qui n&apos;existe pas en PDF, ou qui change souvent.
+              Aucune limite de taille.
+            </p>
+            <textarea
+              value={texteLibre}
+              onChange={(e) => setTexteLibre(e.target.value)}
+              rows={8}
+              className={`${champClasse} resize-y`}
+            />
+            {erreurTexteLibre && <p className="text-sm text-[#F87171]">{erreurTexteLibre}</p>}
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={enregistrementTexteLibre}
+                className="self-start rounded-full border border-dj-bordure px-5 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {enregistrementTexteLibre ? "Enregistrement…" : "Enregistrer"}
+              </button>
+              {messageTexteLibre && (
+                <span className="text-sm text-dj-texte-muet">{messageTexteLibre}</span>
+              )}
+            </div>
+          </form>
+
+          <div className="flex flex-col gap-3 border-t border-dj-bordure pt-4">
+            <label className={labelClasse}>Documents PDF</label>
 
           {documents && documents.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -286,6 +341,7 @@ export default function PageAdminAgent() {
             >
               {envoiPdf ? "Envoi…" : "Ajouter"}
             </button>
+          </div>
           </div>
         </section>
 
