@@ -89,10 +89,11 @@ export default function PageMonEspace() {
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
-  const [onglet, setOnglet] = useState<Onglet>("mesIA");
+  const [onglet, setOnglet] = useState<Onglet>("historique");
   const [sousOnglet, setSousOnglet] = useState<SousOngletBiblio>("tous");
 
   const [agents, setAgents] = useState<AgentResume[] | null>(null);
+  const [estCreateur, setEstCreateur] = useState<boolean | null>(null);
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
@@ -119,11 +120,24 @@ export default function PageMonEspace() {
 
   function chargerAgents() {
     // GET /api/profiles/{user_id} : même endpoint que l'ancien /dashboard
-    // (portfolio public + Mon espace), .agents suffit ici.
+    // (portfolio public + Mon espace), .agents suffit ici. est_createur
+    // (05/08, Bourama : "n'importe qui peut plus être créateur") pilote
+    // l'affichage de l'onglet "Mes IA" -- valeur réelle uniquement pour
+    // le propriétaire du profil (voir api/profiles.py).
     appelerApi(`/api/profiles/${session!.user.id}`)
-      .then((r: { agents: AgentResume[] }) => setAgents(r.agents ?? []))
-      .catch(() => setAgents([]));
+      .then((r: { agents: AgentResume[]; est_createur: boolean }) => {
+        setAgents(r.agents ?? []);
+        setEstCreateur(!!r.est_createur);
+      })
+      .catch(() => {
+        setAgents([]);
+        setEstCreateur(false);
+      });
   }
+
+  useEffect(() => {
+    if (estCreateur) setOnglet("mesIA");
+  }, [estCreateur]);
 
   function chargerFichiers() {
     appelerApi("/api/bibliotheque")
@@ -200,7 +214,7 @@ export default function PageMonEspace() {
         <h1 className="font-display text-2xl font-extrabold text-dj-texte">Mon espace</h1>
 
         <div className="flex gap-2 border-b border-dj-bordure">
-          {ONGLETS.map((o) => (
+          {ONGLETS.filter((o) => o.id !== "mesIA" || estCreateur).map((o) => (
             <button
               key={o.id}
               onClick={() => setOnglet(o.id)}
@@ -217,7 +231,7 @@ export default function PageMonEspace() {
           ))}
         </div>
 
-        {onglet === "mesIA" && (
+        {onglet === "mesIA" && estCreateur && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-dj-texte-muet">Les IA que tu as créées.</p>
