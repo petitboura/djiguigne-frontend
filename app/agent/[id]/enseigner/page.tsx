@@ -64,7 +64,7 @@ export default function PageEnseignerAgent() {
           </p>
         </div>
 
-        <SectionMatieres />
+        <SectionMatieres agentIdEnseignant={agentId} />
       </main>
     </>
   );

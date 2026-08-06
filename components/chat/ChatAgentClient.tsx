@@ -18,6 +18,7 @@ import { useHauteurVisuelle } from "@/lib/useHauteurVisuelle";
 export function ChatAgentClient({
   agent,
   retourExterne,
+  retourIA,
 }: {
   agent: {
     id: string;
@@ -35,6 +36,12 @@ export function ChatAgentClient({
     contenu_dynamique_par_matiere?: boolean;
   };
   retourExterne?: string;
+  // Retour vers l'IA d'origine après "Tester" depuis "L'IA de mes
+  // élèves" (06/08/2026). Volontairement PAS branché sur l'effet
+  // ci-dessous (qui change l'IA par défaut) : ce cas n'a rien à voir
+  // avec un clic depuis la vitrine, juste transmis à SidebarChat pour
+  // le bouton de retour.
+  retourIA?: string;
 }) {
   const [cle, setCle] = useState(() => crypto.randomUUID());
   const [messagesInitiaux, setMessagesInitiaux] = useState<MessageAffiche[]>([]);
@@ -124,6 +131,7 @@ export function ChatAgentClient({
       <SidebarChat
         agentId={agent.id}
         retourExterne={retourExterne}
+        retourIA={retourIA}
         aDesMessages={nbMessages > 0}
         conversationActiveId={cle}
         onNouvelleConversation={nouvelleConversation}

@@ -31,7 +31,7 @@ import { messageErreur, ErreurApi } from "@/lib/erreurs";
  * agent côté étudiant -- même table, même mécanisme, juste un autre
  * endroit pour l'écrire.
  */
-export function SectionMatieres() {
+export function SectionMatieres({ agentIdEnseignant }: { agentIdEnseignant: string }) {
   const [agents, setAgents] = useState<AgentContenuDynamique[] | null>(null);
   const [erreurAgents, setErreurAgents] = useState<string | null>(null);
 
@@ -56,13 +56,29 @@ export function SectionMatieres() {
   return (
     <div className="flex flex-col gap-6">
       {agents.map((agent) => (
-        <BlocEcritureMatiere key={agent.id} agentId={agent.id} agentNom={agent.nom} />
+        <BlocEcritureMatiere
+          key={agent.id}
+          agentId={agent.id}
+          agentNom={agent.nom}
+          agentIdEnseignant={agentIdEnseignant}
+        />
       ))}
     </div>
   );
 }
 
-function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom: string }) {
+function BlocEcritureMatiere({
+  agentId,
+  agentNom,
+  agentIdEnseignant,
+}: {
+  agentId: string;
+  agentNom: string;
+  // IA que l'enseignant utilisait avant d'ouvrir "L'IA de mes élèves"
+  // (06/08/2026) -- sert à construire le lien "Retour à mon IA" après
+  // "Tester", pour ne pas rester coincé sur le chat de {agentNom}.
+  agentIdEnseignant: string;
+}) {
   const router = useRouter();
   const [mesContenus, setMesContenus] = useState<ContenuMatiere[] | null>(null);
   const [matiereChoisie, setMatiereChoisie] = useState<string>(MATIERES[0]);
@@ -147,7 +163,9 @@ function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom:
         if (!(e instanceof ErreurApi) || e.code !== "DEJA_RATTACHE_A_CE_CONTENU") throw e;
       }
       await activerRattachementMatiere(agentId, contenu.id);
-      router.push(`/agent/${agentId}/chat`);
+      router.push(
+        `/agent/${agentId}/chat?retourIA=${encodeURIComponent(`/agent/${agentIdEnseignant}/chat`)}`
+      );
     } catch (e) {
       setErreur(messageErreur(e));
       setTest(false);
