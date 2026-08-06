@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, lireOutilsChatAgent } from "@/lib/api";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -412,35 +412,6 @@ export function SidebarChat({
           </div>
         )}
 
-        <div className="mt-2 rounded-xl border border-dj-bordure">
-          <button
-            onClick={() => basculerVoletRail("avis")}
-            title="Avis sur cet agent"
-            className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
-              avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
-            }`}
-          >
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <Star size={18} />
-            </span>
-            <LibelleRail ouverte={ouverte}>Avis sur cet agent</LibelleRail>
-          </button>
-          {ouverte && (
-            <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-              }`}
-            >
-              <div className="overflow-hidden">
-                <div className="flex flex-col gap-4 px-3 pb-3">
-                  <NoteAgent agentId={agentId} />
-                  <CommentairesAgent agentId={agentId} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
         {connecte && profilADesChamps && (
           <div className="mt-2 rounded-xl border border-dj-bordure">
             <button
@@ -451,7 +422,7 @@ export function SidebarChat({
               }`}
             >
               <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-                <UserCircle size={18} />
+                <Contact size={18} />
               </span>
               <LibelleRail ouverte={ouverte}>Mon profil</LibelleRail>
             </button>
@@ -486,6 +457,35 @@ export function SidebarChat({
           </span>
           <LibelleRail ouverte={ouverte}>{copie ? "Copié !" : "Partager"}</LibelleRail>
         </button>
+
+        <div className="mt-2 rounded-xl border border-dj-bordure">
+          <button
+            onClick={() => basculerVoletRail("avis")}
+            title="Avis sur cet agent"
+            className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+              avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+            }`}
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <Star size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>Avis sur cet agent</LibelleRail>
+          </button>
+          {ouverte && (
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-4 px-3 pb-3">
+                  <NoteAgent agentId={agentId} />
+                  <CommentairesAgent agentId={agentId} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Ajouté le 02/08 (Bourama : "piégée dans le chat, aucun moyen de
             sortir et revenir à la vitrine") -- distinct du bouton
@@ -622,35 +622,13 @@ export function SidebarChat({
             </div>
           )}
 
-          <div className="rounded-xl border border-dj-bordure">
-            <button
-              onClick={() => setAvisDeplie((v) => !v)}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dj-texte"
-            >
-              <Star size={16} />
-              Avis sur cet agent
-            </button>
-            <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-              }`}
-            >
-              <div className="overflow-hidden">
-                <div className="flex flex-col gap-4 px-3 pb-3">
-                  <NoteAgent agentId={agentId} />
-                  <CommentairesAgent agentId={agentId} />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {connecte && (
             <div className={`rounded-xl border border-dj-bordure ${profilADesChamps ? "" : "hidden"}`}>
               <button
                 onClick={() => setProfilDeplie((v) => !v)}
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dj-texte"
               >
-                <UserCircle size={16} />
+                <Contact size={16} />
                 Mon profil
               </button>
               <div
