@@ -551,3 +551,45 @@ export async function creerPageNotion(titre: string, contenu: string) {
   });
   return resultat as { url: string };
 }
+
+/**
+ * Contenu dynamique par matière -- agent "Nitrux" (06/08/2026, demande
+ * Bourama). Voir djiguigne-backend/api/contenu_dynamique_matiere.py.
+ * "Enseignant" et "étudiant" ici ne sont pas des rôles de compte : ce
+ * sont juste les deux rôles qu'on joue sur CET agent précis en écrivant
+ * du contenu ou en entrant un code -- n'importe quel compte connecté
+ * peut faire les deux.
+ */
+export type ContenuMatiere = { id: string; matiere: string; system_prompt: string; code: string };
+export type Rattachement = { contenu_id: string; matiere: string; enseignant_nom: string; actif: boolean };
+
+export async function lireMesContenusMatiere(agentId: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/contenus-matiere`);
+  return resultat as ContenuMatiere[];
+}
+
+export async function ecrireContenuMatiere(agentId: string, matiere: string, systemPrompt: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/contenus-matiere`, {
+    method: "PUT",
+    body: JSON.stringify({ matiere, system_prompt: systemPrompt }),
+  });
+  return resultat as ContenuMatiere;
+}
+
+export async function lireMesRattachements(agentId: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/rattachements`);
+  return resultat as Rattachement[];
+}
+
+export async function entrerCodeMatiere(agentId: string, code: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/rattachements`, {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+  return resultat as Rattachement;
+}
+
+export async function activerRattachementMatiere(agentId: string, contenuId: string) {
+  return appelerApi(`/api/agents/${agentId}/rattachements/${contenuId}/activer`, { method: "PATCH" });
+}
+

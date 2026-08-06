@@ -31,6 +31,8 @@ export function ChatAgentClient({
     // pas encore (voir app/agent/[id]/chat/page.tsx).
     modeles_disponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
     modele_choisi?: string | null;
+    // Agent "Nitrux" / contenu dynamique par matière (06/08/2026).
+    contenu_dynamique_par_matiere?: boolean;
   };
   retourExterne?: string;
 }) {
@@ -126,6 +128,7 @@ export function ChatAgentClient({
         conversationActiveId={cle}
         onNouvelleConversation={nouvelleConversation}
         onSelectionnerConversation={selectionnerConversation}
+        contenuDynamiqueParMatiere={agent.contenu_dynamique_par_matiere}
       />
       <div className="flex-1 overflow-hidden">
         <ChatIA

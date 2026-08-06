@@ -26,6 +26,10 @@ type AgentDetailPublic = {
   // page) les laisse passer jusqu'a ChatAgentClient.
   modeles_disponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
   modele_choisi?: string | null;
+  // Agent "Nitrux" / contenu dynamique par matière (06/08/2026) -- voir
+  // core/contenu_dynamique_matiere.py côté backend. Passé jusqu'à
+  // ChatAgentClient pour afficher l'entrée "Matières" dans la sidebar.
+  contenu_dynamique_par_matiere?: boolean;
 };
 
 async function chargerAgent(id: string): Promise<AgentDetailPublic | null> {

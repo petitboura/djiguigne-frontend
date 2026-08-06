@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, GraduationCap } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, lireOutilsChatAgent } from "@/lib/api";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -75,6 +75,7 @@ export function SidebarChat({
   conversationActiveId,
   onNouvelleConversation,
   onSelectionnerConversation,
+  contenuDynamiqueParMatiere,
 }: {
   agentId: string;
   retourExterne?: string;
@@ -82,6 +83,11 @@ export function SidebarChat({
   conversationActiveId: string | null;
   onNouvelleConversation: () => void;
   onSelectionnerConversation: (fil: FilConversation) => void;
+  // Agent "Nitrux" / contenu dynamique par matière (06/08/2026, demande
+  // Bourama) : affiche l'entrée "Matières" (écrire du contenu par
+  // matière côté enseignant, entrer un code + basculer d'enseignant côté
+  // étudiant) UNIQUEMENT pour les agents marqués ainsi côté backend.
+  contenuDynamiqueParMatiere?: boolean;
 }) {
   const [ouverte, setOuverte] = useState(false);
   const [connecte, setConnecte] = useState<boolean | undefined>(undefined);
@@ -355,6 +361,18 @@ export function SidebarChat({
           </Link>
         )}
 
+        {contenuDynamiqueParMatiere && (
+          <Link
+            href={`/agent/${agentId}/matieres`}
+            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <GraduationCap size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>Matières</LibelleRail>
+          </Link>
+        )}
+
         {connecte && aDesMessages && (
           <button
             onClick={onNouvelleConversation}
@@ -571,6 +589,16 @@ export function SidebarChat({
             >
               <LayoutGrid size={16} />
               Applications
+            </Link>
+          )}
+
+          {contenuDynamiqueParMatiere && (
+            <Link
+              href={`/agent/${agentId}/matieres`}
+              className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+            >
+              <GraduationCap size={16} />
+              Matières
             </Link>
           )}
 
