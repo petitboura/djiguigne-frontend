@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck, GraduationCap } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
@@ -18,7 +18,6 @@ import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 import { MaMemoire } from "@/components/MaMemoire";
-import { SectionMatieres } from "@/components/SectionMatieres";
 import { AgentCard, type AgentResume } from "@/components/AgentCard";
 import { BoutonPartager } from "@/components/BoutonPartager";
 
@@ -55,7 +54,7 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis" | "matieres";
+type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 // Onglets fixes, toujours affichés.
@@ -107,11 +106,6 @@ export default function PageMonEspace() {
   // séparé.
   const [estCreateur, setEstCreateur] = useState(false);
   const [agentsAdministres, setAgentsAdministres] = useState<AgentResume[] | null>(null);
-  // Onglet "L'IA de mes élèves" (2026-08-06) : réservé aux comptes
-  // enseignant (voir GET /api/roles/moi -- role: "enseignant" |
-  // "etablissement" | "etudiant" | "admin" | null). Un étudiant ou un
-  // établissement ne doit pas le voir.
-  const [monRole, setMonRole] = useState<string | null>(null);
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
@@ -133,9 +127,6 @@ export default function PageMonEspace() {
     if (!session) return;
     chargerFichiers();
     chargerAgents();
-    appelerApi("/api/roles/moi")
-      .then((r: { role: string | null }) => setMonRole(r.role))
-      .catch(() => setMonRole(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
@@ -147,11 +138,8 @@ export default function PageMonEspace() {
     if (estCreateur) {
       dynamiques.push({ id: "mesIA", label: "Mes IA", Icone: Bot });
     }
-    if (monRole === "enseignant") {
-      dynamiques.push({ id: "matieres", label: "L'IA de mes élèves", Icone: GraduationCap });
-    }
     return [...dynamiques, ...ONGLETS_FIXES];
-  }, [estCreateur, agentsAdministres, monRole]);
+  }, [estCreateur, agentsAdministres]);
 
   useEffect(() => {
     // Choisit/rebascule sur le bon onglet par défaut dès qu'on sait ce
@@ -460,8 +448,6 @@ export default function PageMonEspace() {
         {onglet === "memoire" && <MaMemoire />}
 
         {onglet === "applis" && <ApplisConnectees />}
-
-        {onglet === "matieres" && <SectionMatieres />}
       </main>
     </>
   );

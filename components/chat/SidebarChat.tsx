@@ -358,6 +358,18 @@ export function SidebarChat({
           </Link>
         )}
 
+        {agentId === "stirux" && (
+          <Link
+            href={`/agent/${agentId}/enseigner`}
+            className="mt-2 flex w-full items-center gap-2 rounded-xl text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+              <GraduationCap size={18} />
+            </span>
+            <LibelleRail ouverte={ouverte}>L&apos;IA de mes élèves</LibelleRail>
+          </Link>
+        )}
+
         {contenuDynamiqueParMatiere && (
           <div className="mt-2 rounded-xl border border-dj-bordure">
             <button
@@ -638,6 +650,16 @@ export function SidebarChat({
             >
               <LayoutGrid size={16} />
               Applications
+            </Link>
+          )}
+
+          {agentId === "stirux" && (
+            <Link
+              href={`/agent/${agentId}/enseigner`}
+              className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+            >
+              <GraduationCap size={16} />
+              L&apos;IA de mes élèves
             </Link>
           )}
 

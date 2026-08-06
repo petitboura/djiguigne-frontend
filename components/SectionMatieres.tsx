@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GraduationCap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { GraduationCap, FlaskConical } from "lucide-react";
 import {
   listerAgentsContenuDynamique,
   lireMesContenusMatiere,
   ecrireContenuMatiere,
+  entrerCodeMatiere,
+  activerRattachementMatiere,
   type AgentContenuDynamique,
   type ContenuMatiere,
 } from "@/lib/api";
 import { MATIERES } from "@/lib/matieres";
-import { messageErreur } from "@/lib/erreurs";
+import { messageErreur, ErreurApi } from "@/lib/erreurs";
 
 /**
  * Onglet "L'IA de mes élèves" de Mon espace (2026-08-06, demande
@@ -60,10 +63,12 @@ export function SectionMatieres() {
 }
 
 function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom: string }) {
+  const router = useRouter();
   const [mesContenus, setMesContenus] = useState<ContenuMatiere[] | null>(null);
   const [matiereChoisie, setMatiereChoisie] = useState<string>(MATIERES[0]);
   const [texteContenu, setTexteContenu] = useState("");
   const [enregistrement, setEnregistrement] = useState(false);
+  const [test, setTest] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
   function rafraichir() {
@@ -93,6 +98,38 @@ function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom:
       setErreur(messageErreur(e));
     } finally {
       setEnregistrement(false);
+    }
+  }
+
+  // "Tester" (2026-08-06) : enregistre d'abord si besoin, se rattache à
+  // son propre contenu tout juste écrit (un compte peut entrer son
+  // propre code, rien ne l'en empêche côté backend) puis file discuter
+  // avec l'agent étudiant pour essayer directement le system prompt
+  // qu'on vient d'écrire. "Déjà rattaché" n'est pas une erreur ici, ça
+  // veut juste dire qu'un test précédent a déjà créé le rattachement.
+  async function testerContenu() {
+    setTest(true);
+    setErreur(null);
+    try {
+      let contenu = (mesContenus || []).find((c) => c.matiere === matiereChoisie);
+      if (!contenu || contenu.system_prompt !== texteContenu.trim()) {
+        await ecrireContenuMatiere(agentId, matiereChoisie, texteContenu.trim());
+        const frais = await lireMesContenusMatiere(agentId);
+        setMesContenus(frais);
+        contenu = frais.find((c) => c.matiere === matiereChoisie);
+      }
+      if (!contenu) throw new Error("Contenu introuvable après enregistrement.");
+
+      try {
+        await entrerCodeMatiere(agentId, contenu.code);
+      } catch (e) {
+        if (!(e instanceof ErreurApi) || e.code !== "DEJA_RATTACHE_A_CE_CONTENU") throw e;
+      }
+      await activerRattachementMatiere(agentId, contenu.id);
+      router.push(`/agent/${agentId}/chat`);
+    } catch (e) {
+      setErreur(messageErreur(e));
+      setTest(false);
     }
   }
 
@@ -147,13 +184,23 @@ function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom:
 
       {erreur && <p className="text-sm text-red-500">{erreur}</p>}
 
-      <button
-        onClick={enregistrerContenu}
-        disabled={enregistrement || !texteContenu.trim()}
-        className="self-start rounded-xl bg-dj-accent-1 px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
-      >
-        {enregistrement ? "Enregistrement…" : "Enregistrer et générer le code"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={enregistrerContenu}
+          disabled={enregistrement || test || !texteContenu.trim()}
+          className="rounded-xl bg-dj-accent-1 px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+        >
+          {enregistrement ? "Enregistrement…" : "Enregistrer et générer le code"}
+        </button>
+        <button
+          onClick={testerContenu}
+          disabled={enregistrement || test || !texteContenu.trim()}
+          className="flex items-center gap-2 rounded-xl border border-dj-bordure px-4 py-2 text-sm font-medium text-dj-texte transition-colors hover:bg-dj-surface-haute disabled:opacity-50"
+        >
+          <FlaskConical size={16} />
+          {test ? "Ouverture…" : "Tester"}
+        </button>
+      </div>
     </section>
   );
 }
