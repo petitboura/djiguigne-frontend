@@ -7,6 +7,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { AgentCard, type AgentResume } from "@/components/AgentCard";
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 import { TopBar } from "@/components/TopBar";
 import { BoutonFollow } from "@/components/BoutonFollow";
 import { BoutonPartager } from "@/components/BoutonPartager";
@@ -296,8 +297,12 @@ export default function PageDashboard() {
                               onClick={() => setBulleAgentsOuverte(false)}
                               className="flex items-center gap-2 rounded-full px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
                             >
-                              <span className="text-lg leading-none">
-                                {agent.icone_page ?? "🤖"}
+                              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+                                {agent.icone_url ? (
+                                  <Image src={agent.icone_url} alt="" fill className="object-cover" sizes="20px" />
+                                ) : (
+                                  <IconeGenerique className="h-3 w-3 text-dj-accent-1" />
+                                )}
                               </span>
                               <span className="truncate">{agent.nom}</span>
                             </Link>
@@ -335,7 +340,13 @@ export default function PageDashboard() {
                               onClick={() => setBulleMajOuverte(false)}
                               className="flex items-center gap-2 rounded-full px-3 py-2 text-left text-sm text-dj-texte transition-colors hover:bg-dj-surface-haute"
                             >
-                              <span className="text-lg leading-none">{agent.icone_page ?? "🤖"}</span>
+                              <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+                                {agent.icone_url ? (
+                                  <Image src={agent.icone_url} alt="" fill className="object-cover" sizes="20px" />
+                                ) : (
+                                  <IconeGenerique className="h-3 w-3 text-dj-accent-1" />
+                                )}
+                              </span>
                               <span className="truncate">{agent.nom}</span>
                             </Link>
                           ))}

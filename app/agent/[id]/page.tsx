@@ -11,11 +11,7 @@ import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { MisesAJourAgent } from "@/components/MisesAJourAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { JsonLd } from "@/components/JsonLd";
-import { IconeMatrix } from "@/components/icones/IconeMatrix";
-
-// Même cas particulier que dans AgentCard.tsx (02/08, Bourama) : cet agent
-// précis n'a ni photo ni emoji, juste l'icône dessinée.
-const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 
 // Étape D.3 (pivot social) : page agent publique (/agent/[id], "id" sert
 // de slug). Server Component pour le SSR (règle SEO/AEO/GEO
@@ -27,8 +23,12 @@ const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 type AgentDetailPublic = {
   id: string;
   nom: string;
-  icone_page: string;
-  image_vitrine_url: string | null;
+  // Nouveau système d'icône (2026-08-05, demande Bourama : remplace
+  // l'emoji ET la grande bannière image_vitrine_url partout, une icône
+  // compacte -- dessinée ou uploadée -- généralisée depuis le cas
+  // particulier "math-matique"/IconeMatrix). Repli sur IconeGenerique si
+  // absent.
+  icone_url: string | null;
   description: string;
   owner_id: string;
   // Chantier SEO/AEO (2026-08-01) : mêmes champs que /api/feed, exposés
@@ -113,9 +113,7 @@ export async function generateMetadata({
     title: specialite ? `${agent.nom} — IA spécialisée en ${specialite}` : `${agent.nom} — Djiguignè AI`,
     description,
     alternates: { canonical: `/agent/${agent.id}` },
-    openGraph: agent.image_vitrine_url && !AGENTS_SANS_IMAGE_VITRINE.has(agent.id)
-      ? { images: [{ url: agent.image_vitrine_url }] }
-      : undefined,
+    openGraph: agent.icone_url ? { images: [{ url: agent.icone_url }] } : undefined,
   };
 }
 
@@ -137,9 +135,7 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
           ...(specialite ? { applicationSubCategory: specialite } : {}),
           description:
             agent.description || (specialite ? `IA spécialisée en ${specialite}.` : undefined),
-          ...(agent.image_vitrine_url && !AGENTS_SANS_IMAGE_VITRINE.has(agent.id)
-            ? { image: agent.image_vitrine_url }
-            : {}),
+          ...(agent.icone_url ? { image: agent.icone_url } : {}),
           offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
           provider: { "@type": "Organization", name: "Djiguignè AI" },
           // Uniquement si au moins un avis existe -- ne jamais déclarer
@@ -177,30 +173,15 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface">
-          {!AGENTS_SANS_IMAGE_VITRINE.has(agent.id) && (
-            <div className="relative flex aspect-[16/9] items-center justify-center bg-dj-surface-haute">
-              {agent.image_vitrine_url ? (
-                <Image
-                  src={agent.image_vitrine_url}
-                  alt={agent.nom}
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 768px) 768px, 100vw"
-                  priority
-                />
-              ) : (
-                <span className="text-6xl">{agent.icone_page}</span>
-              )}
-            </div>
-          )}
-
           <div className="flex flex-col gap-4 p-6">
             <div className="flex items-center gap-3">
-              {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
-                <IconeMatrix className="h-12 w-12 shrink-0 text-dj-accent-1" />
-              ) : (
-                <span className="text-2xl leading-none">{agent.icone_page}</span>
-              )}
+              <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+                {agent.icone_url ? (
+                  <Image src={agent.icone_url} alt="" fill className="object-cover" sizes="56px" />
+                ) : (
+                  <IconeGenerique className="h-8 w-8 text-dj-accent-1" />
+                )}
+              </span>
               <h1 className="font-display text-2xl font-bold text-dj-texte">{agent.nom}</h1>
             </div>
 

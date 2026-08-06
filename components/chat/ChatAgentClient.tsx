@@ -22,7 +22,7 @@ export function ChatAgentClient({
   agent: {
     id: string;
     nom: string;
-    icone_page: string;
+    icone_url: string | null;
     titre_accueil: string;
     sous_titre_accueil: string;
     // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) --
@@ -135,6 +135,7 @@ export function ChatAgentClient({
           key={cle}
           agentId={agent.id}
           nomAgent={agent.nom}
+          iconeUrl={agent.icone_url}
           titreAccueil={agent.titre_accueil}
           sousTitreAccueil={agent.sous_titre_accueil}
           conversationId={cle}

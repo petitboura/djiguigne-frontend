@@ -17,7 +17,7 @@ import { ChatAgentClient } from "@/components/chat/ChatAgentClient";
 type AgentDetailPublic = {
   id: string;
   nom: string;
-  icone_page: string;
+  icone_url: string | null;
   titre_accueil: string;
   sous_titre_accueil: string;
   // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) -- deja

@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { revaliderPortfolioPublic } from "@/app/actions";
@@ -14,6 +15,7 @@ import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { ChampImage } from "@/components/ChampImage";
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 import { NotificationsPushToggle } from "@/components/NotificationsPushToggle";
 import { messageErreur } from "@/lib/erreurs";
 
@@ -190,14 +192,14 @@ function SectionZoneDanger({ userId }: { userId: string }) {
   // encore ailleurs.
   const router = useRouter();
 
-  const [agents, setAgents] = useState<{ id: string; nom: string; icone_page?: string }[] | null>(null);
+  const [agents, setAgents] = useState<{ id: string; nom: string; icone_url?: string | null }[] | null>(null);
   const [histoires, setHistoires] = useState<{ id: number; titre: string | null }[] | null>(null);
   const [enSuppression, setEnSuppression] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
     appelerApi(`/api/profiles/${userId}`)
-      .then((r: { agents: { id: string; nom: string; icone_page?: string }[] }) => setAgents(r.agents))
+      .then((r: { agents: { id: string; nom: string; icone_url?: string | null }[] }) => setAgents(r.agents))
       .catch(() => setAgents([]));
     appelerApi(`/api/posts?type=histoire&user_id=${userId}&limite=50`)
       .then((r: { id: number; titre: string | null }[]) => setHistoires(r))
@@ -280,7 +282,13 @@ function SectionZoneDanger({ userId }: { userId: string }) {
                 className="flex items-center justify-between rounded-xl border border-dj-bordure px-3 py-2"
               >
                 <span className="flex items-center gap-2 text-sm text-dj-texte">
-                  <span>{agent.icone_page ?? "🤖"}</span>
+                  <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+                    {agent.icone_url ? (
+                      <Image src={agent.icone_url} alt="" fill className="object-cover" sizes="20px" />
+                    ) : (
+                      <IconeGenerique className="h-3 w-3 text-dj-accent-1" />
+                    )}
+                  </span>
                   {agent.nom}
                 </span>
                 <button

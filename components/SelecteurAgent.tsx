@@ -10,10 +10,7 @@ import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
 import { BoutonDevenirCreateur } from "@/components/BoutonDevenirCreateur";
-import { IconeMatrix } from "@/components/icones/IconeMatrix";
-
-// Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama).
-const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 
 // Ajouté le 31/07 (Bourama : "je veux que ce soit l'interface d'un chat en
 // premier") -- reprend le principe des boutons de la page Services de la
@@ -55,8 +52,7 @@ const SECTIONS: CleSection[] = ["matieres", "metier", "filiere", "domaine", "lan
 type AgentSection = {
   id: string;
   nom: string;
-  icone_page?: string;
-  image_vitrine_url?: string | null;
+  icone_url?: string | null;
   description?: string;
 };
 
@@ -302,18 +298,16 @@ export function SelecteurAgent() {
                     className="group flex items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface p-3 text-left transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute disabled:opacity-50"
                   >
                     <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
-                      {AGENTS_SANS_IMAGE_VITRINE.has(agent.id) ? (
-                        <IconeMatrix className="h-6 w-6 text-dj-accent-1" />
-                      ) : agent.image_vitrine_url ? (
+                      {agent.icone_url ? (
                         <Image
-                          src={agent.image_vitrine_url}
+                          src={agent.icone_url}
                           alt=""
                           fill
                           className="object-cover"
                           sizes="40px"
                         />
                       ) : (
-                        <span className="text-lg leading-none">{agent.icone_page || "🤖"}</span>
+                        <IconeGenerique className="h-5 w-5 text-dj-accent-1" />
                       )}
                     </span>
                     <span className="flex min-w-0 flex-col">

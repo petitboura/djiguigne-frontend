@@ -2,28 +2,28 @@ import { ImageResponse } from "next/og";
 import { appelerApiPublicOuNull } from "@/lib/api-serveur";
 
 // Chantier SEO/AEO (2026-08-01) : image de partage pour les IA qui n'ont
-// pas encore d'image_vitrine_url personnalisée (generateMetadata dans
-// page.tsx utilise déjà image_vitrine_url en priorité quand elle existe --
-// ce fichier ne sert que de repli, généré à la volée, aucun asset PNG à
-// fournir ou maintenir). Mêmes couleurs de marque que app/manifest.ts et
+// pas encore d'icone_url personnalisée (generateMetadata dans page.tsx
+// utilise déjà icone_url en priorité quand elle existe -- ce fichier ne
+// sert que de repli, généré à la volée, aucun asset PNG à fournir ou
+// maintenir). Mêmes couleurs de marque que app/manifest.ts et
 // tailwind.config.ts (dj-accent-1).
+//
+// Réécrit le 2026-08-05 (demande Bourama) : le cas particulier
+// "math-matique"/IconeMatrix (02/08) est retiré -- Matrix a maintenant sa
+// propre icone_url comme tout agent migré, donc ce fichier ne la
+// concerne plus. Le repli affiche désormais la même étincelle générique
+// que IconeGenerique.tsx (components/icones/), jamais un emoji.
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-type AgentMinimal = { nom: string; icone_page: string; description: string };
-
-// Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama) :
-// l'icône dessinée à la main plutôt que l'emoji, pour cet agent précis.
-const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
+type AgentMinimal = { nom: string; description: string };
 
 export default async function OgImageAgent({ params }: { params: { id: string } }) {
   const agent: AgentMinimal | null = await appelerApiPublicOuNull(`/api/agents/${params.id}`);
 
   const nom = agent?.nom || "Djiguignè AI";
-  const icone = agent?.icone_page || "🤖";
   const description = agent?.description?.slice(0, 120) || "Une IA spécialisée sur Djiguignè AI.";
-  const iconeDessinee = AGENTS_SANS_IMAGE_VITRINE.has(params.id);
 
   return new ImageResponse(
     (
@@ -39,22 +39,10 @@ export default async function OgImageAgent({ params }: { params: { id: string } 
           padding: 80,
         }}
       >
-        {iconeDessinee ? (
-          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#e8934a" strokeWidth="1">
-            <line x1="5" y1="19" x2="5" y2="3.5" />
-            <path d="M3.6 6.2 L5 3.5 L6.4 6.2" />
-            <line x1="5" y1="19" x2="20.5" y2="19" />
-            <path d="M17.8 17.6 L20.5 19 L17.8 20.4" />
-            <line x1="9" y1="18.4" x2="9" y2="19.6" />
-            <line x1="13" y1="18.4" x2="13" y2="19.6" />
-            <line x1="17" y1="18.4" x2="17" y2="19.6" />
-            <line x1="4.4" y1="13" x2="5.6" y2="13" />
-            <line x1="4.4" y1="9" x2="5.6" y2="9" />
-            <path d="M6.5 16 C 9.5 6.5, 12.5 6.5, 14.5 11 S 18.5 19, 20 12.5" />
-          </svg>
-        ) : (
-          <div style={{ fontSize: 120, lineHeight: 1 }}>{icone}</div>
-        )}
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#e8934a" strokeWidth="1">
+          <path d="M12 2.5 C 12 8, 12 8, 18.5 9.5 C 12 11, 12 11, 12 21.5 C 12 11, 12 11, 5.5 9.5 C 12 8, 12 8, 12 2.5 Z" />
+          <path d="M18.5 3 C 18.5 5, 18.5 5, 21 5.5 C 18.5 6, 18.5 6, 18.5 8 C 18.5 6, 18.5 6, 16 5.5 C 18.5 5, 18.5 5, 18.5 3 Z" />
+        </svg>
         <div
           style={{
             marginTop: 32,

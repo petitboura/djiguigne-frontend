@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { appelerApiStream, uploaderImageChat, uploaderDocumentChat, uploaderVideoChat, transcrireAudioChat } from "@/lib/api";
 import { useNotificationsPush, proposerNotificationsPushUneFois } from "@/lib/useNotificationsPush";
 import { BulleMessage, MessageAffiche } from "./BulleMessage";
@@ -9,13 +10,7 @@ import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
 import { messageErreur } from "@/lib/erreurs";
-import { IconeMatrix } from "@/components/icones/IconeMatrix";
-
-// Même cas particulier que AgentCard.tsx / page.tsx (02/08, Bourama) :
-// l'écran d'accueil de cet agent affichait 🎓 (stocké dans le champ
-// titre_accueil en base) -- retiré du texte côté Supabase, remplacé ici
-// par l'icône dessinée devant le titre.
-const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 
 // Page de chat qui remplace chat.py (Streamlit). Consomme la
 // nouvelle route /api/chat (api/chat.py) en streaming, au lieu d'appeler
@@ -29,6 +24,7 @@ const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
 export function ChatIA({
   agentId,
   nomAgent,
+  iconeUrl = null,
   titreAccueil,
   sousTitreAccueil,
   conversationId,
@@ -39,6 +35,10 @@ export function ChatIA({
 }: {
   agentId: string;
   nomAgent: string;
+  // Nouveau système d'icône (2026-08-05) : remplace l'ancien cas
+  // particulier AGENTS_SANS_IMAGE_VITRINE/IconeMatrix -- voir usage plus
+  // bas, écran d'accueil du chat.
+  iconeUrl?: string | null;
   titreAccueil?: string;
   sousTitreAccueil?: string;
   conversationId: string;
@@ -522,9 +522,13 @@ export function ChatIA({
           titreAccueil ? (
             <div className="mb-4 mt-6">
               <div className="flex items-center gap-2">
-                {AGENTS_SANS_IMAGE_VITRINE.has(agentId) && (
-                  <IconeMatrix className="h-6 w-6 shrink-0 text-dj-accent-1" />
-                )}
+                <span className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+                  {iconeUrl ? (
+                    <Image src={iconeUrl} alt="" fill className="object-cover" sizes="28px" />
+                  ) : (
+                    <IconeGenerique className="h-4 w-4 text-dj-accent-1" />
+                  )}
+                </span>
                 <h1 className="font-display text-2xl font-bold tracking-[-0.01em] text-dj-texte">{titreAccueil}</h1>
               </div>
               {sousTitreAccueil && <p className="mt-1 text-sm text-dj-texte-muet">{sousTitreAccueil}</p>}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { proposerNotificationsPushUneFois, useNotificationsPush } from "@/lib/useNotificationsPush";
@@ -9,6 +10,7 @@ import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { ChampImage } from "@/components/ChampImage";
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { PopupCategories, type Categorie } from "@/components/PopupCategories";
 import { DroitsAgentCreation } from "@/components/DroitsAgentCreation";
@@ -64,13 +66,15 @@ function FormulaireCreerAgent() {
 
   const [nom, setNom] = useState("");
   const { activer: activerNotificationsPush } = useNotificationsPush();
-  const [iconePage, setIconePage] = useState("🤖");
   // Point 5 (2026-07-14, Bourama : "il n'y a pas de section pour modifier
   // le texte qui s'affiche dans la barre de saisie") -- déjà lu par
   // faces/vues/chat.py (ui_config.placeholder_saisie), il manquait juste
   // ce champ côté formulaire Next.js.
   const [placeholderSaisie, setPlaceholderSaisie] = useState("");
-  const [imageVitrineUrl, setImageVitrineUrl] = useState("");
+  // Nouveau système d'icône (2026-08-05, remplace le picker emoji +
+  // l'image de vitrine 16:9 : une seule icône compacte, uploadée,
+  // affichée partout).
+  const [iconeUrl, setIconeUrl] = useState("");
   const [description, setDescription] = useState("");
   // Ajouté le 2026-07-12 (Bourama : "tu as mélangé deux choses, la
   // description publique et le sous-titre"). Distinct de `description` :
@@ -212,7 +216,7 @@ function FormulaireCreerAgent() {
   const [droitsActionsLocales, setDroitsActionsLocales] = useState<string[]>([]);
 
   const [envoi, setEnvoi] = useState(false);
-  const [agentCree, setAgentCree] = useState<{ id: string; nom: string; icone: string } | null>(
+  const [agentCree, setAgentCree] = useState<{ id: string; nom: string; iconeUrl: string } | null>(
     null
   );
   const [erreur, setErreur] = useState<string | null>(null);
@@ -279,8 +283,8 @@ function FormulaireCreerAgent() {
           description_connaissance: descriptionConnaissance,
           lien_notion: lienNotion || null,
           texte_libre: texteLibre,
-          ui_config: { icone_page: iconePage || "🤖", placeholder_saisie: placeholderSaisie || "Pose ta question..." },
-          image_vitrine_url: imageVitrineUrl || null,
+          ui_config: { placeholder_saisie: placeholderSaisie || "Pose ta question..." },
+          icone_url: iconeUrl || null,
           description,
           sous_titre: sousTitre,
           categorie_id: categorie?.id,
@@ -327,7 +331,7 @@ function FormulaireCreerAgent() {
     // que la création se sente confirmée plutôt que de disparaître d'un
     // coup vers une autre page.
     setEnvoi(false);
-    setAgentCree({ id: idAgentCree!, nom, icone: iconePage || "🤖" });
+    setAgentCree({ id: idAgentCree!, nom, iconeUrl });
   }
 
   if (session === undefined || session === null) return null;
@@ -346,7 +350,13 @@ function FormulaireCreerAgent() {
       <div className="min-h-screen">
         <TopBar />
         <main className="mx-auto max-w-lg px-5 py-10 text-center">
-          <p className="text-5xl">{agentCree.icone}</p>
+          <span className="relative mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute">
+            {agentCree.iconeUrl ? (
+              <Image src={agentCree.iconeUrl} alt="" fill className="object-cover" sizes="64px" />
+            ) : (
+              <IconeGenerique className="h-9 w-9 text-dj-accent-1" />
+            )}
+          </span>
           <h1 className="mt-3 font-display text-2xl font-bold text-dj-texte">
             {agentCree.nom} est en ligne !
           </h1>
@@ -414,20 +424,11 @@ function FormulaireCreerAgent() {
               />
             </div>
 
-            <div>
-              <label className={labelClasse}>Icône</label>
-              <input
-                value={iconePage}
-                onChange={(e) => setIconePage(e.target.value)}
-                maxLength={4}
-                className={`${champClasse} w-20 text-center text-xl`}
-              />
-            </div>
-
             <ChampImage
-              label="Image de vitrine"
-              valeur={imageVitrineUrl}
-              onChange={setImageVitrineUrl}
+              label="Icône"
+              valeur={iconeUrl}
+              onChange={setIconeUrl}
+              rond
             />
 
             <div>

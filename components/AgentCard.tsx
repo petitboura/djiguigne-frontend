@@ -7,25 +7,31 @@ import Image from "next/image";
 import { appelerApi, appelerApiFichier } from "@/lib/api";
 import { RecadreurImage } from "@/components/RecadreurImage";
 import { messageErreur } from "@/lib/erreurs";
-import { IconeMatrix } from "@/components/icones/IconeMatrix";
+import { IconeGenerique } from "@/components/icones/IconeGenerique";
 
-// Cas particulier demandé par Bourama (02/08) : l'agent "math-matique" n'a
-// pas de section image vitrine -- ni photo, ni emoji -- mais une icône
-// dessinée à la main (Matrix -- courbe sur repère, lignes fines, couleur du
-// thème, aucun remplissage). Volontairement codé en dur pour CET agent
-// précis, pas une règle générale par matière.
-const AGENTS_SANS_IMAGE_VITRINE = new Set(["math-matique"]);
+// Réécrit le 2026-08-05 (demande Bourama : remplacer l'emoji ET la grande
+// bannière d'image vitrine, partout, par une icône compacte -- dessinée à
+// la main ou uploadée -- déjà le cas au coup par coup pour l'agent
+// "math-matique" via IconeMatrix.tsx + AGENTS_SANS_IMAGE_VITRINE avant ce
+// changement, généralisé ici à tous les agents. `icone_url` est
+// maintenant la seule source de vérité visuelle : rempli -> photo/dessin
+// uploadé ; vide -> IconeGenerique (jamais l'emoji ui_config.icone_page,
+// qui reste en base pour d'autres usages internes mais n'est plus
+// affiché nulle part).
+//
+// La bannière 16:9 (image_vitrine_url) est entièrement retirée de cette
+// carte, y compris son flow d'édition en ligne (upload + recadrage 16:9,
+// bouton "Ajouter une image vitrine") -- ce champ reste en base pour les
+// agents créés avant ce changement, simplement plus affiché.
 
 // Réutilisé par le feed (D.2), la recherche (D.2) et le portfolio créateur
 // (D.4) — un seul endroit à faire évoluer si l'apparence d'une carte agent
-// change. Les champs optionnels (image_vitrine_url, description) viennent
-// de GET /api/feed ; GET /api/search ne renvoie que id/nom/icone_page,
-// d'où leur caractère optionnel ici plutôt que requis.
+// change. `icone_url` optionnel : GET /api/search ne renvoie que
+// id/nom/icone_url minimal, contrairement à GET /api/feed.
 export type AgentResume = {
   id: string;
   nom: string;
-  icone_page?: string;
-  image_vitrine_url?: string | null;
+  icone_url?: string | null;
   description?: string;
   // Ajouté le 2026-07-13 (Bourama : bouton on/off pour (dés)activer un
   // agent publiquement). Optionnel + défaut True partout où lu (même
@@ -40,8 +46,7 @@ export type AgentResume = {
 // laisser ces champs vides sans rien dire, `editable` (utilisé UNIQUEMENT
 // par le dashboard "Mes agents", jamais par le feed/recherche/portfolio
 // public — voir app/dashboard/page.tsx) affiche des boutons "Écrire une
-// description publique" / "Ajouter une image vitrine" pour pousser le
-// créateur à les remplir, et un petit crayon sur l'icône. Cliquer dessus
+// description publique" / un petit crayon sur l'icône. Cliquer dessus
 // édite DIRECTEMENT dans la carte (PATCH /api/agents/{id}), PAS de
 // redirection vers la page de modification complète -- c'est le point
 // explicite de la demande ("ces parties se modifient directement").
@@ -61,16 +66,14 @@ export function AgentCard({
 }) {
   const router = useRouter();
   const [donnees, setDonnees] = useState(agent);
-  const [edition, setEdition] = useState<"description" | "icone" | null>(null);
+  const [edition, setEdition] = useState<"description" | null>(null);
   const [brouillonDescription, setBrouillonDescription] = useState(donnees.description ?? "");
-  const [brouillonIcone, setBrouillonIcone] = useState(donnees.icone_page ?? "🤖");
   const [envoiDescription, setEnvoiDescription] = useState(false);
   const [envoiIcone, setEnvoiIcone] = useState(false);
-  const [envoiImage, setEnvoiImage] = useState(false);
   const [envoiActif, setEnvoiActif] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [fichierACadrer, setFichierACadrer] = useState<File | null>(null);
-  const inputImageRef = useRef<HTMLInputElement>(null);
+  const [fichierIconeACadrer, setFichierIconeACadrer] = useState<File | null>(null);
+  const inputIconeRef = useRef<HTMLInputElement>(null);
 
   const estActif = donnees.actif ?? true;
 
@@ -113,227 +116,111 @@ export function AgentCard({
     }
   }
 
-  async function enregistrerIcone() {
-    const nouvelleIcone = brouillonIcone.trim() || "🤖";
+  async function envoyerIconeCadree(blob: Blob) {
+    setFichierIconeACadrer(null);
     setEnvoiIcone(true);
     setErreur(null);
     try {
+      const fichierCadre = new File([blob], "icone.jpg", { type: "image/jpeg" });
+      const upload = await appelerApiFichier("/api/uploads/image", fichierCadre);
       await appelerApi(`/api/agents/${agent.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ icone_page: nouvelleIcone }),
+        body: JSON.stringify({ icone_url: upload.url }),
       });
-      setDonnees((d) => ({ ...d, icone_page: nouvelleIcone }));
-      setEdition(null);
+      setDonnees((d) => ({ ...d, icone_url: upload.url }));
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
       setEnvoiIcone(false);
+      if (inputIconeRef.current) inputIconeRef.current.value = "";
     }
   }
-
-  async function envoyerImageCadree(blob: Blob) {
-    setFichierACadrer(null);
-    setEnvoiImage(true);
-    setErreur(null);
-    try {
-      const fichierCadre = new File([blob], "vitrine.jpg", { type: "image/jpeg" });
-      const upload = await appelerApiFichier("/api/uploads/image", fichierCadre);
-      await appelerApi(`/api/agents/${agent.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ image_vitrine_url: upload.url }),
-      });
-      setDonnees((d) => ({ ...d, image_vitrine_url: upload.url }));
-    } catch (e) {
-      setErreur(messageErreur(e));
-    } finally {
-      setEnvoiImage(false);
-      if (inputImageRef.current) inputImageRef.current.value = "";
-    }
-  }
-
-  // Uniquement côté public (pas en mode `editable`/dashboard) : le bloc
-  // contient aussi le bouton Public/Privé, qui doit rester accessible au
-  // créateur même sans image vitrine.
-  const sansImageVitrine = !editable && AGENTS_SANS_IMAGE_VITRINE.has(agent.id);
 
   const contenu = (
     <>
-      {!sansImageVitrine && (
-      <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden bg-dj-surface-haute">
-        {donnees.image_vitrine_url ? (
-          <>
-            <Image
-              src={donnees.image_vitrine_url}
-              alt={donnees.nom}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              sizes="(min-width: 768px) 33vw, 100vw"
-            />
-            {editable && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  stopper(e);
-                  inputImageRef.current?.click();
-                }}
-                disabled={envoiImage}
-                className="absolute bottom-2 left-2 z-10 rounded-full border border-dj-bordure bg-dj-fond/80 px-3 py-1 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
-              >
-                {envoiImage ? "Envoi…" : "Changer l'image"}
-              </button>
-            )}
-          </>
-        ) : editable ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              stopper(e);
-              inputImageRef.current?.click();
-            }}
-            disabled={envoiImage}
-            className="flex flex-col items-center gap-1.5 text-xs text-dj-texte-muet transition-colors hover:text-dj-texte disabled:opacity-50"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
-            {envoiImage ? "Envoi…" : "Ajouter une image vitrine"}
-          </button>
-        ) : (
-          <span className="text-4xl">{donnees.icone_page ?? "🤖"}</span>
-        )}
-
-        {editable && (
-          <input
-            ref={inputImageRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) setFichierACadrer(f);
-            }}
-            className="hidden"
-          />
-        )}
-
-        {editable && (
-          <button
-            type="button"
-            onClick={(e) => {
-              stopper(e);
-              basculerActif();
-            }}
-            disabled={envoiActif}
-            title={estActif ? "IA publique : clique pour rendre privée" : "IA privée : clique pour rendre publique"}
-            className={
-              estActif
-                ? "absolute right-2 top-2 z-10 rounded-full bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02] disabled:opacity-50"
-                : "absolute right-2 top-2 z-10 rounded-full border border-dj-bordure bg-dj-fond/80 px-3 py-1 text-xs text-dj-texte-muet disabled:opacity-50"
-            }
-          >
-            {envoiActif ? "…" : estActif ? "Public" : "Privé"}
-          </button>
-        )}
-
-        {/* "Tester" (2026-08-04, demande Bourama) : accès direct au chat de
-            l'IA depuis "Mon espace", sans repasser par la vitrine
-            /agent/{id}. Utile pour les IA modèles établissement/enseignant
-            (non publiables) qu'il garde ici pour prévisualiser le
-            comportement. */}
-        {editable && (
-          <Link
-            href={`/agent/${agent.id}/chat`}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-2 right-2 z-10 rounded-full border border-dj-bordure bg-dj-fond/80 px-3 py-1 text-xs font-medium text-dj-texte-muet hover:text-dj-texte"
-          >
-            Tester
-          </Link>
-        )}
-      </div>
-      )}
-
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-center gap-2">
-          {editable && edition === "icone" ? (
-            <form
-              onSubmit={(e) => {
-                stopper(e);
-                enregistrerIcone();
+          <button
+            type="button"
+            onClick={(e) => {
+              if (!editable) return;
+              stopper(e);
+              inputIconeRef.current?.click();
+            }}
+            disabled={envoiIcone}
+            title={editable ? "Changer l'icône" : undefined}
+            className={
+              editable
+                ? "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-dj-bordure bg-dj-surface-haute transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+                : "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute"
+            }
+          >
+            {donnees.icone_url ? (
+              <Image src={donnees.icone_url} alt="" fill className="object-cover" sizes="36px" />
+            ) : (
+              <IconeGenerique className="h-5 w-5 text-dj-accent-1" />
+            )}
+            {editable && (
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute bottom-0 right-0 rounded-full bg-dj-fond/80 p-0.5 text-dj-texte-muet"
+                aria-hidden="true"
+              >
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
+            )}
+          </button>
+          {editable && (
+            <input
+              ref={inputIconeRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) setFichierIconeACadrer(f);
               }}
-              onClick={stopper}
-              className="flex items-center gap-1"
-            >
-              <input
-                autoFocus
-                value={brouillonIcone}
-                onChange={(e) => setBrouillonIcone(e.target.value)}
-                maxLength={4}
-                className="w-12 rounded-lg border border-dj-bordure bg-dj-surface-haute px-2 py-1 text-center text-lg outline-none focus:border-dj-accent-1"
-              />
-              <button type="submit" disabled={envoiIcone} className="text-xs text-dj-accent-1">
-                {envoiIcone ? "…" : "OK"}
-              </button>
+              className="hidden"
+            />
+          )}
+          <h3 className="font-display text-base font-bold text-dj-texte">{donnees.nom}</h3>
+
+          {editable && (
+            <div className="ml-auto flex items-center gap-1.5">
+              {/* "Tester" (2026-08-04, demande Bourama) : accès direct au chat
+                  de l'IA depuis "Mon espace", sans repasser par la vitrine
+                  /agent/{id}. */}
+              <Link
+                href={`/agent/${agent.id}/chat`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet hover:text-dj-texte"
+              >
+                Tester
+              </Link>
               <button
                 type="button"
                 onClick={(e) => {
                   stopper(e);
-                  setEdition(null);
+                  basculerActif();
                 }}
-                className="text-xs text-dj-texte-muet"
+                disabled={envoiActif}
+                title={estActif ? "IA publique : clique pour rendre privée" : "IA privée : clique pour rendre publique"}
+                className={
+                  estActif
+                    ? "rounded-full bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02] disabled:opacity-50"
+                    : "rounded-full border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet disabled:opacity-50"
+                }
               >
-                Annuler
+                {envoiActif ? "…" : estActif ? "Public" : "Privé"}
               </button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => {
-                if (!editable) return;
-                stopper(e);
-                setBrouillonIcone(donnees.icone_page ?? "🤖");
-                setEdition("icone");
-              }}
-              className={
-                editable
-                  ? "flex items-center gap-1 rounded px-1 -mx-1 transition-colors hover:bg-dj-surface-haute"
-                  : "flex items-center gap-1"
-              }
-            >
-              {sansImageVitrine ? (
-                <IconeMatrix className="h-9 w-9 shrink-0 text-dj-accent-1" />
-              ) : (
-                <span className="text-lg leading-none">{donnees.icone_page ?? "🤖"}</span>
-              )}
-              {editable && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-dj-texte-muet"
-                  aria-hidden="true"
-                >
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-              )}
-            </button>
+            </div>
           )}
-          <h3 className="font-display text-base font-bold text-dj-texte">{donnees.nom}</h3>
         </div>
 
         {donnees.description ? (
@@ -395,14 +282,11 @@ export function AgentCard({
             // Correction du bug "cliquer sur une IA ne fait rien" (Bourama,
             // 2026-07-15) : l'ancienne garde `e.target === e.currentTarget`
             // exigeait que le clic tombe EXACTEMENT sur le fond de la
-            // carte, or l'image et le bloc nom/description recouvrent
-            // presque toute sa surface -- en pratique quasi aucun clic ne
-            // pouvait jamais naviguer. Chaque zone réellement interactive
-            // (image, icône, description, bouton actif) appelle déjà
-            // stopper() avant sa propre action (voir plus haut), donc la
-            // propagation ne remonte JAMAIS jusqu'ici depuis ces zones --
-            // pas besoin de la garde en plus, elle ne faisait que casser
-            // le cas normal.
+            // carte -- chaque zone réellement interactive (icône,
+            // description, boutons) appelle déjà stopper() avant sa propre
+            // action (voir plus haut), donc la propagation ne remonte
+            // JAMAIS jusqu'ici depuis ces zones -- pas besoin de la garde
+            // en plus, elle ne faisait que casser le cas normal.
             router.push(`/agent/${agent.id}`);
           }}
           className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-dj-bordure bg-dj-surface transition-colors hover:border-dj-bordure-forte"
@@ -418,14 +302,14 @@ export function AgentCard({
         </Link>
       )}
 
-      {fichierACadrer && (
+      {fichierIconeACadrer && (
         <RecadreurImage
-          source={fichierACadrer}
-          aspect={16 / 9}
-          onValider={envoyerImageCadree}
+          source={fichierIconeACadrer}
+          aspect={1}
+          onValider={envoyerIconeCadree}
           onAnnuler={() => {
-            setFichierACadrer(null);
-            if (inputImageRef.current) inputImageRef.current.value = "";
+            setFichierIconeACadrer(null);
+            if (inputIconeRef.current) inputIconeRef.current.value = "";
           }}
         />
       )}

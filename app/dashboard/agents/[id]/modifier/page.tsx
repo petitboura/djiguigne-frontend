@@ -29,7 +29,9 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 type AgentEditable = {
   id: string;
   nom: string;
-  icone_page: string;
+  // Nouveau système d'icône (2026-08-05) : remplace icone_page (emoji) et
+  // image_vitrine_url (bannière), voir migrations/2026_08_05_ajout_icone_url_agents.sql
+  icone_url: string | null;
   system_prompt: string;
   notion_page_id: string | null;
   // Ajouté le 2026-08-03 : jusqu'ici, sauvegarder un lien Notion n'indexait
@@ -39,7 +41,6 @@ type AgentEditable = {
   notion_index_message: string | null;
   notion_index_maj_le: string | null;
   texte_libre: string;
-  image_vitrine_url: string | null;
   description: string;
   sous_titre: string;
   placeholder_saisie: string;
@@ -80,8 +81,7 @@ export default function PageModifierAgent() {
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
   const [nom, setNom] = useState("");
-  const [iconePage, setIconePage] = useState("🤖");
-  const [imageVitrineUrl, setImageVitrineUrl] = useState("");
+  const [iconeUrl, setIconeUrl] = useState("");
   const [description, setDescription] = useState("");
   // Ajouté le 2026-07-12 (Bourama : "le dashboard de modification aussi
   // changer") -- même correctif que le formulaire de création, distinct
@@ -173,8 +173,7 @@ export default function PageModifierAgent() {
     appelerApi(`/api/agents/${agentId}/edition`)
       .then((r: AgentEditable) => {
         setNom(r.nom);
-        setIconePage(r.icone_page || "🤖");
-        setImageVitrineUrl(r.image_vitrine_url || "");
+        setIconeUrl(r.icone_url || "");
         setDescription(r.description || "");
         setSousTitre(r.sous_titre || "");
         setPlaceholderSaisie(r.placeholder_saisie || "");
@@ -254,11 +253,10 @@ export default function PageModifierAgent() {
         method: "PATCH",
         body: JSON.stringify({
           nom,
-          icone_page: iconePage,
+          icone_url: iconeUrl || null,
           system_prompt: systemPrompt,
           lien_notion: lienNotion || null,
           texte_libre: texteLibre,
-          image_vitrine_url: imageVitrineUrl || null,
           description,
           sous_titre: sousTitre,
           placeholder_saisie: placeholderSaisie,
@@ -393,20 +391,11 @@ export default function PageModifierAgent() {
               <input value={nom} onChange={(e) => setNom(e.target.value)} className={champClasse} />
             </div>
 
-            <div>
-              <label className={labelClasse}>Icône</label>
-              <input
-                value={iconePage}
-                onChange={(e) => setIconePage(e.target.value)}
-                maxLength={4}
-                className={`${champClasse} w-20 text-center text-xl`}
-              />
-            </div>
-
             <ChampImage
-              label="Image de vitrine"
-              valeur={imageVitrineUrl}
-              onChange={setImageVitrineUrl}
+              label="Icône"
+              valeur={iconeUrl}
+              onChange={setIconeUrl}
+              rond
             />
 
             <div>
