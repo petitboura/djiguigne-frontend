@@ -60,7 +60,6 @@ type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "
 
 // Onglets fixes, toujours affichés.
 const ONGLETS_FIXES: { id: Onglet; label: string; Icone: typeof History }[] = [
-  { id: "matieres", label: "L'IA de mes élèves", Icone: GraduationCap },
   { id: "historique", label: "Historique", Icone: History },
   { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
   { id: "memoire", label: "Ma mémoire", Icone: Brain },
@@ -108,6 +107,11 @@ export default function PageMonEspace() {
   // séparé.
   const [estCreateur, setEstCreateur] = useState(false);
   const [agentsAdministres, setAgentsAdministres] = useState<AgentResume[] | null>(null);
+  // Onglet "L'IA de mes élèves" (2026-08-06) : réservé aux comptes
+  // enseignant (voir GET /api/roles/moi -- role: "enseignant" |
+  // "etablissement" | "etudiant" | "admin" | null). Un étudiant ou un
+  // établissement ne doit pas le voir.
+  const [monRole, setMonRole] = useState<string | null>(null);
 
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
@@ -129,6 +133,9 @@ export default function PageMonEspace() {
     if (!session) return;
     chargerFichiers();
     chargerAgents();
+    appelerApi("/api/roles/moi")
+      .then((r: { role: string | null }) => setMonRole(r.role))
+      .catch(() => setMonRole(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
@@ -140,8 +147,11 @@ export default function PageMonEspace() {
     if (estCreateur) {
       dynamiques.push({ id: "mesIA", label: "Mes IA", Icone: Bot });
     }
+    if (monRole === "enseignant") {
+      dynamiques.push({ id: "matieres", label: "L'IA de mes élèves", Icone: GraduationCap });
+    }
     return [...dynamiques, ...ONGLETS_FIXES];
-  }, [estCreateur, agentsAdministres]);
+  }, [estCreateur, agentsAdministres, monRole]);
 
   useEffect(() => {
     // Choisit/rebascule sur le bon onglet par défaut dès qu'on sait ce
