@@ -3,9 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { appelerApi, lireOutilsChatAgent, entrerCodeMatiere } from "@/lib/api";
+import {
+  appelerApi,
+  lireOutilsChatAgent,
+  entrerCodeMatiere,
+  lireMesRattachements,
+  renommerRattachementMatiere,
+  activerRattachementMatiere,
+  type Rattachement,
+} from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { NoteAgent } from "@/components/NoteAgent";
@@ -60,6 +68,122 @@ function LibelleRail({ ouverte, children }: { ouverte: boolean; children: React.
   );
 }
 
+// Liste "mes matières débloquées" (06/08/2026, demande Bourama : le
+// déblocage est déjà permanent en base -- ce composant le rend enfin
+// VISIBLE, sinon rien ne confirmait à l'étudiant que ça avait marché,
+// et retaper un code déjà utilisé tombait sur un message d'erreur rouge
+// (DEJA_RATTACHE_A_CE_CONTENU) sans qu'il ait pu vérifier autrement.
+// Affiche automatiquement le nom de l'enseignant (déjà en base) + un
+// surnom perso optionnel que l'étudiant tape lui-même pour s'y
+// retrouver (utile si plusieurs enseignants couvrent la même matière).
+function ListeMatieresDebloquees({
+  rattachements,
+  chargement,
+  onActiver,
+  onRenomme,
+}: {
+  rattachements: Rattachement[] | null;
+  chargement: boolean;
+  onActiver: (contenuId: string) => void;
+  onRenomme: (contenuId: string, surnom: string) => void;
+}) {
+  const [editionId, setEditionId] = useState<string | null>(null);
+  const [texteEdition, setTexteEdition] = useState("");
+
+  function ouvrirEdition(r: Rattachement) {
+    setEditionId(r.contenu_id);
+    setTexteEdition(r.surnom || "");
+  }
+
+  function valider(contenuId: string) {
+    onRenomme(contenuId, texteEdition.trim());
+    setEditionId(null);
+  }
+
+  if (chargement) {
+    return (
+      <div className="flex flex-col gap-1.5 px-2 pt-1">
+        {[0, 1].map((i) => (
+          <div key={i} className="h-8 animate-pulse rounded-lg bg-dj-surface-haute" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!rattachements || rattachements.length === 0) return null;
+
+  // Regroupe par matière pour ne montrer le bouton "changer" que quand
+  // plusieurs enseignants couvrent la même matière pour cet étudiant.
+  const parMatiere = new Map<string, Rattachement[]>();
+  for (const r of rattachements) {
+    parMatiere.set(r.matiere, [...(parMatiere.get(r.matiere) || []), r]);
+  }
+
+  return (
+    <div className="flex animate-dj-fade-in-rapide flex-col gap-1.5 px-2 pt-1">
+      {Array.from(parMatiere.entries()).map(([matiere, groupe]) =>
+        groupe.map((r) => (
+          <div
+            key={r.contenu_id}
+            className="flex flex-col gap-1 rounded-lg border border-dj-bordure/60 px-2 py-1.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-dj-texte">
+                  {r.surnom || matiere}
+                </p>
+                <p className="truncate text-[11px] text-dj-texte-muet">
+                  {r.surnom ? `${matiere} · ` : ""}
+                  {r.enseignant_nom}
+                  {!r.actif && groupe.length > 1 ? " · inactif" : ""}
+                </p>
+              </div>
+              {editionId !== r.contenu_id && (
+                <button
+                  onClick={() => ouvrirEdition(r)}
+                  title="Donner un nom"
+                  className="flex-shrink-0 text-dj-texte-muet transition-colors hover:text-dj-texte"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
+            </div>
+
+            {editionId === r.contenu_id && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={texteEdition}
+                  onChange={(e) => setTexteEdition(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && valider(r.contenu_id)}
+                  placeholder={matiere}
+                  className="min-w-0 flex-1 rounded-md border border-dj-bordure bg-transparent px-1.5 py-1 text-xs text-dj-texte"
+                />
+                <button
+                  onClick={() => valider(r.contenu_id)}
+                  className="flex-shrink-0 text-dj-accent-1"
+                  title="Valider le nom"
+                >
+                  <Check size={14} />
+                </button>
+              </div>
+            )}
+
+            {!r.actif && groupe.length > 1 && (
+              <button
+                onClick={() => onActiver(r.contenu_id)}
+                className="self-start text-[11px] text-dj-accent-1 hover:underline"
+              >
+                Utiliser cet enseignant
+              </button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 export function SidebarChat({
   agentId,
   retourExterne,
@@ -95,6 +219,8 @@ export function SidebarChat({
   const [codeEnCours, setCodeEnCours] = useState(false);
   const [codeErreur, setCodeErreur] = useState<string | null>(null);
   const [codeSucces, setCodeSucces] = useState<string | null>(null);
+  const [rattachements, setRattachements] = useState<Rattachement[] | null>(null);
+  const [rattachementsChargement, setRattachementsChargement] = useState(false);
   const [actionsDeplie, setActionsDeplie] = useState(false);
   const [profilADesChamps, setProfilADesChamps] = useState(false);
   const [copie, setCopie] = useState(false);
@@ -178,6 +304,43 @@ export function SidebarChat({
       .catch(() => setFils([]));
   }, [connecte, agentId, aDesMessages]);
 
+  function rafraichirRattachements() {
+    setRattachementsChargement(true);
+    lireMesRattachements(agentId)
+      .then(setRattachements)
+      .catch(() => setRattachements([]))
+      .finally(() => setRattachementsChargement(false));
+  }
+
+  useEffect(() => {
+    if (!connecte || !contenuDynamiqueParMatiere) return;
+    rafraichirRattachements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connecte, contenuDynamiqueParMatiere, agentId]);
+
+  async function activerEnseignant(contenuId: string) {
+    try {
+      await activerRattachementMatiere(agentId, contenuId);
+      rafraichirRattachements();
+    } catch (e) {
+      setCodeErreur(messageErreur(e));
+    }
+  }
+
+  async function renommerMatiere(contenuId: string, surnom: string) {
+    // Optimiste : la liste se met à jour tout de suite, pas d'attente
+    // réseau visible pour un simple renommage.
+    setRattachements((precedent) =>
+      (precedent || []).map((r) => (r.contenu_id === contenuId ? { ...r, surnom: surnom || null } : r))
+    );
+    try {
+      await renommerRattachementMatiere(agentId, contenuId, surnom);
+    } catch (e) {
+      setCodeErreur(messageErreur(e));
+      rafraichirRattachements();
+    }
+  }
+
   async function partager() {
     const url = `${window.location.origin}/agent/${agentId}`;
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -234,6 +397,7 @@ export function SidebarChat({
       const rattachement = await entrerCodeMatiere(agentId, code.trim());
       setCode("");
       setCodeSucces(`${rattachement.matiere} débloquée.`);
+      rafraichirRattachements();
     } catch (e) {
       setCodeErreur(messageErreur(e));
     } finally {
@@ -409,6 +573,12 @@ export function SidebarChat({
                     {codeErreur && <p className="text-xs text-red-500">{codeErreur}</p>}
                     {codeSucces && <p className="text-xs text-green-600">{codeSucces}</p>}
                   </div>
+                  <ListeMatieresDebloquees
+                    rattachements={rattachements}
+                    chargement={rattachementsChargement}
+                    onActiver={activerEnseignant}
+                    onRenomme={renommerMatiere}
+                  />
                 </div>
               </div>
             )}
@@ -696,6 +866,12 @@ export function SidebarChat({
                     {codeErreur && <p className="text-xs text-red-500">{codeErreur}</p>}
                     {codeSucces && <p className="text-xs text-green-600">{codeSucces}</p>}
                   </div>
+                  <ListeMatieresDebloquees
+                    rattachements={rattachements}
+                    chargement={rattachementsChargement}
+                    onActiver={activerEnseignant}
+                    onRenomme={renommerMatiere}
+                  />
                 </div>
               </div>
             </div>

@@ -561,7 +561,13 @@ export async function creerPageNotion(titre: string, contenu: string) {
  * peut faire les deux.
  */
 export type ContenuMatiere = { id: string; matiere: string; system_prompt: string; code: string };
-export type Rattachement = { contenu_id: string; matiere: string; enseignant_nom: string; actif: boolean };
+export type Rattachement = {
+  contenu_id: string;
+  matiere: string;
+  enseignant_nom: string;
+  actif: boolean;
+  surnom: string | null;
+};
 export type AgentContenuDynamique = { id: string; nom: string };
 
 // Pour afficher dynamiquement l'entrée "Matières" dans Mon espace
@@ -601,5 +607,12 @@ export async function entrerCodeMatiere(agentId: string, code: string) {
 
 export async function activerRattachementMatiere(agentId: string, contenuId: string) {
   return appelerApi(`/api/agents/${agentId}/rattachements/${contenuId}/activer`, { method: "PATCH" });
+}
+
+export async function renommerRattachementMatiere(agentId: string, contenuId: string, surnom: string) {
+  return appelerApi(`/api/agents/${agentId}/rattachements/${contenuId}/surnom`, {
+    method: "PATCH",
+    body: JSON.stringify({ surnom }),
+  });
 }
 
