@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap, FlaskConical } from "lucide-react";
+import { GraduationCap, FlaskConical, Copy, Check } from "lucide-react";
 import {
   listerAgentsContenuDynamique,
   lireMesContenusMatiere,
@@ -70,6 +70,27 @@ function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom:
   const [enregistrement, setEnregistrement] = useState(false);
   const [test, setTest] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [codeCopieId, setCodeCopieId] = useState<string | null>(null);
+  const [erreurCopieId, setErreurCopieId] = useState<string | null>(null);
+
+  // Copier uniquement le code (ex. "A3B9") de la pastille, sans déclencher
+  // l'édition (stopPropagation). Retour visuel bref (coche) en cas de
+  // succès, message d'erreur bref en cas d'échec (permission navigateur,
+  // contexte non sécurisé, etc.) -- la pastille elle-même n'est jamais
+  // affectée par un échec de copie.
+  async function copierCode(e: React.MouseEvent, c: ContenuMatiere) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(c.code);
+      setErreurCopieId(null);
+      setCodeCopieId(c.id);
+      setTimeout(() => setCodeCopieId((v) => (v === c.id ? null : v)), 1500);
+    } catch {
+      setCodeCopieId(null);
+      setErreurCopieId(c.id);
+      setTimeout(() => setErreurCopieId((v) => (v === c.id ? null : v)), 1500);
+    }
+  }
 
   function rafraichir() {
     lireMesContenusMatiere(agentId)
@@ -147,13 +168,37 @@ function BlocEcritureMatiere({ agentId, agentNom }: { agentId: string; agentNom:
       {mesContenus && mesContenus.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {mesContenus.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => chargerPourEdition(c)}
-              className="rounded-full border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
-            >
-              {c.matiere} · code {c.code}
-            </button>
+            <div key={c.id} className="flex flex-col gap-1">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => chargerPourEdition(c)}
+                  className="rounded-full border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+                >
+                  {c.matiere} · code {c.code}
+                </button>
+                <button
+                  onClick={(e) => copierCode(e, c)}
+                  aria-label="Copier le code"
+                  className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+                >
+                  <Copy
+                    size={13}
+                    className={`absolute transition-all duration-300 ${
+                      codeCopieId === c.id ? "scale-0 opacity-0" : "scale-100 opacity-100"
+                    }`}
+                  />
+                  <Check
+                    size={13}
+                    className={`absolute text-green-500 transition-all duration-300 ${
+                      codeCopieId === c.id ? "scale-100 opacity-100" : "scale-0 opacity-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              {erreurCopieId === c.id && (
+                <p className="animate-dj-fade-in text-[11px] text-red-500">Copie impossible</p>
+              )}
+            </div>
           ))}
         </div>
       )}
