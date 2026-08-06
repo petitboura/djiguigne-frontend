@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, GraduationCap } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, lireOutilsChatAgent } from "@/lib/api";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -14,23 +14,14 @@ import { MonProfilAgent } from "@/components/MonProfilAgent";
 
 // Reproduit la sidebar de faces/vues/chat.py (Streamlit) dans le chat
 // Next.js -- demande de Bourama (2026-07-16) : "comme si j'avais pas
-// quitté Streamlit en termes de visuel". Cinq éléments, dans le même
-// ordre, avec le même style visuel que le thème Streamlit
-// (theme_djiguigne.py) :
-//   1. Retour à l'agent -- dégradé orange (comme le .stButton standard)
-//   2. Nouvelle conversation -- SANS dégradé, seulement si le fil courant
-//      a déjà des messages (voir chat.py : "n'a de sens que s'il y a
-//      quelque chose à quitter")
-//   3. Historique -- volet repliable, fils de discussion listés à plat
-//      (pas de style bouton, séparateur presque invisible), fermé par
-//      défaut, se referme après sélection
-//   4. Avis sur cet agent -- volet repliable, réutilise les composants
-//      existants NoteAgent + CommentairesAgent (déjà utilisés sur la page
-//      agent, mêmes endpoints)
-//   5. Partager -- dégradé orange plein largeur (voir chat.py, bouton
-//      HTML/JS custom ; ici on réutilise juste la logique de partage déjà
-//      dans components/BoutonPartager.tsx, avec un style différent, sans
-//      toucher à ce composant partagé utilisé ailleurs)
+// quitté Streamlit en termes de visuel".
+//
+// Regroupement du 06/08 (Bourama) : "Retour à l'agent" renommé "Voir
+// l'IA" (ce n'est plus vraiment un retour), et avec Changer d'IA/
+// Partager/Avis sur cet agent, déplacés en bas et réunis dans un seul
+// bouton "Actions" qui les déplie au clic -- au lieu de 4 éléments
+// séparés dispersés dans le rail. Seul le lien "Retour à la vitrine"
+// (logo, tout en bas) reste en dehors de ce groupe.
 //
 // N'affecte jamais BarreDeSaisie.tsx ni l'espacement des bulles de
 // message (BulleMessage.tsx) -- consigne explicite de Bourama.
@@ -95,6 +86,7 @@ export function SidebarChat({
   const [historiqueDeplie, setHistoriqueDeplie] = useState(false);
   const [avisDeplie, setAvisDeplie] = useState(false);
   const [profilDeplie, setProfilDeplie] = useState(false);
+  const [actionsDeplie, setActionsDeplie] = useState(false);
   const [profilADesChamps, setProfilADesChamps] = useState(false);
   const [copie, setCopie] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
@@ -201,8 +193,8 @@ export function SidebarChat({
     setHistoriqueDeplie(false);
   }
 
-  // Bascule exclusive pour les 3 icônes du rail qui pilotent un volet
-  // repliable (Historique/Avis/Mon profil) -- corrige deux bugs remontés
+  // Bascule exclusive pour les 2 icônes du rail qui pilotent un volet
+  // repliable (Historique/Mon profil) -- corrige deux bugs remontés
   // par Bourama le 28/07 : (1) un second clic sur la même icône ne
   // refermait jamais rien (les anciens onClick forçaient toujours
   // `true`) ; (2) cliquer une AUTRE icône ne changeait visiblement rien
@@ -210,14 +202,23 @@ export function SidebarChat({
   // bas dans un panneau déjà rempli -- un seul volet ouvert à la fois
   // rend le changement évident. Les boutons texte du panneau lui-même
   // (plus bas) gardent leur bascule indépendante d'origine, inchangée.
-  function basculerVoletRail(section: "historique" | "avis" | "profil") {
-    const dejaActif =
-      (section === "historique" && historiqueDeplie) ||
-      (section === "avis" && avisDeplie) ||
-      (section === "profil" && profilDeplie);
+  // Avis sur cet agent vit depuis le 06/08 dans le bouton "Actions"
+  // (basculerActions ci-dessous), avec son propre bascule indépendant
+  // (setAvisDeplie), plus dans cette exclusivité.
+  function basculerVoletRail(section: "historique" | "profil") {
+    const dejaActif = (section === "historique" && historiqueDeplie) || (section === "profil" && profilDeplie);
     setHistoriqueDeplie(section === "historique" ? !dejaActif : false);
-    setAvisDeplie(section === "avis" ? !dejaActif : false);
     setProfilDeplie(section === "profil" ? !dejaActif : false);
+    setOuverte(true);
+  }
+
+  // Bouton "Actions" (2026-08-06, demande Bourama : "Retour à l'agent"
+  // renommé "Voir l'IA" -- ce n'est plus vraiment un retour --, regroupé
+  // avec Changer d'IA/Partager/Avis dans un seul bouton qui déplie ces 4
+  // actions, déplacé en bas du rail. Seul le lien "Retour à la vitrine"
+  // (logo) reste en dehors du groupe, tel quel.
+  function basculerActions() {
+    setActionsDeplie((v) => !v);
     setOuverte(true);
   }
 
@@ -291,39 +292,6 @@ export function SidebarChat({
         </button>
 
         <div className="my-2 h-px w-full bg-dj-bordure" />
-
-        <Link
-          href={retourExterne ?? `/agent/${agentId}`}
-          className="flex w-full items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
-        >
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <ArrowLeft size={18} />
-          </span>
-          <LibelleRail ouverte={ouverte}>
-            {retourExterne ? "Retour au site" : "Retour à l'agent"}
-          </LibelleRail>
-        </Link>
-
-        {/* Vitrine (2026-07-30, demande Bourama) : accès direct à la liste
-            de tous les agents depuis le chat -- sans ça, changer d'IA
-            depuis l'app installée (PWA globale) demandait de repasser par
-            la fiche de CET agent d'abord. Bouton distinct de "Retour à
-            l'agent" ci-dessus : l'un revient à l'agent courant, l'autre
-            permet d'en choisir un autre.
-            Renommé "Changer d'IA" et repointé vers /choisir-agent le 31/07 :
-            `/` redirige maintenant automatiquement vers le premier_agent_id
-            déjà choisi (voir app/page.tsx) -- pointer encore vers `/`
-            aurait ramené tout droit au même chat en boucle. /choisir-agent
-            réutilise le même SelecteurAgent mais sans jamais rediriger. */}
-        <Link
-          href="/choisir-agent"
-          className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
-        >
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <Shuffle size={18} />
-          </span>
-          <LibelleRail ouverte={ouverte}>Changer d'IA</LibelleRail>
-        </Link>
 
         {/* Ajouté le 31/07 (Bourama : "ajoute le bouton mon espace dans le
             chat") -- même route que "Mon espace" dans la TopBar. Pointe
@@ -464,41 +432,78 @@ export function SidebarChat({
           </div>
         )}
 
-        <button
-          onClick={partager}
-          className={`flex w-full items-center gap-2 rounded-xl bg-dj-gradient font-bold text-[#1A0D02] transition-[transform,margin-top] duration-300 hover:-translate-y-0.5 ${
-            ouverte ? "mt-2" : "mt-auto"
-          }`}
-        >
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-            <Share2 size={18} />
-          </span>
-          <LibelleRail ouverte={ouverte}>{copie ? "Copié !" : "Partager"}</LibelleRail>
-        </button>
-
-        <div className="mt-2 rounded-xl border border-dj-bordure">
+        <div className={`rounded-xl border border-dj-bordure ${ouverte ? "mt-2" : "mt-auto"}`}>
           <button
-            onClick={() => basculerVoletRail("avis")}
-            title="Avis sur cet agent"
+            onClick={basculerActions}
+            title="Actions"
             className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
-              avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+              actionsDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
             }`}
           >
             <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <Star size={18} />
+              <MoreHorizontal size={18} />
             </span>
-            <LibelleRail ouverte={ouverte}>Avis sur cet agent</LibelleRail>
+            <LibelleRail ouverte={ouverte}>Actions</LibelleRail>
           </button>
           {ouverte && (
             <div
               className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                actionsDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
               }`}
             >
               <div className="overflow-hidden">
-                <div className="flex flex-col gap-4 px-3 pb-3">
-                  <NoteAgent agentId={agentId} />
-                  <CommentairesAgent agentId={agentId} />
+                <div className="flex flex-col gap-2 px-2 pb-2">
+                  <Link
+                    href={retourExterne ?? `/agent/${agentId}`}
+                    className="flex w-full items-center gap-2 rounded-lg bg-dj-gradient px-2 py-2 font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                  >
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+                      {retourExterne ? <ArrowLeft size={16} /> : <Eye size={16} />}
+                    </span>
+                    <span className="text-sm">{retourExterne ? "Retour au site" : "Voir l'IA"}</span>
+                  </Link>
+
+                  <Link
+                    href="/choisir-agent"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte"
+                  >
+                    <Shuffle size={16} className="flex-shrink-0" />
+                    Changer d'IA
+                  </Link>
+
+                  <button
+                    onClick={partager}
+                    className="flex w-full items-center gap-2 rounded-lg bg-dj-gradient px-2 py-2 text-left font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                  >
+                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+                      <Share2 size={16} />
+                    </span>
+                    <span className="text-sm">{copie ? "Copié !" : "Partager"}</span>
+                  </button>
+
+                  <div className="rounded-lg border border-dj-bordure">
+                    <button
+                      onClick={() => setAvisDeplie((v) => !v)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors ${
+                        avisDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface hover:text-dj-texte"
+                      }`}
+                    >
+                      <Star size={16} className="flex-shrink-0" />
+                      Avis sur cet agent
+                    </button>
+                    <div
+                      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                        avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="flex flex-col gap-4 px-2 pb-2">
+                          <NoteAgent agentId={agentId} />
+                          <CommentairesAgent agentId={agentId} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -558,22 +563,6 @@ export function SidebarChat({
             ouverte ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <Link
-            href={retourExterne ?? `/agent/${agentId}`}
-            className="flex items-center justify-center gap-2 rounded-full bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
-          >
-            <ArrowLeft size={16} />
-            {retourExterne ? "Retour au site" : "Retour à l'agent"}
-          </Link>
-
-          <Link
-            href="/choisir-agent"
-            className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-          >
-            <Shuffle size={16} />
-            Changer d'IA
-          </Link>
-
           <Link
             href="/dashboard/espace"
             className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
@@ -675,13 +664,74 @@ export function SidebarChat({
             <BoutonInstaller />
           </div>
 
-          <button
-            onClick={partager}
-            className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
-          >
-            <Share2 size={16} />
-            {copie ? "Copié !" : "Partager"}
-          </button>
+          <div className="rounded-xl border border-dj-bordure">
+            <button
+              onClick={() => setActionsDeplie((v) => !v)}
+              className={`flex w-full items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                actionsDeplie ? "text-dj-accent-1" : "text-dj-texte"
+              }`}
+            >
+              <MoreHorizontal size={16} />
+              Actions
+            </button>
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                actionsDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-2 px-2 pb-2">
+                  <Link
+                    href={retourExterne ?? `/agent/${agentId}`}
+                    className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                  >
+                    {retourExterne ? <ArrowLeft size={16} /> : <Eye size={16} />}
+                    {retourExterne ? "Retour au site" : "Voir l'IA"}
+                  </Link>
+
+                  <Link
+                    href="/choisir-agent"
+                    className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
+                  >
+                    <Shuffle size={16} />
+                    Changer d'IA
+                  </Link>
+
+                  <button
+                    onClick={partager}
+                    className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                  >
+                    <Share2 size={16} />
+                    {copie ? "Copié !" : "Partager"}
+                  </button>
+
+                  <div className="rounded-[10px] border border-dj-bordure">
+                    <button
+                      onClick={() => setAvisDeplie((v) => !v)}
+                      className={`flex w-full items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                        avisDeplie ? "text-dj-accent-1" : "text-dj-texte"
+                      }`}
+                    >
+                      <Star size={16} />
+                      Avis sur cet agent
+                    </button>
+                    <div
+                      className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                        avisDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="flex flex-col gap-4 px-3 pb-3">
+                          <NoteAgent agentId={agentId} />
+                          <CommentairesAgent agentId={agentId} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Ajouté le 02/08 (Bourama : "piégée dans le chat, aucun moyen
               de sortir et revenir à la vitrine") -- voir le commentaire
