@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { appelerApi, lireOutilsChatAgent } from "@/lib/api";
+import { appelerApi, lireOutilsChatAgent, entrerCodeMatiere } from "@/lib/api";
+import { messageErreur } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
@@ -75,9 +76,12 @@ export function SidebarChat({
   onNouvelleConversation: () => void;
   onSelectionnerConversation: (fil: FilConversation) => void;
   // Agent "Nitrux" / contenu dynamique par matière (06/08/2026, demande
-  // Bourama) : affiche l'entrée "Matières" (écrire du contenu par
-  // matière côté enseignant, entrer un code + basculer d'enseignant côté
-  // étudiant) UNIQUEMENT pour les agents marqués ainsi côté backend.
+  // Bourama). Le bloc "écrire une matière" (côté enseignant) vit ailleurs
+  // -- ici on garde UNIQUEMENT "entrer un code -> matière débloquée"
+  // (côté étudiant), volontairement simplifié le 06/08 (Bourama : "le
+  // reste [...] et remplace-le par le mécanisme de je rentre le code et
+  // la matière est débloquée" -- l'ancien lien vers une page /matieres à
+  // deux blocs a été retiré).
   contenuDynamiqueParMatiere?: boolean;
 }) {
   const [ouverte, setOuverte] = useState(false);
@@ -86,6 +90,11 @@ export function SidebarChat({
   const [historiqueDeplie, setHistoriqueDeplie] = useState(false);
   const [avisDeplie, setAvisDeplie] = useState(false);
   const [profilDeplie, setProfilDeplie] = useState(false);
+  const [codeDeplie, setCodeDeplie] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeEnCours, setCodeEnCours] = useState(false);
+  const [codeErreur, setCodeErreur] = useState<string | null>(null);
+  const [codeSucces, setCodeSucces] = useState<string | null>(null);
   const [actionsDeplie, setActionsDeplie] = useState(false);
   const [profilADesChamps, setProfilADesChamps] = useState(false);
   const [copie, setCopie] = useState(false);
@@ -205,11 +214,31 @@ export function SidebarChat({
   // Avis sur cet agent vit depuis le 06/08 dans le bouton "Actions"
   // (basculerActions ci-dessous), avec son propre bascule indépendant
   // (setAvisDeplie), plus dans cette exclusivité.
-  function basculerVoletRail(section: "historique" | "profil") {
-    const dejaActif = (section === "historique" && historiqueDeplie) || (section === "profil" && profilDeplie);
+  function basculerVoletRail(section: "historique" | "profil" | "code") {
+    const dejaActif =
+      (section === "historique" && historiqueDeplie) ||
+      (section === "profil" && profilDeplie) ||
+      (section === "code" && codeDeplie);
     setHistoriqueDeplie(section === "historique" ? !dejaActif : false);
     setProfilDeplie(section === "profil" ? !dejaActif : false);
+    setCodeDeplie(section === "code" ? !dejaActif : false);
     setOuverte(true);
+  }
+
+  async function validerCode() {
+    if (!code.trim()) return;
+    setCodeEnCours(true);
+    setCodeErreur(null);
+    setCodeSucces(null);
+    try {
+      const rattachement = await entrerCodeMatiere(agentId, code.trim());
+      setCode("");
+      setCodeSucces(`${rattachement.matiere} débloquée.`);
+    } catch (e) {
+      setCodeErreur(messageErreur(e));
+    } finally {
+      setCodeEnCours(false);
+    }
   }
 
   // Bouton "Actions" (2026-08-06, demande Bourama : "Retour à l'agent"
@@ -330,15 +359,48 @@ export function SidebarChat({
         )}
 
         {contenuDynamiqueParMatiere && (
-          <Link
-            href={`/agent/${agentId}/matieres`}
-            className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dj-bordure text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
-          >
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <GraduationCap size={18} />
-            </span>
-            <LibelleRail ouverte={ouverte}>Matières</LibelleRail>
-          </Link>
+          <div className="mt-2 rounded-xl border border-dj-bordure">
+            <button
+              onClick={() => basculerVoletRail("code")}
+              title="Débloquer une matière"
+              className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+                codeDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+              }`}
+            >
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <GraduationCap size={18} />
+              </span>
+              <LibelleRail ouverte={ouverte}>Débloquer une matière</LibelleRail>
+            </button>
+            {ouverte && (
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  codeDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col gap-2 px-2 pb-2">
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && !codeEnCours && validerCode()}
+                      placeholder="CODE"
+                      className="rounded-lg border border-dj-bordure bg-transparent px-2 py-1.5 text-sm uppercase tracking-widest text-dj-texte"
+                    />
+                    <button
+                      onClick={validerCode}
+                      disabled={codeEnCours || !code.trim()}
+                      className="rounded-lg bg-dj-accent-1 px-2 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+                    >
+                      {codeEnCours ? "Validation…" : "Valider"}
+                    </button>
+                    {codeErreur && <p className="text-xs text-red-500">{codeErreur}</p>}
+                    {codeSucces && <p className="text-xs text-green-600">{codeSucces}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {connecte && aDesMessages && (
@@ -580,13 +642,41 @@ export function SidebarChat({
           )}
 
           {contenuDynamiqueParMatiere && (
-            <Link
-              href={`/agent/${agentId}/matieres`}
-              className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
-            >
-              <GraduationCap size={16} />
-              Matières
-            </Link>
+            <div className="rounded-xl border border-dj-bordure">
+              <button
+                onClick={() => setCodeDeplie((v) => !v)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dj-texte"
+              >
+                <GraduationCap size={16} />
+                Débloquer une matière
+              </button>
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  codeDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col gap-2 px-3 pb-3">
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && !codeEnCours && validerCode()}
+                      placeholder="CODE"
+                      className="rounded-lg border border-dj-bordure bg-transparent px-2 py-1.5 text-sm uppercase tracking-widest text-dj-texte"
+                    />
+                    <button
+                      onClick={validerCode}
+                      disabled={codeEnCours || !code.trim()}
+                      className="rounded-lg bg-dj-accent-1 px-2 py-1.5 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+                    >
+                      {codeEnCours ? "Validation…" : "Valider"}
+                    </button>
+                    {codeErreur && <p className="text-xs text-red-500">{codeErreur}</p>}
+                    {codeSucces && <p className="text-xs text-green-600">{codeSucces}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {connecte && aDesMessages && (
