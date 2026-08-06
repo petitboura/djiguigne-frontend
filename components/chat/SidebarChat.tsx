@@ -473,12 +473,10 @@ export function SidebarChat({
 
                   <button
                     onClick={partager}
-                    className="flex w-full items-center gap-2 rounded-lg bg-dj-gradient px-2 py-2 text-left font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-dj-texte-muet transition-colors hover:bg-dj-surface hover:text-dj-texte"
                   >
-                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
-                      <Share2 size={16} />
-                    </span>
-                    <span className="text-sm">{copie ? "Copié !" : "Partager"}</span>
+                    <Share2 size={16} className="flex-shrink-0" />
+                    {copie ? "Copié !" : "Partager"}
                   </button>
 
                   <div className="rounded-lg border border-dj-bordure">
@@ -699,7 +697,7 @@ export function SidebarChat({
 
                   <button
                     onClick={partager}
-                    className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                    className="flex items-center justify-center gap-2 rounded-[10px] border border-dj-bordure bg-dj-surface-haute px-4 py-2.5 text-sm text-dj-texte transition-colors hover:bg-dj-surface"
                   >
                     <Share2 size={16} />
                     {copie ? "Copié !" : "Partager"}
