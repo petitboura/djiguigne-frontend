@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
@@ -18,6 +18,7 @@ import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 import { MaMemoire } from "@/components/MaMemoire";
+import { SectionMatieres } from "@/components/SectionMatieres";
 import { AgentCard, type AgentResume } from "@/components/AgentCard";
 import { BoutonPartager } from "@/components/BoutonPartager";
 
@@ -54,11 +55,12 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis";
+type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis" | "matieres";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 // Onglets fixes, toujours affichés.
 const ONGLETS_FIXES: { id: Onglet; label: string; Icone: typeof History }[] = [
+  { id: "matieres", label: "L'IA de mes élèves", Icone: GraduationCap },
   { id: "historique", label: "Historique", Icone: History },
   { id: "bibliotheque", label: "Bibliothèque", Icone: Library },
   { id: "memoire", label: "Ma mémoire", Icone: Brain },
@@ -448,6 +450,8 @@ export default function PageMonEspace() {
         {onglet === "memoire" && <MaMemoire />}
 
         {onglet === "applis" && <ApplisConnectees />}
+
+        {onglet === "matieres" && <SectionMatieres />}
       </main>
     </>
   );

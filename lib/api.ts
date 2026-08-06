@@ -562,6 +562,16 @@ export async function creerPageNotion(titre: string, contenu: string) {
  */
 export type ContenuMatiere = { id: string; matiere: string; system_prompt: string; code: string };
 export type Rattachement = { contenu_id: string; matiere: string; enseignant_nom: string; actif: boolean };
+export type AgentContenuDynamique = { id: string; nom: string };
+
+// Pour afficher dynamiquement l'entrée "Matières" dans Mon espace
+// (2026-08-06) sans coder un id d'agent en dur : renvoie tous les
+// agents actifs marqués contenu_dynamique_par_matiere (aujourd'hui
+// seul Nitrux, potentiellement d'autres plus tard).
+export async function listerAgentsContenuDynamique() {
+  const resultat = await appelerApi(`/api/agents-contenu-dynamique`);
+  return resultat as AgentContenuDynamique[];
+}
 
 export async function lireMesContenusMatiere(agentId: string) {
   const resultat = await appelerApi(`/api/agents/${agentId}/contenus-matiere`);
