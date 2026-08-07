@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, Plus, X, Check } from "lucide-react";
+import { Trash2, Plus, X, Check, Maximize2 } from "lucide-react";
 import { lireMesComportements, ajouterComportement, modifierComportement, supprimerComportement, type Comportement } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 
@@ -30,8 +30,14 @@ export function MesComportements({ agentId }: { agentId: string }) {
   const [ajoutEnCours, setAjoutEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Comportement actuellement ouvert en plein écran (null = fermé).
-  const [ouvert, setOuvert] = useState<Comportement | null>(null);
+  // Panneau plein écran : soit édition d'un comportement existant, soit
+  // création d'un nouveau (07/08/2026, demande Bourama : "le mode plein
+  // écran ne doit pas être dispo que pour ceux qui existent -- en mode
+  // édition [ajout] il faut aussi un truc à côté de la ligne de champ").
+  // La création rapide (petit champ + bouton en bas) reste disponible en
+  // parallèle, ce plein écran est une option en plus pour qui veut plus
+  // de place pour écrire.
+  const [panneau, setPanneau] = useState<{ type: "edition"; c: Comportement } | { type: "creation" } | null>(null);
   const [texteOuvert, setTexteOuvert] = useState("");
   const [enregistrementEnCours, setEnregistrementEnCours] = useState(false);
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
@@ -59,31 +65,53 @@ export function MesComportements({ agentId }: { agentId: string }) {
     }
   }
 
-  function ouvrir(c: Comportement) {
-    setOuvert(c);
+  function ouvrirEdition(c: Comportement) {
+    setPanneau({ type: "edition", c });
     setTexteOuvert(c.texte);
+    setErreurOuvert(null);
+  }
+
+  function ouvrirCreation() {
+    setPanneau({ type: "creation" });
+    setTexteOuvert("");
     setErreurOuvert(null);
   }
 
   function fermer() {
     if (enregistrementEnCours || suppressionEnCours) return;
-    setOuvert(null);
+    setPanneau(null);
   }
 
   async function enregistrer() {
-    if (!ouvert) return;
+    if (!panneau) return;
     const texte = texteOuvert.trim();
     if (!texte) return;
-    if (texte === ouvert.texte) {
-      setOuvert(null);
+
+    if (panneau.type === "creation") {
+      setEnregistrementEnCours(true);
+      setErreurOuvert(null);
+      try {
+        const cree = await ajouterComportement(agentId, texte);
+        setListe((prec) => [...(prec || []), cree]);
+        setPanneau(null);
+      } catch (e) {
+        setErreurOuvert(messageErreur(e));
+      } finally {
+        setEnregistrementEnCours(false);
+      }
+      return;
+    }
+
+    if (texte === panneau.c.texte) {
+      setPanneau(null);
       return;
     }
     setEnregistrementEnCours(true);
     setErreurOuvert(null);
     try {
-      const maj = await modifierComportement(agentId, ouvert.id, texte);
-      setListe((prec) => (prec || []).map((c) => (c.id === ouvert.id ? maj : c)));
-      setOuvert(null);
+      const maj = await modifierComportement(agentId, panneau.c.id, texte);
+      setListe((prec) => (prec || []).map((c) => (c.id === panneau.c.id ? maj : c)));
+      setPanneau(null);
     } catch (e) {
       setErreurOuvert(messageErreur(e));
     } finally {
@@ -92,13 +120,13 @@ export function MesComportements({ agentId }: { agentId: string }) {
   }
 
   async function supprimer() {
-    if (!ouvert) return;
+    if (!panneau || panneau.type !== "edition") return;
     setSuppressionEnCours(true);
     setErreurOuvert(null);
     try {
-      await supprimerComportement(agentId, ouvert.id);
-      setListe((prec) => (prec || []).filter((c) => c.id !== ouvert.id));
-      setOuvert(null);
+      await supprimerComportement(agentId, panneau.c.id);
+      setListe((prec) => (prec || []).filter((c) => c.id !== panneau.c.id));
+      setPanneau(null);
     } catch (e) {
       setErreurOuvert(messageErreur(e));
       setSuppressionEnCours(false);
@@ -124,7 +152,7 @@ export function MesComportements({ agentId }: { agentId: string }) {
       {liste.map((c) => (
         <button
           key={c.id}
-          onClick={() => ouvrir(c)}
+          onClick={() => ouvrirEdition(c)}
           title="Ouvrir et modifier"
           className="flex items-start justify-between gap-2 rounded-lg border border-dj-bordure/60 px-2 py-1.5 text-left transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute"
         >
@@ -148,14 +176,23 @@ export function MesComportements({ agentId }: { agentId: string }) {
         >
           <Plus size={14} />
         </button>
+        <button
+          onClick={ouvrirCreation}
+          title="Écrire en plein écran"
+          className="flex-shrink-0 rounded-lg border border-dj-bordure p-2 text-dj-texte-muet transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute"
+        >
+          <Maximize2 size={14} />
+        </button>
       </div>
 
       {erreur && <p className="text-xs text-[#F87171]">{erreur}</p>}
 
-      {ouvert && (
+      {panneau && (
         <div className="fixed inset-0 z-50 flex animate-dj-fade-in flex-col bg-dj-fond p-4 sm:p-6">
           <div className="flex items-center justify-between pb-4">
-            <span className="text-sm text-dj-texte-muet">Modifier ce comportement</span>
+            <span className="text-sm text-dj-texte-muet">
+              {panneau.type === "creation" ? "Nouveau comportement" : "Modifier ce comportement"}
+            </span>
             <button
               onClick={fermer}
               disabled={enregistrementEnCours || suppressionEnCours}
@@ -180,19 +217,22 @@ export function MesComportements({ agentId }: { agentId: string }) {
               <span className="hidden sm:block" />
             )}
             <div className="flex items-center gap-2">
-              <button
-                onClick={supprimer}
-                disabled={enregistrementEnCours || suppressionEnCours}
-                className="flex items-center gap-1.5 rounded-lg border border-dj-bordure px-3 py-2 text-sm text-[#F87171] transition-colors hover:bg-[#F87171]/10 disabled:opacity-50"
-              >
-                <Trash2 size={14} /> Supprimer
-              </button>
+              {panneau.type === "edition" && (
+                <button
+                  onClick={supprimer}
+                  disabled={enregistrementEnCours || suppressionEnCours}
+                  className="flex items-center gap-1.5 rounded-lg border border-dj-bordure px-3 py-2 text-sm text-[#F87171] transition-colors hover:bg-[#F87171]/10 disabled:opacity-50"
+                >
+                  <Trash2 size={14} /> Supprimer
+                </button>
+              )}
               <button
                 onClick={enregistrer}
                 disabled={enregistrementEnCours || suppressionEnCours || !texteOuvert.trim()}
                 className="flex items-center gap-1.5 rounded-lg bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
               >
-                <Check size={14} /> {enregistrementEnCours ? "Enregistrement…" : "Enregistrer"}
+                <Check size={14} />{" "}
+                {enregistrementEnCours ? "Enregistrement…" : panneau.type === "creation" ? "Créer" : "Enregistrer"}
               </button>
             </div>
           </div>
