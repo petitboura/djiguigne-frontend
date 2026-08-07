@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check, Send, Link2, FileUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
@@ -12,7 +12,12 @@ import {
   lireMesRattachements,
   renommerRattachementMatiere,
   activerRattachementMatiere,
+  lireMonRole,
+  diffuserDocumentEtablissement,
+  diffuserLien,
   type Rattachement,
+  type MonRole,
+  type ResultatDiffusion,
 } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -184,6 +189,135 @@ function ListeMatieresDebloquees({
   );
 }
 
+// Section "Envoyer à..." côté enseignant ET établissement (2026-08-06,
+// demande Bourama) : nouvelle section dédiée dans le chat (sidebar) de
+// l'IA fixe de la personne connectée (Stirux pour l'enseignant, Lirinus
+// pour l'établissement), séparée de "Écrire une matière" (qui vit dans
+// Mon espace, components/SectionMatieres.tsx) -- ici il s'agit
+// d'ajouter un document ou un lien directement à la bibliothèque de
+// TOUS les destinataires autorisés d'un coup (un niveau pour
+// l'enseignant : ses étudiants ; deux niveaux pour l'établissement :
+// ses enseignants + les étudiants de ces enseignants), pas d'écrire le
+// contenu pédagogique lui-même. Réutilise diffuserDocumentEtablissement/
+// diffuserLien (voir lib/api.ts) : même endpoint pour les deux rôles,
+// _contacts_autorises limite déjà les cibles au bon périmètre côté
+// backend selon le rôle réel de qui appelle.
+function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
+  const texteAide =
+    role === "etablissement"
+      ? "Ajouté d'un coup à la bibliothèque de tous tes enseignants et de leurs étudiants."
+      : "Ajouté d'un coup à la bibliothèque de tous tes étudiants.";
+  const texteBouton = role === "etablissement" ? "Envoyer à tous" : "Envoyer à tous mes étudiants";
+  const [mode, setMode] = useState<"fichier" | "lien">("fichier");
+  const [fichier, setFichier] = useState<File | null>(null);
+  const [url, setUrl] = useState("");
+  const [titre, setTitre] = useState("");
+  const [description, setDescription] = useState("");
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [resultat, setResultat] = useState<ResultatDiffusion | null>(null);
+
+  const pretAEnvoyer =
+    !enCours &&
+    description.trim() !== "" &&
+    (mode === "fichier" ? !!fichier : url.trim() !== "");
+
+  async function envoyer() {
+    if (!pretAEnvoyer) return;
+    setEnCours(true);
+    setErreur(null);
+    setResultat(null);
+    try {
+      const r =
+        mode === "fichier"
+          ? await diffuserDocumentEtablissement(fichier as File, description.trim(), titre.trim())
+          : await diffuserLien(url.trim(), description.trim(), titre.trim());
+      setResultat(r);
+      setFichier(null);
+      setUrl("");
+      setTitre("");
+      setDescription("");
+    } catch (e) {
+      setErreur(messageErreur(e));
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 px-3 pb-3">
+      <p className="text-xs text-dj-texte-muet">{texteAide}</p>
+
+      <div className="flex gap-1.5 rounded-lg border border-dj-bordure p-0.5">
+        <button
+          onClick={() => setMode("fichier")}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${
+            mode === "fichier" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
+          }`}
+        >
+          <FileUp size={13} />
+          Fichier
+        </button>
+        <button
+          onClick={() => setMode("lien")}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${
+            mode === "lien" ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
+          }`}
+        >
+          <Link2 size={13} />
+          Lien
+        </button>
+      </div>
+
+      {mode === "fichier" ? (
+        <input
+          type="file"
+          onChange={(e) => setFichier(e.target.files?.[0] ?? null)}
+          className="block w-full text-xs text-dj-texte-muet file:mr-2 file:rounded-full file:border-0 file:bg-dj-surface-haute file:px-2.5 file:py-1 file:text-xs file:text-dj-texte"
+        />
+      ) : (
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://..."
+          className="rounded-lg border border-dj-bordure bg-transparent px-2.5 py-1.5 text-sm text-dj-texte outline-none focus:border-dj-accent-1"
+        />
+      )}
+
+      <input
+        value={titre}
+        onChange={(e) => setTitre(e.target.value)}
+        placeholder="Titre (optionnel)"
+        className="rounded-lg border border-dj-bordure bg-transparent px-2.5 py-1.5 text-sm text-dj-texte outline-none focus:border-dj-accent-1"
+      />
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+        placeholder="Description (pour que l'IA sache le retrouver)"
+        className="rounded-lg border border-dj-bordure bg-transparent px-2.5 py-1.5 text-sm text-dj-texte outline-none focus:border-dj-accent-1"
+      />
+
+      {erreur && <p className="animate-dj-fade-in-rapide text-xs text-red-500">{erreur}</p>}
+      {resultat && (
+        <p className="animate-dj-fade-in-rapide text-xs text-dj-accent-1">
+          Envoyé à {resultat.diffuse_a}/{resultat.total_cibles} étudiant(s).
+          {resultat.echecs.length > 0 && <> Échec pour : {resultat.echecs.join(", ")}.</>}
+        </p>
+      )}
+
+      <button
+        onClick={envoyer}
+        disabled={!pretAEnvoyer}
+        className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
+      >
+        <Send size={14} />
+        {enCours ? "Envoi…" : texteBouton}
+      </button>
+    </div>
+  );
+}
+
 export function SidebarChat({
   agentId,
   retourExterne,
@@ -232,6 +366,8 @@ export function SidebarChat({
   const [actionsDeplie, setActionsDeplie] = useState(false);
   const [profilADesChamps, setProfilADesChamps] = useState(false);
   const [copie, setCopie] = useState(false);
+  const [monRole, setMonRole] = useState<MonRole | null>(null);
+  const [envoyerDeplie, setEnvoyerDeplie] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const boutonBasculeRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
@@ -311,6 +447,21 @@ export function SidebarChat({
       .then((r: FilConversation[]) => setFils(r))
       .catch(() => setFils([]));
   }, [connecte, agentId, aDesMessages]);
+
+  // "Envoyer à..." (2026-08-06) : ne s'affiche que si la personne
+  // connectée a un rôle enseignant OU établissement ET regarde bien le
+  // chat de SA propre IA (agent_id renvoyé par /api/roles/moi) -- pas
+  // l'IA de quelqu'un d'autre qu'elle testerait. `monRole` reste `null`
+  // si l'appel échoue ou si la personne n'a pas de rôle hiérarchique.
+  useEffect(() => {
+    if (!connecte) return;
+    lireMonRole()
+      .then(setMonRole)
+      .catch(() => setMonRole(null));
+  }, [connecte]);
+  const peutEnvoyer =
+    (monRole?.role === "enseignant" || monRole?.role === "etablissement") &&
+    monRole.agent_id === agentId;
 
   function rafraichirRattachements() {
     setRattachementsChargement(true);
@@ -937,6 +1088,29 @@ export function SidebarChat({
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {connecte && peutEnvoyer && (
+            <div className="rounded-xl border border-dj-bordure">
+              <button
+                onClick={() => setEnvoyerDeplie((v) => !v)}
+                className={`flex w-full items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                  envoyerDeplie ? "text-dj-accent-1" : "text-dj-texte"
+                }`}
+              >
+                <Send size={16} />
+                {monRole?.role === "etablissement" ? "Envoyer à mes enseignants et étudiants" : "Envoyer à mes étudiants"}
+              </button>
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  envoyerDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <SectionEnvoyer role={monRole!.role as "enseignant" | "etablissement"} />
                 </div>
               </div>
             </div>

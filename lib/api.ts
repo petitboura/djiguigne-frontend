@@ -237,12 +237,30 @@ export async function ajouterFichierBibliotheque(
   return reponse.json();
 }
 
+export type ResultatDiffusion = { diffuse_a: number; total_cibles: number; echecs: string[] };
+
+export type MonRole = {
+  role: "etablissement" | "enseignant" | "etudiant" | null;
+  etablissement_id: string | null;
+  enseignant_id: string | null;
+  agent_id: string | null;
+};
+
+/** Voir api/roles.py:mon_role. Utilisée pour savoir si la personne
+ * connectée a un rôle hiérarchique (et lequel), notamment pour afficher
+ * la section "Envoyer à mes étudiants" côté enseignant dans le chat. */
+export async function lireMonRole() {
+  return appelerApi("/api/roles/moi") as Promise<MonRole>;
+}
+
 /**
- * Diffusion en masse d'un document par un établissement (2026-08-05,
- * partie D du reste-à-faire hiérarchie de rôles) -- voir
+ * Diffusion en masse d'un document (2026-08-05, partie D du
+ * reste-à-faire hiérarchie de rôles ; ouverte à l'enseignant le
+ * 2026-08-06, plus seulement l'établissement) -- voir
  * api/roles.py:diffuser_document. Même mécanique FormData que
  * ajouterFichierBibliotheque, sur l'endpoint dédié qui répète l'ajout
- * pour chaque enseignant + étudiant de l'établissement plutôt qu'un seul
+ * pour chaque destinataire autorisé (établissement -> ses enseignants +
+ * leurs étudiants ; enseignant -> ses étudiants) plutôt qu'un seul
  * agent. Retourne {diffuse_a, total_cibles, echecs}.
  */
 export async function diffuserDocumentEtablissement(fichier: File, description: string, titre?: string) {
@@ -269,7 +287,21 @@ export async function diffuserDocumentEtablissement(fichier: File, description: 
     throw await construireErreurApi(reponse, "/api/roles/documents/diffuser");
   }
 
-  return reponse.json();
+  return reponse.json() as Promise<ResultatDiffusion>;
+}
+
+/**
+ * Pendant de diffuserDocumentEtablissement pour un lien (pas de fichier,
+ * juste une URL) -- voir api/roles.py:diffuser_lien. Ajoutée le
+ * 2026-08-06 en même temps que l'ouverture du droit de diffusion à
+ * l'enseignant. Même portée par rôle réel que le document : établissement
+ * -> ses enseignants + leurs étudiants, enseignant -> ses étudiants.
+ */
+export async function diffuserLien(url: string, description: string, titre?: string) {
+  return appelerApi("/api/roles/liens/diffuser", {
+    method: "POST",
+    body: JSON.stringify({ url, titre, description }),
+  }) as Promise<ResultatDiffusion>;
 }
 
 /**
