@@ -189,17 +189,25 @@ function ListeMatieresDebloquees({
   );
 }
 
-// Section "Envoyer à mes étudiants" côté enseignant (2026-08-06, demande
-// Bourama) : nouvelle section dédiée dans le chat (sidebar) de l'IA de
-// l'enseignant (Stirux), séparée de "Écrire une matière" (qui vit dans
+// Section "Envoyer à..." côté enseignant ET établissement (2026-08-06,
+// demande Bourama) : nouvelle section dédiée dans le chat (sidebar) de
+// l'IA fixe de la personne connectée (Stirux pour l'enseignant, Lirinus
+// pour l'établissement), séparée de "Écrire une matière" (qui vit dans
 // Mon espace, components/SectionMatieres.tsx) -- ici il s'agit
 // d'ajouter un document ou un lien directement à la bibliothèque de
-// TOUS ses étudiants d'un coup, pas d'écrire le contenu pédagogique
-// lui-même. Réutilise diffuserDocumentEtablissement/diffuserLien (voir
-// lib/api.ts) : même endpoint que celui utilisé par l'établissement,
-// _contacts_autorises limite déjà les cibles aux seuls étudiants de cet
-// enseignant côté backend.
-function SectionEnvoyerAuxEtudiants() {
+// TOUS les destinataires autorisés d'un coup (un niveau pour
+// l'enseignant : ses étudiants ; deux niveaux pour l'établissement :
+// ses enseignants + les étudiants de ces enseignants), pas d'écrire le
+// contenu pédagogique lui-même. Réutilise diffuserDocumentEtablissement/
+// diffuserLien (voir lib/api.ts) : même endpoint pour les deux rôles,
+// _contacts_autorises limite déjà les cibles au bon périmètre côté
+// backend selon le rôle réel de qui appelle.
+function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
+  const texteAide =
+    role === "etablissement"
+      ? "Ajouté d'un coup à la bibliothèque de tous tes enseignants et de leurs étudiants."
+      : "Ajouté d'un coup à la bibliothèque de tous tes étudiants.";
+  const texteBouton = role === "etablissement" ? "Envoyer à tous" : "Envoyer à tous mes étudiants";
   const [mode, setMode] = useState<"fichier" | "lien">("fichier");
   const [fichier, setFichier] = useState<File | null>(null);
   const [url, setUrl] = useState("");
@@ -238,9 +246,7 @@ function SectionEnvoyerAuxEtudiants() {
 
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
-      <p className="text-xs text-dj-texte-muet">
-        Ajouté d'un coup à la bibliothèque de tous tes étudiants.
-      </p>
+      <p className="text-xs text-dj-texte-muet">{texteAide}</p>
 
       <div className="flex gap-1.5 rounded-lg border border-dj-bordure p-0.5">
         <button
@@ -306,7 +312,7 @@ function SectionEnvoyerAuxEtudiants() {
         className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
       >
         <Send size={14} />
-        {enCours ? "Envoi…" : "Envoyer à tous mes étudiants"}
+        {enCours ? "Envoi…" : texteBouton}
       </button>
     </div>
   );
@@ -442,18 +448,20 @@ export function SidebarChat({
       .catch(() => setFils([]));
   }, [connecte, agentId, aDesMessages]);
 
-  // "Envoyer à mes étudiants" (2026-08-06) : ne s'affiche que si la
-  // personne connectée est un enseignant ET regarde bien le chat de SA
-  // propre IA (agent_id renvoyé par /api/roles/moi) -- pas l'IA de
-  // quelqu'un d'autre qu'elle testerait. `monRole` reste `null` si
-  // l'appel échoue ou si la personne n'a pas de rôle hiérarchique.
+  // "Envoyer à..." (2026-08-06) : ne s'affiche que si la personne
+  // connectée a un rôle enseignant OU établissement ET regarde bien le
+  // chat de SA propre IA (agent_id renvoyé par /api/roles/moi) -- pas
+  // l'IA de quelqu'un d'autre qu'elle testerait. `monRole` reste `null`
+  // si l'appel échoue ou si la personne n'a pas de rôle hiérarchique.
   useEffect(() => {
     if (!connecte) return;
     lireMonRole()
       .then(setMonRole)
       .catch(() => setMonRole(null));
   }, [connecte]);
-  const peutEnvoyerAuxEtudiants = monRole?.role === "enseignant" && monRole.agent_id === agentId;
+  const peutEnvoyer =
+    (monRole?.role === "enseignant" || monRole?.role === "etablissement") &&
+    monRole.agent_id === agentId;
 
   function rafraichirRattachements() {
     setRattachementsChargement(true);
@@ -1085,7 +1093,7 @@ export function SidebarChat({
             </div>
           )}
 
-          {connecte && peutEnvoyerAuxEtudiants && (
+          {connecte && peutEnvoyer && (
             <div className="rounded-xl border border-dj-bordure">
               <button
                 onClick={() => setEnvoyerDeplie((v) => !v)}
@@ -1094,7 +1102,7 @@ export function SidebarChat({
                 }`}
               >
                 <Send size={16} />
-                Envoyer à mes étudiants
+                {monRole?.role === "etablissement" ? "Envoyer à mes enseignants et étudiants" : "Envoyer à mes étudiants"}
               </button>
               <div
                 className={`grid transition-[grid-template-rows] duration-300 ease-out ${
@@ -1102,7 +1110,7 @@ export function SidebarChat({
                 }`}
               >
                 <div className="overflow-hidden">
-                  <SectionEnvoyerAuxEtudiants />
+                  <SectionEnvoyer role={monRole!.role as "enseignant" | "etablissement"} />
                 </div>
               </div>
             </div>
