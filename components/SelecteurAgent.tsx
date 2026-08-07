@@ -340,7 +340,10 @@ export function SelecteurAgent() {
                   explicationCorps="Choisis d'abord la matière de ton IA, puis remplis le formulaire de création (identité, comportement, base de connaissance...). Ton IA est publiée dès que tu la crées."
                   continuerLabel="Continuer"
                   annulerLabel="Annuler"
-                  categoriePreselectionnee={ouverte}
+                  // "etablissement" n'atteint jamais `ouverte` ici (Link,
+                  // pas de bouton ouvrir()) mais TypeScript ne le sait
+                  // pas -- même pattern que SectionsProduit.tsx (vitrine).
+                  categoriePreselectionnee={ouverte === "etablissement" ? null : ouverte}
                 />
               </div>
             ) : (
