@@ -12,12 +12,10 @@ import {
   lireMesRattachements,
   renommerRattachementMatiere,
   activerRattachementMatiere,
-  lireMonRole,
   diffuserDocumentEtablissement,
   diffuserLien,
   listerMesDiffusions,
   type Rattachement,
-  type MonRole,
   type ResultatDiffusion,
   type CibleDiffusion,
   type ElementDiffuse,
@@ -452,7 +450,6 @@ export function SidebarChat({
   const [actionsDeplie, setActionsDeplie] = useState(false);
   const [profilADesChamps, setProfilADesChamps] = useState(false);
   const [copie, setCopie] = useState(false);
-  const [monRole, setMonRole] = useState<MonRole | null>(null);
   const [envoyerDeplie, setEnvoyerDeplie] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const boutonBasculeRef = useRef<HTMLButtonElement>(null);
@@ -534,20 +531,22 @@ export function SidebarChat({
       .catch(() => setFils([]));
   }, [connecte, agentId, aDesMessages]);
 
-  // "Envoyer à..." (2026-08-06) : ne s'affiche que si la personne
-  // connectée a un rôle enseignant OU établissement ET regarde bien le
-  // chat de SA propre IA (agent_id renvoyé par /api/roles/moi) -- pas
-  // l'IA de quelqu'un d'autre qu'elle testerait. `monRole` reste `null`
-  // si l'appel échoue ou si la personne n'a pas de rôle hiérarchique.
-  useEffect(() => {
-    if (!connecte) return;
-    lireMonRole()
-      .then(setMonRole)
-      .catch(() => setMonRole(null));
-  }, [connecte]);
-  const peutEnvoyer =
-    (monRole?.role === "enseignant" || monRole?.role === "etablissement") &&
-    monRole.agent_id === agentId;
+  // "Envoyer à..." (2026-08-06, modifié 07/08 -- demande Bourama) :
+  // affichée sans condition de rôle dès qu'on regarde le chat de stirux
+  // (enseignant) ou lirinus (établissement), plutôt que de dépendre de
+  // monRole?.role -- ce champ n'est de toute façon plus jamais renseigné
+  // pour un nouveau compte depuis que l'inscription par rôle est
+  // désactivée (05/08, voir SECTIONS_DESACTIVEES.md côté djiguigne-ai).
+  // ATTENTION : le backend (POST /api/roles/documents/diffuser et
+  // /liens/diffuser) exige encore profil.role in (etablissement,
+  // enseignant) -- un compte sans ce rôle verra le bouton mais aura une
+  // erreur 403 à l'envoi tant que ce n'est pas aussi ajusté côté API.
+  const ROLE_ENVOI_PAR_AGENT: Record<string, "enseignant" | "etablissement"> = {
+    stirux: "enseignant",
+    lirinus: "etablissement",
+  };
+  const roleEnvoi = ROLE_ENVOI_PAR_AGENT[agentId];
+  const peutEnvoyer = connecte && !!roleEnvoi;
 
   function rafraichirRattachements() {
     setRattachementsChargement(true);
@@ -1218,7 +1217,7 @@ export function SidebarChat({
                 }`}
               >
                 <Send size={16} />
-                {monRole?.role === "etablissement"
+                {roleEnvoi === "etablissement"
                   ? "Ajouter à la bibliothèque de mes enseignants/étudiants"
                   : "Ajouter à la bibliothèque de mes étudiants"}
               </button>
@@ -1228,7 +1227,7 @@ export function SidebarChat({
                 }`}
               >
                 <div className="overflow-hidden">
-                  <SectionEnvoyer role={monRole!.role as "enseignant" | "etablissement"} />
+                  <SectionEnvoyer role={roleEnvoi} />
                 </div>
               </div>
             </div>
