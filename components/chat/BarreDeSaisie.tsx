@@ -197,7 +197,7 @@ export function BarreDeSaisie({
   modelesDisponibles = [],
   modeleSelectionne = null,
   onModeleChange,
-  contenuDynamiqueParMatiere = false,
+  boutonSansEnseignant = false,
 }: {
   onEnvoyer: (
     texte: string,
@@ -228,7 +228,7 @@ export function BarreDeSaisie({
   // plus bas), qui force le prompt généraliste pour le prochain message,
   // sans utiliser le contenu d'aucun enseignant même si des matières
   // sont débloquées. Absent pour tous les autres agents.
-  contenuDynamiqueParMatiere?: boolean;
+  boutonSansEnseignant?: boolean;
 }) {
   const [texte, setTexte] = useState("");
   const [longueur, setLongueur] = useState<LongueurReponse>("moyenne");
@@ -248,7 +248,7 @@ export function BarreDeSaisie({
   // généraliste pour LE PROCHAIN message uniquement (voir
   // core/contenu_dynamique_matiere.py côté backend), puis se désactive
   // -- pas un mode permanent. Uniquement affiché si
-  // contenuDynamiqueParMatiere (Nitrux et futurs agents du même genre).
+  // boutonSansEnseignant (Nitrux et futurs agents du même genre).
   const [sansEnseignant, setSansEnseignant] = useState(false);
   // Bouton "Outils" (2026-07-25, étendu à la MULTI-sélection le 26/07 --
   // voir core/mcp_tools.py:lister_tous_les_outils). AUCUN outil n'est
@@ -1649,7 +1649,7 @@ export function BarreDeSaisie({
                 message, sans utiliser le contenu d'aucun enseignant même
                 si l'étudiant a des matières débloquées. Même pattern
                 d'icône que rechercheForcee juste au-dessus. */}
-            {contenuDynamiqueParMatiere && (
+            {boutonSansEnseignant && (
               <button
                 onClick={() => setSansEnseignant((v) => !v)}
                 aria-label="Répondre sans utiliser le contenu d'un enseignant"

@@ -32,7 +32,7 @@ export function ChatIA({
   onMessagesChange,
   modelesDisponibles = [],
   modeleChoisi = null,
-  contenuDynamiqueParMatiere = false,
+  boutonSansEnseignant = false,
 }: {
   agentId: string;
   nomAgent: string;
@@ -57,7 +57,7 @@ export function ChatIA({
   // core/contenu_dynamique_matiere.py. Passé jusqu'à BarreDeSaisie pour
   // afficher le bouton "Sans enseignant" (forcer le prompt généraliste
   // pour un message précis, sans passer par le routeur de matière).
-  contenuDynamiqueParMatiere?: boolean;
+  boutonSansEnseignant?: boolean;
 }) {
   const [modeleSelectionne, setModeleSelectionne] = useState<string | null>(modeleChoisi);
   const [messages, setMessages] = useState<MessageAffiche[]>(messagesInitiaux);
@@ -639,7 +639,7 @@ export function ChatIA({
           modelesDisponibles={modelesDisponibles}
           modeleSelectionne={modeleSelectionne}
           onModeleChange={setModeleSelectionne}
-          contenuDynamiqueParMatiere={contenuDynamiqueParMatiere}
+          boutonSansEnseignant={boutonSansEnseignant}
         />
       </div>
 

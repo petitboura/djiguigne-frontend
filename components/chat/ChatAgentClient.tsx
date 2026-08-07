@@ -34,6 +34,9 @@ export function ChatAgentClient({
     modele_choisi?: string | null;
     // Agent "Nitrux" / contenu dynamique par matière (06/08/2026).
     contenu_dynamique_par_matiere?: boolean;
+    // Bouton "Sans enseignant" (06/08/2026) : piloté indépendamment de
+    // contenu_dynamique_par_matiere, voir api/agents.py. Défaut true.
+    bouton_sans_enseignant?: boolean;
   };
   retourExterne?: string;
   // Retour vers l'IA d'origine après "Tester" depuis "L'IA de mes
@@ -151,7 +154,7 @@ export function ChatAgentClient({
           onMessagesChange={setNbMessages}
           modelesDisponibles={agent.modeles_disponibles}
           modeleChoisi={agent.modele_choisi}
-          contenuDynamiqueParMatiere={agent.contenu_dynamique_par_matiere}
+          boutonSansEnseignant={agent.bouton_sans_enseignant ?? true}
         />
       </div>
     </div>
