@@ -15,10 +15,12 @@ import {
   lireMonRole,
   diffuserDocumentEtablissement,
   diffuserLien,
+  listerMesDiffusions,
   type Rattachement,
   type MonRole,
   type ResultatDiffusion,
   type CibleDiffusion,
+  type ElementDiffuse,
 } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -213,19 +215,32 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [resultat, setResultat] = useState<ResultatDiffusion | null>(null);
+  const [dejaAjoutes, setDejaAjoutes] = useState<ElementDiffuse[] | null>(null);
+  const [historiqueDeplie, setHistoriqueDeplie] = useState(false);
+
+  function rafraichirHistorique() {
+    listerMesDiffusions()
+      .then(setDejaAjoutes)
+      .catch(() => setDejaAjoutes([]));
+  }
+
+  useEffect(() => {
+    rafraichirHistorique();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const texteAide =
     role === "etablissement"
-      ? "Ajouté à la bibliothèque des destinataires choisis ci-dessous."
-      : "Ajouté d'un coup à la bibliothèque de tous tes étudiants.";
+      ? "Ajouté à la bibliothèque des destinataires choisis ci-dessous — pas un message, personne n'est notifié."
+      : "Ajouté à la bibliothèque de tous tes étudiants — pas un message, personne n'est notifié.";
   const texteBouton =
     role !== "etablissement"
-      ? "Envoyer à tous mes étudiants"
+      ? "Ajouter à la bibliothèque de mes étudiants"
       : cible === "enseignant"
-        ? "Envoyer à mes enseignants"
+        ? "Ajouter à la bibliothèque de mes enseignants"
         : cible === "etudiant"
-          ? "Envoyer aux étudiants de mes enseignants"
-          : "Envoyer à tous";
+          ? "Ajouter à la bibliothèque des étudiants de mes enseignants"
+          : "Ajouter à la bibliothèque de tous";
 
   const pretAEnvoyer =
     !enCours &&
@@ -247,6 +262,7 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
       setUrl("");
       setTitre("");
       setDescription("");
+      rafraichirHistorique();
     } catch (e) {
       setErreur(messageErreur(e));
     } finally {
@@ -333,7 +349,7 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
       {erreur && <p className="animate-dj-fade-in-rapide text-xs text-red-500">{erreur}</p>}
       {resultat && (
         <p className="animate-dj-fade-in-rapide text-xs text-dj-accent-1">
-          Envoyé à {resultat.diffuse_a}/{resultat.total_cibles} étudiant(s).
+          Ajouté à la bibliothèque de {resultat.diffuse_a}/{resultat.total_cibles} destinataire(s).
           {resultat.echecs.length > 0 && <> Échec pour : {resultat.echecs.join(", ")}.</>}
         </p>
       )}
@@ -346,6 +362,36 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
         <Send size={14} />
         {enCours ? "Envoi…" : texteBouton}
       </button>
+
+      {dejaAjoutes && dejaAjoutes.length > 0 && (
+        <div className="mt-1 border-t border-dj-bordure pt-2">
+          <button
+            onClick={() => setHistoriqueDeplie((v) => !v)}
+            className="text-xs text-dj-texte-muet underline decoration-dotted"
+          >
+            Déjà ajouté ({dejaAjoutes.length}) {historiqueDeplie ? "▲" : "▼"}
+          </button>
+          <div
+            className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+              historiqueDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <ul className="mt-2 flex max-h-40 flex-col gap-1.5 overflow-y-auto pr-1">
+                {dejaAjoutes.map((item) => (
+                  <li key={item.id} className="rounded-lg bg-dj-surface-haute px-2 py-1.5 text-xs">
+                    <p className="truncate text-dj-texte">{item.nom_fichier}</p>
+                    <p className="text-[11px] text-dj-texte-muet">
+                      {item.role_cible === "enseignant" ? "→ enseignants" : "→ étudiants"} ·{" "}
+                      {new Date(item.created_at).toLocaleDateString("fr-FR")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1134,7 +1180,9 @@ export function SidebarChat({
                 }`}
               >
                 <Send size={16} />
-                {monRole?.role === "etablissement" ? "Envoyer à mes enseignants et étudiants" : "Envoyer à mes étudiants"}
+                {monRole?.role === "etablissement"
+                  ? "Ajouter à la bibliothèque de mes enseignants/étudiants"
+                  : "Ajouter à la bibliothèque de mes étudiants"}
               </button>
               <div
                 className={`grid transition-[grid-template-rows] duration-300 ease-out ${

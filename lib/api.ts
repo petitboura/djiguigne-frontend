@@ -263,6 +263,22 @@ export async function lireMonRole() {
  * leurs étudiants ; enseignant -> ses étudiants) plutôt qu'un seul
  * agent. Retourne {diffuse_a, total_cibles, echecs}.
  */
+export type ElementDiffuse = {
+  id: string;
+  nom_fichier: string;
+  description: string | null;
+  type_mime: string;
+  role_cible: "enseignant" | "etudiant";
+  created_at: string;
+};
+
+/** Voir api/roles.py:lister_mes_diffusions. Ce que la personne connectée
+ * a déjà ajouté via diffuserDocumentEtablissement/diffuserLien -- pour
+ * éviter d'envoyer deux fois le même document sans le savoir. */
+export async function listerMesDiffusions() {
+  return appelerApi("/api/roles/diffusions") as Promise<ElementDiffuse[]>;
+}
+
 export type CibleDiffusion = "tous" | "enseignant" | "etudiant";
 
 export async function diffuserDocumentEtablissement(
