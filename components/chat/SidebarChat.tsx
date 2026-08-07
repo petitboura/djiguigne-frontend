@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check, Send, Link2, FileUp } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check, Send, Link2, FileUp, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
@@ -25,6 +25,7 @@ import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
 import { MonProfilAgent } from "@/components/MonProfilAgent";
+import { MesComportements } from "@/components/MesComportements";
 
 // Reproduit la sidebar de faces/vues/chat.py (Streamlit) dans le chat
 // Next.js -- demande de Bourama (2026-07-16) : "comme si j'avais pas
@@ -327,6 +328,7 @@ export function SidebarChat({
   onNouvelleConversation,
   onSelectionnerConversation,
   contenuDynamiqueParMatiere,
+  sectionMesComportements,
 }: {
   agentId: string;
   retourExterne?: string;
@@ -349,6 +351,11 @@ export function SidebarChat({
   // la matière est débloquée" -- l'ancien lien vers une page /matieres à
   // deux blocs a été retiré).
   contenuDynamiqueParMatiere?: boolean;
+  // Section "Mes comportements" (06/08/2026, demande Bourama) : pilotée
+  // par agents.section_mes_comportements, indépendamment de
+  // contenuDynamiqueParMatiere ci-dessus (Nitrux uniquement pour
+  // l'instant). Voir components/MesComportements.tsx.
+  sectionMesComportements?: boolean;
 }) {
   const [ouverte, setOuverte] = useState(false);
   const [connecte, setConnecte] = useState<boolean | undefined>(undefined);
@@ -356,6 +363,7 @@ export function SidebarChat({
   const [historiqueDeplie, setHistoriqueDeplie] = useState(false);
   const [avisDeplie, setAvisDeplie] = useState(false);
   const [profilDeplie, setProfilDeplie] = useState(false);
+  const [comportementsDeplie, setComportementsDeplie] = useState(false);
   const [codeDeplie, setCodeDeplie] = useState(false);
   const [code, setCode] = useState("");
   const [codeEnCours, setCodeEnCours] = useState(false);
@@ -536,14 +544,16 @@ export function SidebarChat({
   // Avis sur cet agent vit depuis le 06/08 dans le bouton "Actions"
   // (basculerActions ci-dessous), avec son propre bascule indépendant
   // (setAvisDeplie), plus dans cette exclusivité.
-  function basculerVoletRail(section: "historique" | "profil" | "code") {
+  function basculerVoletRail(section: "historique" | "profil" | "code" | "comportements") {
     const dejaActif =
       (section === "historique" && historiqueDeplie) ||
       (section === "profil" && profilDeplie) ||
-      (section === "code" && codeDeplie);
+      (section === "code" && codeDeplie) ||
+      (section === "comportements" && comportementsDeplie);
     setHistoriqueDeplie(section === "historique" ? !dejaActif : false);
     setProfilDeplie(section === "profil" ? !dejaActif : false);
     setCodeDeplie(section === "code" ? !dejaActif : false);
+    setComportementsDeplie(section === "comportements" ? !dejaActif : false);
     setOuverte(true);
   }
 
@@ -832,6 +842,34 @@ export function SidebarChat({
               >
                 <div className="overflow-hidden">
                   <MonProfilAgent agentId={agentId} onEtat={setProfilADesChamps} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {connecte && sectionMesComportements && (
+          <div className="mt-2 rounded-xl border border-dj-bordure">
+            <button
+              onClick={() => basculerVoletRail("comportements")}
+              title="Mes comportements"
+              className={`flex w-full items-center gap-2 rounded-xl transition-colors ${
+                comportementsDeplie ? "text-dj-accent-1" : "text-dj-texte-muet hover:bg-dj-surface-haute hover:text-dj-texte"
+              }`}
+            >
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                <Sparkles size={18} />
+              </span>
+              <LibelleRail ouverte={ouverte}>Mes comportements</LibelleRail>
+            </button>
+            {ouverte && (
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  comportementsDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <MesComportements agentId={agentId} />
                 </div>
               </div>
             )}
@@ -1132,6 +1170,27 @@ export function SidebarChat({
               >
                 <div className="overflow-hidden">
                   <MonProfilAgent agentId={agentId} onEtat={setProfilADesChamps} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {connecte && sectionMesComportements && (
+            <div className="rounded-xl border border-dj-bordure">
+              <button
+                onClick={() => setComportementsDeplie((v) => !v)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-dj-texte"
+              >
+                <Sparkles size={16} />
+                Mes comportements
+              </button>
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  comportementsDeplie ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <MesComportements agentId={agentId} />
                 </div>
               </div>
             </div>

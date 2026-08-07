@@ -648,3 +648,19 @@ export async function renommerRattachementMatiere(agentId: string, contenuId: st
   });
 }
 
+// Section "Mes comportements" (06/08/2026, demande Bourama) : texte
+// libre écrit par l'étudiant, ajouté EN PLUS du system_prompt déjà
+// résolu (voir core/main.py::_construire_system_prompt côté backend).
+export async function lireMonComportement(agentId: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/mon-comportement`);
+  return (resultat as { texte: string }).texte;
+}
+
+export async function enregistrerMonComportement(agentId: string, texte: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/mon-comportement`, {
+    method: "PUT",
+    body: JSON.stringify({ texte }),
+  });
+  return (resultat as { texte: string }).texte;
+}
+

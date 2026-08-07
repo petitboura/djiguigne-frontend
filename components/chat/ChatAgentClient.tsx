@@ -37,6 +37,9 @@ export function ChatAgentClient({
     // Bouton "Sans enseignant" (06/08/2026) : piloté indépendamment de
     // contenu_dynamique_par_matiere, voir api/agents.py. Défaut true.
     bouton_sans_enseignant?: boolean;
+    // Section "Mes comportements" (06/08/2026) : même logique, défaut
+    // false, Nitrux uniquement pour l'instant.
+    section_mes_comportements?: boolean;
   };
   retourExterne?: string;
   // Retour vers l'IA d'origine après "Tester" depuis "L'IA de mes
@@ -140,6 +143,7 @@ export function ChatAgentClient({
         onNouvelleConversation={nouvelleConversation}
         onSelectionnerConversation={selectionnerConversation}
         contenuDynamiqueParMatiere={agent.contenu_dynamique_par_matiere}
+        sectionMesComportements={agent.section_mes_comportements}
       />
       <div className="flex-1 overflow-hidden">
         <ChatIA
