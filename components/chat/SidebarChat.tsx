@@ -18,6 +18,7 @@ import {
   type Rattachement,
   type MonRole,
   type ResultatDiffusion,
+  type CibleDiffusion,
 } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
@@ -203,12 +204,8 @@ function ListeMatieresDebloquees({
 // _contacts_autorises limite déjà les cibles au bon périmètre côté
 // backend selon le rôle réel de qui appelle.
 function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
-  const texteAide =
-    role === "etablissement"
-      ? "Ajouté d'un coup à la bibliothèque de tous tes enseignants et de leurs étudiants."
-      : "Ajouté d'un coup à la bibliothèque de tous tes étudiants.";
-  const texteBouton = role === "etablissement" ? "Envoyer à tous" : "Envoyer à tous mes étudiants";
   const [mode, setMode] = useState<"fichier" | "lien">("fichier");
+  const [cible, setCible] = useState<CibleDiffusion>("tous");
   const [fichier, setFichier] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [titre, setTitre] = useState("");
@@ -216,6 +213,19 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [resultat, setResultat] = useState<ResultatDiffusion | null>(null);
+
+  const texteAide =
+    role === "etablissement"
+      ? "Ajouté à la bibliothèque des destinataires choisis ci-dessous."
+      : "Ajouté d'un coup à la bibliothèque de tous tes étudiants.";
+  const texteBouton =
+    role !== "etablissement"
+      ? "Envoyer à tous mes étudiants"
+      : cible === "enseignant"
+        ? "Envoyer à mes enseignants"
+        : cible === "etudiant"
+          ? "Envoyer aux étudiants de mes enseignants"
+          : "Envoyer à tous";
 
   const pretAEnvoyer =
     !enCours &&
@@ -230,8 +240,8 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
     try {
       const r =
         mode === "fichier"
-          ? await diffuserDocumentEtablissement(fichier as File, description.trim(), titre.trim())
-          : await diffuserLien(url.trim(), description.trim(), titre.trim());
+          ? await diffuserDocumentEtablissement(fichier as File, description.trim(), titre.trim(), cible)
+          : await diffuserLien(url.trim(), description.trim(), titre.trim(), cible);
       setResultat(r);
       setFichier(null);
       setUrl("");
@@ -247,6 +257,28 @@ function SectionEnvoyer({ role }: { role: "enseignant" | "etablissement" }) {
   return (
     <div className="flex flex-col gap-2 px-3 pb-3">
       <p className="text-xs text-dj-texte-muet">{texteAide}</p>
+
+      {role === "etablissement" && (
+        <div className="flex gap-1.5 rounded-lg border border-dj-bordure p-0.5">
+          {(
+            [
+              ["tous", "Tous"],
+              ["enseignant", "Enseignants"],
+              ["etudiant", "Étudiants"],
+            ] as [CibleDiffusion, string][]
+          ).map(([valeur, libelle]) => (
+            <button
+              key={valeur}
+              onClick={() => setCible(valeur)}
+              className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
+                cible === valeur ? "bg-dj-surface-haute text-dj-texte" : "text-dj-texte-muet"
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-1.5 rounded-lg border border-dj-bordure p-0.5">
         <button
