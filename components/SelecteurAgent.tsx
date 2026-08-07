@@ -25,7 +25,7 @@ import { IconeGenerique } from "@/components/icones/IconeGenerique";
 // catégories, adapté au design du frontend.
 //
 // Rattrapé à nouveau le 07/08 : 7ème bouton "Pour les établissements"
-// (ajouté côté vitrine le 06/08) -- lien direct vers djiguigne.com,
+// (ajouté côté vitrine le 06/08) -- lien direct vers djiguigne-ai.vercel.app,
 // contrairement aux 6 autres qui filtrent /api/feed (ce parcours
 // établissement/enseignant/étudiant n'existe que côté vitrine).
 //
@@ -53,7 +53,7 @@ type CleSection = "etablissement" | "matieres" | "metier" | "filiere" | "domaine
 // "ouvrir une section d'agents" habituel -- même logique que
 // SectionsProduit.tsx (vitrine).
 const CONFIG_SECTIONS: Record<CleSection, { param?: string; libelle: string; icon: React.ReactNode; href?: string }> = {
-  etablissement: { libelle: "Pour les établissements", icon: <Building2 size={18} />, href: "https://djiguigne.com/fr/etablissements" },
+  etablissement: { libelle: "Pour les établissements", icon: <Building2 size={18} />, href: "https://djiguigne-ai.vercel.app/fr/etablissements" },
   matieres: { param: "avec_matiere", libelle: "Matières", icon: <BookOpen size={18} /> },
   metier: { param: "avec_metier", libelle: "Métier", icon: <Briefcase size={18} /> },
   filiere: { param: "avec_filiere", libelle: "Filière", icon: <Milestone size={18} /> },
