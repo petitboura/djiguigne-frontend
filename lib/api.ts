@@ -703,3 +703,21 @@ export async function supprimerComportement(agentId: string, comportementId: str
   return appelerApi(`/api/agents/${agentId}/mes-comportements/${comportementId}`, { method: "DELETE" });
 }
 
+// Utilisée par /dashboard/espace pour savoir si l'onglet "Mes
+// comportements" doit s'afficher pour l'IA de l'utilisateur connecté
+// (récupérée dynamiquement via lireMonRole, jamais un id d'agent codé en
+// dur -- si demain une autre IA active `section_mes_comportements`, ça
+// marche pareil). Endpoint public (GET /api/agents/{id}), pas besoin
+// d'appelerApi/auth. Renvoie false silencieusement si l'agent n'existe
+// pas ou en cas d'erreur réseau, pour ne jamais faire planter Mon espace.
+export async function sectionComportementsActivee(agentId: string): Promise<boolean> {
+  try {
+    const reponse = await fetch(`${API_URL}/api/agents/${agentId}`);
+    if (!reponse.ok) return false;
+    const data = await reponse.json();
+    return !!data.section_mes_comportements;
+  } catch {
+    return false;
+  }
+}
+

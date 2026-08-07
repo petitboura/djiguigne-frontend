@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck } from "lucide-react";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
@@ -10,6 +10,8 @@ import {
   ajouterFichiersBibliothequePersonnelle,
   ajouterLienBibliothequePersonnelle,
   ajouterTexteBibliothequePersonnelle,
+  lireMonRole,
+  sectionComportementsActivee,
 } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { TopBar } from "@/components/TopBar";
@@ -18,6 +20,7 @@ import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { ApplisConnectees } from "@/components/ApplisConnectees";
 import { MaMemoire } from "@/components/MaMemoire";
+import { MesComportements } from "@/components/MesComportements";
 import { AgentCard, type AgentResume } from "@/components/AgentCard";
 import { BoutonPartager } from "@/components/BoutonPartager";
 
@@ -54,7 +57,7 @@ type FichierBiblio = {
   created_at: string;
 };
 
-type Onglet = "mesIA" | "administrer" | "historique" | "bibliotheque" | "memoire" | "applis";
+type Onglet = "mesIA" | "administrer" | "comportements" | "historique" | "bibliotheque" | "memoire" | "applis";
 type SousOngletBiblio = "tous" | "documents" | "images" | "audio" | "videos" | "liens" | "texte";
 
 // Onglets fixes, toujours affichés.
@@ -107,6 +110,13 @@ export default function PageMonEspace() {
   const [estCreateur, setEstCreateur] = useState(false);
   const [agentsAdministres, setAgentsAdministres] = useState<AgentResume[] | null>(null);
 
+  // Onglet "Mes comportements" (07/08/2026, demande Bourama) : dynamique,
+  // basé sur l'IA réellement liée au rôle de la personne connectée (voir
+  // GET /api/roles/moi -> AGENT_PAR_ROLE côté backend), jamais un id
+  // d'agent codé en dur ici. `undefined` = pas encore vérifié,
+  // `null` = pas d'IA concernée ou section non activée pour elle.
+  const [agentComportements, setAgentComportements] = useState<string | null | undefined>(undefined);
+
   const [fichiers, setFichiers] = useState<FichierBiblio[] | null>(null);
   const [nouveauxFichiers, setNouveauxFichiers] = useState<File[]>([]);
   const [texteOuLien, setTexteOuLien] = useState("");
@@ -127,8 +137,23 @@ export default function PageMonEspace() {
     if (!session) return;
     chargerFichiers();
     chargerAgents();
+    chargerAgentComportements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  async function chargerAgentComportements() {
+    try {
+      const role = await lireMonRole();
+      if (!role.agent_id) {
+        setAgentComportements(null);
+        return;
+      }
+      const active = await sectionComportementsActivee(role.agent_id);
+      setAgentComportements(active ? role.agent_id : null);
+    } catch {
+      setAgentComportements(null);
+    }
+  }
 
   const ongletsAffiches = useMemo(() => {
     const dynamiques: { id: Onglet; label: string; Icone: typeof History }[] = [];
@@ -138,20 +163,23 @@ export default function PageMonEspace() {
     if (estCreateur) {
       dynamiques.push({ id: "mesIA", label: "Mes IA", Icone: Bot });
     }
+    if (agentComportements) {
+      dynamiques.push({ id: "comportements", label: "Mes comportements", Icone: Sparkles });
+    }
     return [...dynamiques, ...ONGLETS_FIXES];
-  }, [estCreateur, agentsAdministres]);
+  }, [estCreateur, agentsAdministres, agentComportements]);
 
   useEffect(() => {
     // Choisit/rebascule sur le bon onglet par défaut dès qu'on sait ce
     // qu'il y a à afficher -- que ce soit au premier chargement (onglet
-    // encore null) ou dès que le statut créateur/administrateur arrive
-    // après coup (évite de rester coincé sur "Historique" si le compte
-    // est en fait créateur ou administrateur).
-    if (agentsAdministres === null) return; // chargement pas fini
+    // encore null) ou dès que le statut créateur/administrateur/IA à
+    // comportements arrive après coup (évite de rester coincé sur
+    // "Historique" si le compte a en fait accès à l'un de ces onglets).
+    if (agentsAdministres === null || agentComportements === undefined) return; // chargement pas fini
     if (onglet !== null && onglet !== "historique") return;
     setOnglet(ongletsAffiches[0]?.id ?? "historique");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentsAdministres, estCreateur]);
+  }, [agentsAdministres, estCreateur, agentComportements]);
 
   function chargerAgents() {
     // GET /api/profiles/{user_id} : même endpoint que l'ancien /dashboard
@@ -303,6 +331,18 @@ export default function PageMonEspace() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {onglet === "comportements" && agentComportements && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-dj-texte-muet">
+              Tes consignes perso pour ton IA. Clique sur l&apos;une d&apos;elles pour l&apos;ouvrir en grand et la
+              modifier tranquillement.
+            </p>
+            <div className="max-w-md">
+              <MesComportements agentId={agentComportements} />
+            </div>
           </div>
         )}
 
