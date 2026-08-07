@@ -143,6 +143,7 @@ export function ChatAgentClient({
           onMessagesChange={setNbMessages}
           modelesDisponibles={agent.modeles_disponibles}
           modeleChoisi={agent.modele_choisi}
+          contenuDynamiqueParMatiere={agent.contenu_dynamique_par_matiere}
         />
       </div>
     </div>

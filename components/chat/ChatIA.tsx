@@ -32,6 +32,7 @@ export function ChatIA({
   onMessagesChange,
   modelesDisponibles = [],
   modeleChoisi = null,
+  contenuDynamiqueParMatiere = false,
 }: {
   agentId: string;
   nomAgent: string;
@@ -52,6 +53,11 @@ export function ChatIA({
   // l'utilisateur peut la changer pour la session via le selecteur.
   modelesDisponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
   modeleChoisi?: string | null;
+  // Agent "Nitrux" / contenu dynamique par matière (06/08/2026) -- voir
+  // core/contenu_dynamique_matiere.py. Passé jusqu'à BarreDeSaisie pour
+  // afficher le bouton "Sans enseignant" (forcer le prompt généraliste
+  // pour un message précis, sans passer par le routeur de matière).
+  contenuDynamiqueParMatiere?: boolean;
 }) {
   const [modeleSelectionne, setModeleSelectionne] = useState<string | null>(modeleChoisi);
   const [messages, setMessages] = useState<MessageAffiche[]>(messagesInitiaux);
@@ -256,7 +262,8 @@ export function ChatIA({
     texteColle: string | null = null,
     rechercheForcee: boolean = false,
     outilsForces: string[] = [],
-    ignorerRouteurOutils: boolean = false
+    ignorerRouteurOutils: boolean = false,
+    sansEnseignant: boolean = false
   ) {
     // Demande de Bourama (2026-07-22) : proposer l'activation des
     // notifications push dès la première vraie action (envoyer un
@@ -392,6 +399,13 @@ export function ChatIA({
           // Bouton "Aucun" (31/07, demande Bourama) -- voir
           // ignorerSuggestionOutils ci-dessous.
           ignorer_suggestion_outils: ignorerRouteurOutils,
+          // Bouton "Sans enseignant" (06/08/2026, demande Bourama) --
+          // uniquement pour les agents à contenu dynamique par matière
+          // (Nitrux) : force le prompt généraliste pour CE message
+          // précis, sans passer par le routeur de matière ni utiliser le
+          // contenu d'aucun enseignant, même si l'étudiant a des
+          // matières débloquées. Voir core/contenu_dynamique_matiere.py.
+          sans_enseignant: sansEnseignant,
           // Selecteur de modele premium (02/08/2026) -- null tant que
           // l'agent n'a rien debloque ou que l'utilisateur n'a pas
           // change le defaut, voir modeleSelectionne plus haut. Revalide
@@ -625,6 +639,7 @@ export function ChatIA({
           modelesDisponibles={modelesDisponibles}
           modeleSelectionne={modeleSelectionne}
           onModeleChange={setModeleSelectionne}
+          contenuDynamiqueParMatiere={contenuDynamiqueParMatiere}
         />
       </div>
 

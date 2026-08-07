@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus, SlidersHorizontal } from "lucide-react";
+import { Pin, Mic, Square, AudioLines, ArrowUp, X, MapPin, Github, FileText, Maximize2, Minimize2, Search, Code, PenLine, Wrench, FileSearch, Globe, Map, FileType, FileSpreadsheet, Presentation, FolderSearch, Package, Archive, Download, Image as IconImage, Rocket, Bell, FolderTree, FileCode, Edit3, Sigma, Check, LayoutGrid, ChevronDown, Plus, SlidersHorizontal, UserX } from "lucide-react";
 import { transcrireAudioChat, statutConnexion, demarrerConnexion, depotsGithub, pagesNotion, lignesBaseNotion, creerPageNotion, extraireFormuleImage, lireOutilsChatAgent } from "@/lib/api";
 import { OngletOutil, OUTILS_DISPONIBLES, ONGLETS_OUTILS, APPLIS_DISPONIBLES } from "@/lib/outils";
 import { IconeNotion } from "@/components/icons/IconeNotion";
@@ -197,6 +197,7 @@ export function BarreDeSaisie({
   modelesDisponibles = [],
   modeleSelectionne = null,
   onModeleChange,
+  contenuDynamiqueParMatiere = false,
 }: {
   onEnvoyer: (
     texte: string,
@@ -205,7 +206,9 @@ export function BarreDeSaisie({
     localisation: LocalisationJointe,
     texteColle: string | null,
     rechercheForcee: boolean,
-    outilsForces: string[]
+    outilsForces: string[],
+    ignorerRouteurOutils: boolean,
+    sansEnseignant: boolean
   ) => void;
   desactive?: boolean;
   agentId?: string;
@@ -220,6 +223,12 @@ export function BarreDeSaisie({
   modelesDisponibles?: { modele_id: string; label: string; distributeur: string; palier: string }[];
   modeleSelectionne?: string | null;
   onModeleChange?: (modeleId: string | null) => void;
+  // Agent "Nitrux" / contenu dynamique par matière (06/08/2026, demande
+  // Bourama) -- affiche le bouton "Sans enseignant" (voir sansEnseignant
+  // plus bas), qui force le prompt généraliste pour le prochain message,
+  // sans utiliser le contenu d'aucun enseignant même si des matières
+  // sont débloquées. Absent pour tous les autres agents.
+  contenuDynamiqueParMatiere?: boolean;
 }) {
   const [texte, setTexte] = useState("");
   const [longueur, setLongueur] = useState<LongueurReponse>("moyenne");
@@ -234,6 +243,13 @@ export function BarreDeSaisie({
   // core/registre_outils.py). Un clic garantit la recherche pour LE
   // PROCHAIN message envoyé, puis se désactive (pas un mode permanent).
   const [rechercheForcee, setRechercheForcee] = useState(false);
+  // Bouton "Sans enseignant" (06/08/2026, demande Bourama) -- même
+  // pattern que rechercheForcee ci-dessus : un clic force le prompt
+  // généraliste pour LE PROCHAIN message uniquement (voir
+  // core/contenu_dynamique_matiere.py côté backend), puis se désactive
+  // -- pas un mode permanent. Uniquement affiché si
+  // contenuDynamiqueParMatiere (Nitrux et futurs agents du même genre).
+  const [sansEnseignant, setSansEnseignant] = useState(false);
   // Bouton "Outils" (2026-07-25, étendu à la MULTI-sélection le 26/07 --
   // voir core/mcp_tools.py:lister_tous_les_outils). AUCUN outil n'est
   // envoyé au modèle par défaut, sur aucun agent : il faut en
@@ -1198,7 +1214,7 @@ export function BarreDeSaisie({
 
   function envoyer() {
     if ((!texte.trim() && !texteColle) || desactive) return;
-    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee, outilsForces);
+    onEnvoyer(texte, longueur, fichier, localisation, texteColle, rechercheForcee, outilsForces, false, sansEnseignant);
     setTexte("");
     choisirFichier(null);
     setLocalisation(null);
@@ -1206,6 +1222,7 @@ export function BarreDeSaisie({
     setLangageDetecte(null);
     setRechercheForcee(false);
     setOutilsForces([]);
+    setSansEnseignant(false);
     requestAnimationFrame(ajusterHauteurTexte);
   }
 
@@ -1625,6 +1642,28 @@ export function BarreDeSaisie({
               </div>
             )}
 
+
+            {/* Bouton "Sans enseignant" (06/08/2026, demande Bourama) --
+                uniquement pour les agents à contenu dynamique par matière
+                (Nitrux) : force le prompt généraliste pour le prochain
+                message, sans utiliser le contenu d'aucun enseignant même
+                si l'étudiant a des matières débloquées. Même pattern
+                d'icône que rechercheForcee juste au-dessus. */}
+            {contenuDynamiqueParMatiere && (
+              <button
+                onClick={() => setSansEnseignant((v) => !v)}
+                aria-label="Répondre sans utiliser le contenu d'un enseignant"
+                title="Répondre sans utiliser le contenu d'un enseignant"
+                className={
+                  "relative rounded-full p-1 transition-colors " +
+                  (sansEnseignant
+                    ? "bg-dj-accent-1/10 text-dj-accent-1"
+                    : "text-dj-texte-muet hover:text-dj-texte")
+                }
+              >
+                <UserX size={18} />
+              </button>
+            )}
 
             {/* Bouton Outils (2026-07-25, multi-sélection depuis le 26/07) --
                 icône FIXE (ne varie jamais) : ouvre la liste complète des
