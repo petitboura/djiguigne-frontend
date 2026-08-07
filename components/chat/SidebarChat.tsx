@@ -187,6 +187,7 @@ function ListeMatieresDebloquees({
 export function SidebarChat({
   agentId,
   retourExterne,
+  retourIA,
   aDesMessages,
   conversationActiveId,
   onNouvelleConversation,
@@ -195,6 +196,13 @@ export function SidebarChat({
 }: {
   agentId: string;
   retourExterne?: string;
+  // Retour vers l'IA qu'on utilisait avant de cliquer "Tester" depuis
+  // "L'IA de mes élèves" (2026-08-06, demande Bourama : ce cas précis --
+  // on est déjà dans l'app, pas venu de la vitrine -- doit être traité
+  // différemment de retourExterne, qui lui déclenche aussi le mécanisme
+  // "devient mon IA par défaut" côté ChatAgentClient). Chemin interne
+  // relatif uniquement (/agent/{id}/chat), jamais une URL externe.
+  retourIA?: string;
   aDesMessages: boolean;
   conversationActiveId: string | null;
   onNouvelleConversation: () => void;
@@ -414,6 +422,15 @@ export function SidebarChat({
     setActionsDeplie((v) => !v);
     setOuverte(true);
   }
+
+  // Calcul unique du lien "Voir l'IA" / "Retour au site" / "Retour à mon
+  // IA", réutilisé desktop + mobile. Priorité : retourIA (cas "Tester")
+  // > retourExterne (venu de la vitrine) > "Voir l'IA" par défaut.
+  const lienPrincipal = retourIA
+    ? { href: retourIA, icone: <ArrowLeft size={16} />, texte: "Retour à mon IA" }
+    : retourExterne
+      ? { href: retourExterne, icone: <ArrowLeft size={16} />, texte: "Retour au site" }
+      : { href: `/agent/${agentId}`, icone: <Eye size={16} />, texte: "Voir l'IA" };
 
   return (
     <>
@@ -698,13 +715,13 @@ export function SidebarChat({
               <div className="overflow-hidden">
                 <div className="flex flex-col gap-2 px-2 pb-2">
                   <Link
-                    href={retourExterne ?? `/agent/${agentId}`}
+                    href={lienPrincipal.href}
                     className="flex w-full items-center gap-2 rounded-lg bg-dj-gradient px-2 py-2 font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
                   >
                     <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
-                      {retourExterne ? <ArrowLeft size={16} /> : <Eye size={16} />}
+                      {lienPrincipal.icone}
                     </span>
-                    <span className="text-sm">{retourExterne ? "Retour au site" : "Voir l'IA"}</span>
+                    <span className="text-sm">{lienPrincipal.texte}</span>
                   </Link>
 
                   <Link
@@ -968,11 +985,11 @@ export function SidebarChat({
               <div className="overflow-hidden">
                 <div className="flex flex-col gap-2 px-2 pb-2">
                   <Link
-                    href={retourExterne ?? `/agent/${agentId}`}
+                    href={lienPrincipal.href}
                     className="flex items-center justify-center gap-2 rounded-[10px] bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
                   >
-                    {retourExterne ? <ArrowLeft size={16} /> : <Eye size={16} />}
-                    {retourExterne ? "Retour au site" : "Voir l'IA"}
+                    {lienPrincipal.icone}
+                    {lienPrincipal.texte}
                   </Link>
 
                   <Link

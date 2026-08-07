@@ -72,15 +72,33 @@ function nettoyerUrlRetour(valeur: string | undefined): string | undefined {
   }
 }
 
+// Retour vers l'IA d'origine après "Tester" depuis "L'IA de mes élèves"
+// (06/08/2026, demande Bourama : ce cas -- déjà dans l'app, pas venu de
+// la vitrine -- doit être traité différemment de ?retour=). Volontairement
+// un chemin interne relatif uniquement (jamais une URL complète comme
+// nettoyerUrlRetour ci-dessus) : on n'a besoin de rien d'autre pour
+// revenir sur le chat d'un agent, et ça évite tout risque de redirection
+// vers un domaine externe.
+function nettoyerCheminRetourIA(valeur: string | undefined): string | undefined {
+  if (!valeur) return undefined;
+  return /^\/agent\/[a-zA-Z0-9_-]+\/chat$/.test(valeur) ? valeur : undefined;
+}
+
 export default async function PageChatAgent({
   params,
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { retour?: string };
+  searchParams: { retour?: string; retourIA?: string };
 }) {
   const agent = await chargerAgent(params.id);
   if (!agent) notFound();
 
-  return <ChatAgentClient agent={agent} retourExterne={nettoyerUrlRetour(searchParams.retour)} />;
+  return (
+    <ChatAgentClient
+      agent={agent}
+      retourExterne={nettoyerUrlRetour(searchParams.retour)}
+      retourIA={nettoyerCheminRetourIA(searchParams.retourIA)}
+    />
+  );
 }
