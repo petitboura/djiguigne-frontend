@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import Image from "next/image";
-import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, ChevronDown, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, Building2, ChevronDown, Loader2 } from "lucide-react";
 import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
@@ -20,8 +21,13 @@ import { IconeGenerique } from "@/components/icones/IconeGenerique";
 // Rattrapé le 05/08 sur SectionsProduit.tsx (vitrine), qui avait pris deux
 // mises à jour jamais reportées ici : le 6ème bouton "Exécution" (31/07)
 // et le redesign "sélectionner une catégorie replie la liste en barre
-// latérale (PC) / tiroir (mobile)" (01/08). Même comportement, mêmes 6
+// latérale (PC) / tiroir (mobile)" (01/08). Même comportement, mêmes
 // catégories, adapté au design du frontend.
+//
+// Rattrapé à nouveau le 07/08 : 7ème bouton "Pour les établissements"
+// (ajouté côté vitrine le 06/08) -- lien direct vers djiguigne.com,
+// contrairement aux 6 autres qui filtrent /api/feed (ce parcours
+// établissement/enseignant/étudiant n'existe que côté vitrine).
 //
 // Utilisé à deux endroits :
 // - app/page.tsx : uniquement si l'utilisateur n'a pas encore de
@@ -36,9 +42,18 @@ import { IconeGenerique } from "@/components/icones/IconeGenerique";
 // connecté peut quand même choisir un agent et discuter, simplement son
 // choix n'est pas mémorisé pour la prochaine visite.
 
-type CleSection = "matieres" | "metier" | "filiere" | "domaine" | "languesAfricaines" | "execution";
+type CleSection = "etablissement" | "matieres" | "metier" | "filiere" | "domaine" | "languesAfricaines" | "execution";
 
-const CONFIG_SECTIONS: Record<CleSection, { param: string; libelle: string; icon: React.ReactNode }> = {
+// "etablissement" (rattrapage 07/08, ajoutée côté vitrine le 06/08) :
+// pas de `param` -- ce n'est pas un filtre /api/feed comme les autres,
+// c'est un lien direct vers la page /etablissements de la vitrine (ce
+// parcours n'existe que là-bas, voir djiguigne-ai/app/[locale]/etablissements).
+// `href` signale au rendu (3 endroits : liste initiale, barre latérale
+// desktop, tiroir mobile) d'afficher un <Link> plutôt que le bouton
+// "ouvrir une section d'agents" habituel -- même logique que
+// SectionsProduit.tsx (vitrine).
+const CONFIG_SECTIONS: Record<CleSection, { param?: string; libelle: string; icon: React.ReactNode; href?: string }> = {
+  etablissement: { libelle: "Pour les établissements", icon: <Building2 size={18} />, href: "https://djiguigne.com/fr/etablissements" },
   matieres: { param: "avec_matiere", libelle: "Matières", icon: <BookOpen size={18} /> },
   metier: { param: "avec_metier", libelle: "Métier", icon: <Briefcase size={18} /> },
   filiere: { param: "avec_filiere", libelle: "Filière", icon: <Milestone size={18} /> },
@@ -47,7 +62,7 @@ const CONFIG_SECTIONS: Record<CleSection, { param: string; libelle: string; icon
   execution: { param: "avec_execution", libelle: "Exécution", icon: <Zap size={18} /> },
 };
 
-const SECTIONS: CleSection[] = ["matieres", "metier", "filiere", "domaine", "languesAfricaines", "execution"];
+const SECTIONS: CleSection[] = ["etablissement", "matieres", "metier", "filiere", "domaine", "languesAfricaines", "execution"];
 
 type AgentSection = {
   id: string;
@@ -132,8 +147,17 @@ export function SelecteurAgent() {
         // --- Rien de sélectionné : liste empilée classique ---
         <div className="flex w-full max-w-xs flex-col gap-3 animate-dj-fade-up">
           {SECTIONS.map((cle) => {
-            const { libelle, icon } = CONFIG_SECTIONS[cle];
-            return (
+            const { libelle, icon, href } = CONFIG_SECTIONS[cle];
+            return href ? (
+              <Link
+                key={cle}
+                href={href}
+                className="flex items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-5 py-4 text-left font-display text-base font-semibold text-dj-texte transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute"
+              >
+                <span className="text-dj-accent-1">{icon}</span>
+                {libelle}
+              </Link>
+            ) : (
               <button
                 key={cle}
                 type="button"
@@ -175,7 +199,29 @@ export function SelecteurAgent() {
             </button>
 
             {SECTIONS.map((cle) => {
-              const { libelle, icon } = CONFIG_SECTIONS[cle];
+              const { libelle, icon, href } = CONFIG_SECTIONS[cle];
+              if (href) {
+                return barreRepliee ? (
+                  <Link
+                    key={cle}
+                    href={href}
+                    aria-label={libelle}
+                    title={libelle}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg border border-transparent text-dj-texte-muet transition-colors hover:border-dj-bordure hover:bg-dj-surface"
+                  >
+                    {icon}
+                  </Link>
+                ) : (
+                  <Link
+                    key={cle}
+                    href={href}
+                    className="flex items-center gap-2.5 rounded-lg border border-transparent px-3.5 py-2.5 text-left text-sm font-semibold text-dj-texte-muet transition-colors hover:border-dj-bordure hover:bg-dj-surface"
+                  >
+                    <span className="text-dj-accent-1">{icon}</span>
+                    {libelle}
+                  </Link>
+                );
+              }
               return barreRepliee ? (
                 <button
                   key={cle}
@@ -239,8 +285,18 @@ export function SelecteurAgent() {
                     <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-dj-bordure" />
                     <div className="flex flex-col gap-2">
                       {SECTIONS.map((cle) => {
-                        const { libelle, icon } = CONFIG_SECTIONS[cle];
-                        return (
+                        const { libelle, icon, href } = CONFIG_SECTIONS[cle];
+                        return href ? (
+                          <Link
+                            key={cle}
+                            href={href}
+                            onClick={() => setTiroirOuvert(false)}
+                            className="flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-left text-sm font-semibold text-dj-texte transition-colors hover:bg-dj-surface-haute"
+                          >
+                            <span className="text-dj-accent-1">{icon}</span>
+                            {libelle}
+                          </Link>
+                        ) : (
                           <button
                             key={cle}
                             type="button"
