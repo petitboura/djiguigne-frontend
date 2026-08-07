@@ -672,19 +672,34 @@ export async function renommerRattachementMatiere(agentId: string, contenuId: st
   });
 }
 
-// Section "Mes comportements" (06/08/2026, demande Bourama) : texte
-// libre écrit par l'étudiant, ajouté EN PLUS du system_prompt déjà
+// Section "Mes comportements" (06/08/2026, demande Bourama : "on peut en
+// mettre plusieurs hein, pas juste un") : plusieurs instructions perso
+// écrites par l'étudiant, chacune ajoutée EN PLUS du system_prompt déjà
 // résolu (voir core/main.py::_construire_system_prompt côté backend).
-export async function lireMonComportement(agentId: string) {
-  const resultat = await appelerApi(`/api/agents/${agentId}/mon-comportement`);
-  return (resultat as { texte: string }).texte;
+export type Comportement = { id: string; texte: string };
+
+export async function lireMesComportements(agentId: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/mes-comportements`);
+  return resultat as Comportement[];
 }
 
-export async function enregistrerMonComportement(agentId: string, texte: string) {
-  const resultat = await appelerApi(`/api/agents/${agentId}/mon-comportement`, {
-    method: "PUT",
+export async function ajouterComportement(agentId: string, texte: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/mes-comportements`, {
+    method: "POST",
     body: JSON.stringify({ texte }),
   });
-  return (resultat as { texte: string }).texte;
+  return resultat as Comportement;
+}
+
+export async function modifierComportement(agentId: string, comportementId: string, texte: string) {
+  const resultat = await appelerApi(`/api/agents/${agentId}/mes-comportements/${comportementId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ texte }),
+  });
+  return resultat as Comportement;
+}
+
+export async function supprimerComportement(agentId: string, comportementId: string) {
+  return appelerApi(`/api/agents/${agentId}/mes-comportements/${comportementId}`, { method: "DELETE" });
 }
 
