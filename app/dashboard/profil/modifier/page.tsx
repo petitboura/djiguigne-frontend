@@ -6,7 +6,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
@@ -40,6 +40,7 @@ type ProfilMoi = {
 
 export default function PageModifierProfil() {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
@@ -57,7 +58,7 @@ export default function PageModifierProfil() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        router.push("/connexion");
+        router.push(`/connexion?retour=${encodeURIComponent(pathname)}`);
         return;
       }
       setSession(session);

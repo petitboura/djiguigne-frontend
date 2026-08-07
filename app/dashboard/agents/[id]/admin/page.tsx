@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { appelerApi, appelerApiFichier, ajouterFichierBibliotheque } from "@/lib/api";
@@ -37,6 +37,7 @@ type FichierBiblio = {
 
 export default function PageAdminAgent() {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const agentId = params.id as string;
 
@@ -71,7 +72,7 @@ export default function PageAdminAgent() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        router.push("/connexion");
+        router.push(`/connexion?retour=${encodeURIComponent(pathname)}`);
         return;
       }
       setSession(session);

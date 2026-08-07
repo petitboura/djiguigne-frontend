@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { connecterOuInscrire } from "@/lib/authFallback";
@@ -9,11 +9,24 @@ import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { ChampTelephone } from "@/components/ChampTelephone";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
+import { nettoyerCheminRetour } from "@/lib/retourInterne";
 
 type MethodeConnexion = "email" | "telephone";
 
+// useSearchParams() exige un Suspense autour de la page en app router
+// (voir dashboard/agents/nouveau/page.tsx, même pattern).
 export default function PageConnexion() {
+  return (
+    <Suspense fallback={null}>
+      <ContenuConnexion />
+    </Suspense>
+  );
+}
+
+function ContenuConnexion() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const retour = nettoyerCheminRetour(searchParams.get("retour"));
   const [methode, setMethode] = useState<MethodeConnexion>("email");
   const [email, setEmail] = useState("");
   const [telephone, setTelephone] = useState("");
@@ -43,11 +56,12 @@ export default function PageConnexion() {
       return;
     }
 
-    // DÉSACTIVÉ — 2026-08-05 : la redirection vers /dashboard/espace-role
-    // (tâche F, établissement/enseignant/étudiant) est retirée, ce système
-    // de rôle n'est plus utilisé. Tout le monde retombe sur l'accueil, comme
-    // avant l'introduction du rôle. Voir SECTIONS_DESACTIVEES.md.
-    router.push("/");
+    // 07/08/2026 (Bourama) : "redirigé là où tu étais" -- si la page qui a
+    // amené ici a transmis ?retour=<chemin interne> (ex. depuis une IA via
+    // enseigner/page.tsx, ou depuis une page dashboard protégée), on y
+    // retourne directement. Sinon, comportement par défaut inchangé
+    // depuis la désactivation du 05/08 : l'accueil.
+    router.push(retour ?? "/");
   }
 
   return (
@@ -136,7 +150,10 @@ export default function PageConnexion() {
 
         <p className="mt-5 text-center text-sm text-dj-texte-muet">
           Pas encore de compte ?{" "}
-          <Link href="/inscription" className="text-dj-accent-1 hover:underline">
+          <Link
+            href={retour ? `/inscription?retour=${encodeURIComponent(retour)}` : "/inscription"}
+            className="text-dj-accent-1 hover:underline"
+          >
             S&apos;inscrire
           </Link>
         </p>

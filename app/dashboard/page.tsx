@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -56,6 +56,7 @@ const BOUTONS_PUBLICATION = [
 
 export default function PageDashboard() {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] | null | undefined
   >(undefined);
@@ -72,7 +73,7 @@ export default function PageDashboard() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        router.push("/connexion");
+        router.push(`/connexion?retour=${encodeURIComponent(pathname)}`);
         return;
       }
       setSession(session);

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { inscrireOuConnecter } from "@/lib/authFallback";
 import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { ChampTelephone } from "@/components/ChampTelephone";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
+import { nettoyerCheminRetour } from "@/lib/retourInterne";
 
 type MethodeInscription = "email" | "telephone";
 
@@ -18,8 +19,21 @@ type MethodeInscription = "email" | "telephone";
 // voir djiguigne-ai/components/InscriptionEtablissements.tsx) : Bourama a
 // tranché en faveur de la vitrine comme parcours canonique. Un simple lien
 // y renvoie ci-dessous plutôt que de dupliquer le flow ici.
+//
+// useSearchParams() exige un Suspense autour de la page en app router
+// (voir dashboard/agents/nouveau/page.tsx, même pattern).
 export default function PageInscription() {
+  return (
+    <Suspense fallback={null}>
+      <ContenuInscription />
+    </Suspense>
+  );
+}
+
+function ContenuInscription() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const retour = nettoyerCheminRetour(searchParams.get("retour"));
   const [methode, setMethode] = useState<MethodeInscription>("email");
   const [email, setEmail] = useState("");
   const [telephone, setTelephone] = useState("");
@@ -50,10 +64,8 @@ export default function PageInscription() {
 
     setEnCours(false);
 
-    // DÉSACTIVÉ — 2026-08-05 : la redirection vers /dashboard/espace-role
-    // (tâche F) est retirée, ce système de rôle n'est plus utilisé. Voir
-    // SECTIONS_DESACTIVEES.md.
-    router.push("/");
+    // 07/08/2026 (Bourama) : voir même règle sur /connexion/page.tsx.
+    router.push(retour ?? "/");
   }
 
   return (
@@ -151,7 +163,10 @@ export default function PageInscription() {
 
         <p className="mt-5 text-center text-sm text-dj-texte-muet">
           Déjà un compte ?{" "}
-          <Link href="/connexion" className="text-dj-accent-1 hover:underline">
+          <Link
+            href={retour ? `/connexion?retour=${encodeURIComponent(retour)}` : "/connexion"}
+            className="text-dj-accent-1 hover:underline"
+          >
             Se connecter
           </Link>
         </p>
