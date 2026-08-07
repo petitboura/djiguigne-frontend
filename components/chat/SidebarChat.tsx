@@ -20,7 +20,7 @@ import {
   type CibleDiffusion,
   type ElementDiffuse,
 } from "@/lib/api";
-import { messageErreur } from "@/lib/erreurs";
+import { messageErreur, ErreurApi } from "@/lib/erreurs";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
@@ -443,6 +443,15 @@ export function SidebarChat({
   const [codeDeplie, setCodeDeplie] = useState(false);
   const [code, setCode] = useState("");
   const [codeEnCours, setCodeEnCours] = useState(false);
+  // Verrou synchrone (07/08, correctif Bourama : "message d'erreur déjà
+  // débloqué même si pas encore faite") -- `codeEnCours` (état React) ne
+  // change qu'au prochain rendu, donc un double déclenchement rapproché
+  // (clic + Entrée, double-clic) passe le garde-fou `disabled`/`!codeEnCours`
+  // AVANT que le premier rendu n'ait eu le temps de désactiver le bouton :
+  // les deux appels partent, le premier réussit en silence, le second tombe
+  // sur DEJA_RATTACHE_A_CE_CONTENU et écrase l'affichage avec l'erreur. Une
+  // ref change immédiatement, sans attendre de rendu.
+  const codeEnvoiEnCoursRef = useRef(false);
   const [codeErreur, setCodeErreur] = useState<string | null>(null);
   const [codeSucces, setCodeSucces] = useState<string | null>(null);
   const [rattachements, setRattachements] = useState<Rattachement[] | null>(null);
@@ -635,7 +644,8 @@ export function SidebarChat({
   }
 
   async function validerCode() {
-    if (!code.trim()) return;
+    if (!code.trim() || codeEnvoiEnCoursRef.current) return;
+    codeEnvoiEnCoursRef.current = true;
     setCodeEnCours(true);
     setCodeErreur(null);
     setCodeSucces(null);
@@ -645,9 +655,21 @@ export function SidebarChat({
       setCodeSucces(`${rattachement.matiere} débloquée.`);
       rafraichirRattachements();
     } catch (e) {
-      setCodeErreur(messageErreur(e));
+      // "Déjà débloqué" n'est pas un échec du point de vue de
+      // l'étudiant : le contenu EST bien débloqué (par ce même clic, via
+      // le double envoi ci-dessus, ou par une tentative précédente) --
+      // traité comme un succès visuel plutôt qu'une erreur rouge
+      // trompeuse, la liste juste en dessous confirme dans les deux cas.
+      if (e instanceof ErreurApi && e.code === "DEJA_RATTACHE_A_CE_CONTENU") {
+        setCode("");
+        setCodeSucces("Déjà débloqué.");
+        rafraichirRattachements();
+      } else {
+        setCodeErreur(messageErreur(e));
+      }
     } finally {
       setCodeEnCours(false);
+      codeEnvoiEnCoursRef.current = false;
     }
   }
 

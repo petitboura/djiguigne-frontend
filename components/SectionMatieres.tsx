@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap, FlaskConical, Copy, Check } from "lucide-react";
+import { GraduationCap, FlaskConical, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
 import {
   listerAgentsContenuDynamique,
   lireMesContenusMatiere,
@@ -88,6 +88,7 @@ function BlocEcritureMatiere({
   const [erreur, setErreur] = useState<string | null>(null);
   const [codeCopieId, setCodeCopieId] = useState<string | null>(null);
   const [erreurCopieId, setErreurCopieId] = useState<string | null>(null);
+  const [pleinEcran, setPleinEcran] = useState(false);
 
   // Copier uniquement le code (ex. "A3B9") de la pastille, sans déclencher
   // l'édition (stopPropagation). Retour visuel bref (coche) en cas de
@@ -237,13 +238,52 @@ function BlocEcritureMatiere({
         ))}
       </select>
 
-      <textarea
-        value={texteContenu}
-        onChange={(e) => setTexteContenu(e.target.value)}
-        placeholder="Ce que l'IA doit savoir et comment elle doit enseigner cette matière…"
-        rows={8}
-        className="rounded-xl border border-dj-bordure bg-transparent px-3 py-2 text-sm text-dj-texte"
-      />
+      <div className="relative">
+        <textarea
+          value={texteContenu}
+          onChange={(e) => setTexteContenu(e.target.value)}
+          placeholder="Ce que l'IA doit savoir et comment elle doit enseigner cette matière…"
+          rows={8}
+          className="w-full rounded-xl border border-dj-bordure bg-transparent px-3 py-2 pr-9 text-sm text-dj-texte"
+        />
+        <button
+          onClick={() => setPleinEcran(true)}
+          aria-label="Agrandir"
+          title="Agrandir"
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+        >
+          <Maximize2 size={14} />
+        </button>
+      </div>
+
+      {/* Bouton plein écran (07/08, demande Bourama) : ce champ contient
+          souvent un cours entier -- 8 lignes visibles ne suffisent pas
+          pour relire/corriger confortablement un texte long. Le
+          textarea plein écran est LE MÊME champ (même value/onChange,
+          juste une autre présentation), donc rien à synchroniser. */}
+      {pleinEcran && (
+        <div className="fixed inset-0 z-50 flex flex-col gap-3 bg-dj-fond p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-dj-texte">
+              Contenu pour {agentNom} · {matiereChoisie}
+            </p>
+            <button
+              onClick={() => setPleinEcran(false)}
+              aria-label="Réduire"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+            >
+              <Minimize2 size={18} />
+            </button>
+          </div>
+          <textarea
+            value={texteContenu}
+            onChange={(e) => setTexteContenu(e.target.value)}
+            autoFocus
+            placeholder="Ce que l'IA doit savoir et comment elle doit enseigner cette matière…"
+            className="flex-1 resize-none rounded-xl border border-dj-bordure bg-transparent px-3 py-2 text-sm text-dj-texte outline-none"
+          />
+        </div>
+      )}
 
       {erreur && <p className="text-sm text-red-500">{erreur}</p>}
 
