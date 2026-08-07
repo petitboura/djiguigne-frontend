@@ -263,7 +263,30 @@ export async function lireMonRole() {
  * leurs étudiants ; enseignant -> ses étudiants) plutôt qu'un seul
  * agent. Retourne {diffuse_a, total_cibles, echecs}.
  */
-export async function diffuserDocumentEtablissement(fichier: File, description: string, titre?: string) {
+export type ElementDiffuse = {
+  id: string;
+  nom_fichier: string;
+  description: string | null;
+  type_mime: string;
+  role_cible: "enseignant" | "etudiant";
+  created_at: string;
+};
+
+/** Voir api/roles.py:lister_mes_diffusions. Ce que la personne connectée
+ * a déjà ajouté via diffuserDocumentEtablissement/diffuserLien -- pour
+ * éviter d'envoyer deux fois le même document sans le savoir. */
+export async function listerMesDiffusions() {
+  return appelerApi("/api/roles/diffusions") as Promise<ElementDiffuse[]>;
+}
+
+export type CibleDiffusion = "tous" | "enseignant" | "etudiant";
+
+export async function diffuserDocumentEtablissement(
+  fichier: File,
+  description: string,
+  titre?: string,
+  cible: CibleDiffusion = "tous",
+) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -276,6 +299,7 @@ export async function diffuserDocumentEtablissement(fichier: File, description: 
   corps.append("fichier", fichier);
   if (titre?.trim()) corps.append("titre", titre.trim());
   corps.append("description", description);
+  corps.append("cible", cible);
 
   const reponse = await fetch(`${API_URL}/api/roles/documents/diffuser`, {
     method: "POST",
@@ -297,10 +321,10 @@ export async function diffuserDocumentEtablissement(fichier: File, description: 
  * l'enseignant. Même portée par rôle réel que le document : établissement
  * -> ses enseignants + leurs étudiants, enseignant -> ses étudiants.
  */
-export async function diffuserLien(url: string, description: string, titre?: string) {
+export async function diffuserLien(url: string, description: string, titre?: string, cible: CibleDiffusion = "tous") {
   return appelerApi("/api/roles/liens/diffuser", {
     method: "POST",
-    body: JSON.stringify({ url, titre, description }),
+    body: JSON.stringify({ url, titre, description, cible }),
   }) as Promise<ResultatDiffusion>;
 }
 
