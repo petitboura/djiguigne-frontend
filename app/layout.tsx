@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { SessionSyncVitrine } from "@/components/SessionSyncVitrine";
 
 // Correctif mobile (2026-07-30, demande Bourama) : viewportFit "cover" +
 // interactiveWidget "resizes-content" -- sur Android/Chrome récents, ça
@@ -71,6 +72,7 @@ export default function RacineLayout({
       className={`${bricolage.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen bg-dj-fond font-sans text-dj-texte antialiased">
+        <SessionSyncVitrine />
         <ServiceWorkerRegistration />
         {children}
       </body>

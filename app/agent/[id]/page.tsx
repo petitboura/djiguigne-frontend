@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { appelerApiPublicOuNull } from "@/lib/api-serveur";
+import { nettoyerUrlRetour } from "@/lib/retourExterne";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
@@ -117,9 +118,21 @@ export async function generateMetadata({
   };
 }
 
-export default async function PageAgent({ params }: { params: { id: string } }) {
+export default async function PageAgent({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { retour?: string };
+}) {
   const agent = await chargerAgent(params.id);
   if (!agent) notFound();
+
+  // 07/08/2026 : relais du marqueur "vient de la vitrine" jusqu'au chat
+  // (voir BoutonUtiliser.tsx et ChatAgentClient.tsx) -- sans ce relais,
+  // ?retour= arrivait ici depuis la vitrine mais n'allait jamais plus
+  // loin, donc l'IA ne devenait jamais le chat par défaut.
+  const retour = nettoyerUrlRetour(searchParams.retour);
 
   const specialite = specialiteAgent(agent);
   const note = await chargerNote(agent.id);
@@ -196,7 +209,7 @@ export default async function PageAgent({ params }: { params: { id: string } }) 
             )}
 
             <div className="flex flex-wrap items-center gap-3">
-              <BoutonUtiliser agentId={agent.id} />
+              <BoutonUtiliser agentId={agent.id} retour={retour} />
               <BoutonPartager chemin={`/agent/${agent.id}`} titre={agent.nom} />
             </div>
 

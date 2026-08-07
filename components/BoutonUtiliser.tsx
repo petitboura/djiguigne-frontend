@@ -14,10 +14,20 @@ import Link from "next/link";
 // chat vit dans la même app, donc la session Supabase déjà active côté
 // client s'applique directement (voir lib/api.ts, appelerApi/
 // appelerApiStream qui lisent déjà supabase.auth.getSession()).
-export function BoutonUtiliser({ agentId }: { agentId: string }) {
+// retour (07/08/2026, correctif bug "l'IA ne devient pas la mienne par
+// défaut en arrivant depuis la vitrine") : transmis par la page fiche
+// (app/agent/[id]/page.tsx, qui le reçoit elle-même en ?retour= depuis un
+// lien de la vitrine) -- sans ce relais, le paramètre était perdu entre la
+// fiche et le chat, alors que c'est le chat (ChatAgentClient.tsx) qui lit
+// ce marqueur pour enregistrer l'IA comme chat par défaut.
+export function BoutonUtiliser({ agentId, retour }: { agentId: string; retour?: string }) {
+  const chemin = retour
+    ? `/agent/${agentId}/chat?retour=${encodeURIComponent(retour)}`
+    : `/agent/${agentId}/chat`;
+
   return (
     <Link
-      href={`/agent/${agentId}/chat`}
+      href={chemin}
       className="rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
     >
       Utiliser cette IA

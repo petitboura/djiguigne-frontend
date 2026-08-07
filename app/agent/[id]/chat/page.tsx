@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { appelerApiPublicOuNull } from "@/lib/api-serveur";
+import { nettoyerUrlRetour } from "@/lib/retourExterne";
 import { ChatAgentClient } from "@/components/chat/ChatAgentClient";
 
 // Remplace chat.py (Streamlit sur Railway). Tout reste dans la même app Next.js/Vercel : plus de
@@ -53,23 +54,6 @@ export async function generateMetadata({
     icons: { apple: `/agent/${agent.id}/icone?taille=192` },
     appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: agent.nom },
   };
-}
-
-// Support "retour vers la vitrine" (Bourama, 2026-07-30) : la vitrine peut
-// lier directement vers le chat d'un agent choisi par le visiteur via
-// ?retour=<url complète de la vitrine>. Si présent, le bouton "Retour à
-// l'agent" de la sidebar renvoie vers cette URL externe au lieu de la page
-// agent interne. On ne garde que http(s):// pour éviter tout schéma
-// dangereux (javascript:, data:, etc.) glissé dans le paramètre.
-function nettoyerUrlRetour(valeur: string | undefined): string | undefined {
-  if (!valeur) return undefined;
-  try {
-    const url = new URL(valeur);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
-    return url.toString();
-  } catch {
-    return undefined;
-  }
 }
 
 // Retour vers l'IA d'origine après "Tester" depuis "L'IA de mes élèves"
