@@ -9,6 +9,11 @@ import type { Config } from "tailwindcss";
 // djiguigne-backend/faces/vues/theme_djiguigne.py (fichier supprimé depuis,
 // le retrait de Streamlit). Ne pas dévier de ces
 // valeurs sans changer les deux dépôts à la fois.
+//
+// Pivot thème clair (2026-08-08, demande Bourama) : passage d'un fond sombre
+// à un fond crème clair, inspiré de l'identité visuelle de Claude (Anthropic).
+// accent-1/accent-2 inchangés (couleur du logo Djiguignè, conservée). texte/
+// texte-muet/succes/inactif recalculés pour rester lisibles sur fond clair.
 const config: Config = {
   darkMode: "class",
   content: [
@@ -19,17 +24,17 @@ const config: Config = {
     extend: {
       colors: {
         dj: {
-          fond: "#0B0908",
-          surface: "#161210",
-          "surface-haute": "#1E1813",
-          bordure: "rgba(255,255,255,0.08)",
-          "bordure-forte": "rgba(232,147,74,0.35)",
+          fond: "#F4F0E6",
+          surface: "#FCF9F3",
+          "surface-haute": "#FFFFFF",
+          bordure: "rgba(43,33,24,0.10)",
+          "bordure-forte": "rgba(193,68,14,0.35)",
           "accent-1": "#E8934A",
           "accent-2": "#C1440E",
-          texte: "#F5ECE0",
-          "texte-muet": "#A79A8C",
-          succes: "#4ADE80",
-          inactif: "#6B6259",
+          texte: "#2B2118",
+          "texte-muet": "#8A7A64",
+          succes: "#16A34A",
+          inactif: "#B0A79B",
         },
       },
       backgroundImage: {

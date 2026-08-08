@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SessionSyncVitrine } from "@/components/SessionSyncVitrine";
@@ -23,9 +23,16 @@ export const viewport: Viewport = {
 // l'identique de djiguigne-frontend/app/layout.tsx (next/font, auto-
 // hébergées, zéro requête Google au runtime), exposées en variables CSS
 // consommées par tailwind.config.ts.
-const bricolage = Bricolage_Grotesque({
+//
+// Pivot thème clair (2026-08-08) : Bricolage Grotesque remplacé par
+// Fraunces pour les titres -- serif à l'axe optique variable, tracé plus
+// organique/chaleureux, dans l'esprit "moins parfait" repéré chez Claude.
+// Variable CSS --font-bricolage conservée telle quelle pour ne rien casser
+// dans tailwind.config.ts (fontFamily.display la référence toujours).
+const bricolage = Fraunces({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-bricolage",
   display: "swap",
 });
