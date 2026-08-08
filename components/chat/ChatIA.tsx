@@ -27,6 +27,7 @@ export function ChatIA({
   iconeUrl = null,
   titreAccueil,
   sousTitreAccueil,
+  placeholderSaisie,
   conversationId,
   messagesInitiaux = [],
   onMessagesChange,
@@ -42,6 +43,9 @@ export function ChatIA({
   iconeUrl?: string | null;
   titreAccueil?: string;
   sousTitreAccueil?: string;
+  // Corrigé le 08/08/2026 : texte configuré par le créateur (Point 5,
+  // 2026-07-14) mais jamais transmis jusqu'ici -- voir BarreDeSaisie.tsx.
+  placeholderSaisie?: string;
   conversationId: string;
   messagesInitiaux?: MessageAffiche[];
   onMessagesChange?: (nbMessages: number) => void;
@@ -640,6 +644,7 @@ export function ChatIA({
           modeleSelectionne={modeleSelectionne}
           onModeleChange={setModeleSelectionne}
           boutonSansEnseignant={boutonSansEnseignant}
+          placeholderSaisie={placeholderSaisie}
         />
       </div>
 

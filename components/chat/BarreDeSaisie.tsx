@@ -198,6 +198,7 @@ export function BarreDeSaisie({
   modeleSelectionne = null,
   onModeleChange,
   boutonSansEnseignant = false,
+  placeholderSaisie,
 }: {
   onEnvoyer: (
     texte: string,
@@ -229,7 +230,17 @@ export function BarreDeSaisie({
   // sans utiliser le contenu d'aucun enseignant même si des matières
   // sont débloquées. Absent pour tous les autres agents.
   boutonSansEnseignant?: boolean;
+  // Corrigé le 08/08/2026 (Bourama) : le texte configuré par le créateur
+  // pour cet agent précis (Point 5, 2026-07-14) était enregistré en base
+  // mais jamais transmis jusqu'ici -- les 3 zones de saisie (desktop,
+  // mobile, plein écran) retombaient systématiquement sur le texte
+  // générique ci-dessous. undefined/vide -> repli sur "Pose ta
+  // question...", comportement identique à avant pour tout agent qui n'a
+  // pas personnalisé ce champ.
+  placeholderSaisie?: string;
 }) {
+  // Corrigé le 08/08/2026 : voir placeholderSaisie ci-dessus.
+  const placeholderEffectif = placeholderSaisie?.trim() || "Pose ta question...";
   const [texte, setTexte] = useState("");
   const [longueur, setLongueur] = useState<LongueurReponse>("moyenne");
   const [fichier, setFichier] = useState<File | null>(null);
@@ -1465,7 +1476,7 @@ export function BarreDeSaisie({
                 envoyer();
               }
             }}
-            placeholder={transcriptionEnCours ? "Transcription en cours..." : "Pose ta question..."}
+            placeholder={transcriptionEnCours ? "Transcription en cours..." : placeholderEffectif}
             rows={1}
             className="relative max-h-64 w-full resize-none overflow-y-auto bg-transparent text-[15px] leading-normal text-transparent caret-dj-texte outline-none placeholder:text-dj-texte-muet"
           />
@@ -2325,7 +2336,7 @@ export function BarreDeSaisie({
             const el = e.currentTarget;
             setTimeout(() => el.scrollIntoView({ block: "end", behavior: "smooth" }), 300);
           }}
-          placeholder={transcriptionEnCours ? "Transcription en cours..." : "Pose ta question..."}
+          placeholder={transcriptionEnCours ? "Transcription en cours..." : placeholderEffectif}
           rows={1}
           className="max-h-32 min-h-10 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 text-[15px] leading-normal text-dj-texte outline-none placeholder:text-dj-texte-muet"
         />
@@ -2810,7 +2821,7 @@ export function BarreDeSaisie({
                   setPleinEcranSaisie(false);
                 }
               }}
-              placeholder="Pose ta question..."
+              placeholder={placeholderEffectif}
               className="relative h-full w-full resize-none overflow-y-auto bg-transparent text-base leading-relaxed text-transparent caret-dj-texte outline-none placeholder:text-dj-texte-muet"
             />
           </div>

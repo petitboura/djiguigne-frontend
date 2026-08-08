@@ -26,6 +26,11 @@ export function ChatAgentClient({
     icone_url: string | null;
     titre_accueil: string;
     sous_titre_accueil: string;
+    // Corrigé le 08/08/2026 : la valeur était sauvegardée côté formulaire
+    // de création/édition depuis le 2026-07-14 mais jamais transmise
+    // jusqu'au chat (AgentDetailPublic ne l'exposait pas) -- voir
+    // BarreDeSaisie.tsx pour où elle est enfin utilisée.
+    placeholder_saisie?: string;
     // Modeles premium (02/08/2026, voir core/fournisseurs_llm.py) --
     // renvoyes par GET /api/agents/{id} (AgentDetailPublic), optionnels
     // pour rester compatibles avec tout appelant qui ne les fournirait
@@ -153,6 +158,7 @@ export function ChatAgentClient({
           iconeUrl={agent.icone_url}
           titreAccueil={agent.titre_accueil}
           sousTitreAccueil={agent.sous_titre_accueil}
+          placeholderSaisie={agent.placeholder_saisie}
           conversationId={cle}
           messagesInitiaux={messagesInitiaux}
           onMessagesChange={setNbMessages}
