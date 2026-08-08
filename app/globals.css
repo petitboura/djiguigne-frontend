@@ -92,7 +92,7 @@ math-field {
   /* Pivot thème clair (2026-08-08) : voir tailwind.config.ts pour le
      contexte de la décision. Variables tenues en miroir des mêmes valeurs. */
   --dj-fond: #f4f3ee;
-  --dj-surface: #fcf9f3;
+  --dj-surface: #fbfaf8;
   --dj-surface-haute: #ffffff;
   --dj-bordure: rgba(43, 33, 24, 0.1);
   --dj-bordure-forte: rgba(193, 68, 14, 0.35);

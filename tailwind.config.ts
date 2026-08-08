@@ -25,7 +25,7 @@ const config: Config = {
       colors: {
         dj: {
           fond: "#F4F3EE",
-          surface: "#FCF9F3",
+          surface: "#FBFAF8",
           "surface-haute": "#FFFFFF",
           bordure: "rgba(43,33,24,0.10)",
           "bordure-forte": "rgba(193,68,14,0.35)",
