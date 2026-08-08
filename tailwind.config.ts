@@ -24,7 +24,7 @@ const config: Config = {
     extend: {
       colors: {
         dj: {
-          fond: "#F4F0E6",
+          fond: "#F4F3EE",
           surface: "#FCF9F3",
           "surface-haute": "#FFFFFF",
           bordure: "rgba(43,33,24,0.10)",
