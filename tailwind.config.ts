@@ -46,6 +46,10 @@ const config: Config = {
         display: ["var(--font-bricolage)", "sans-serif"],
         sans: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-jetbrains-mono)", "monospace"],
+        // Corps des réponses de l'IA (09/08, façon Claude, identité
+        // partagée avec classgpt-frontend) -- distincte de `display`
+        // (Fraunces, réservée aux titres depuis le 08/08).
+        lecture: ["var(--font-lecture)", "Georgia", "serif"],
       },
       keyframes: {
         "dj-fade-up": {

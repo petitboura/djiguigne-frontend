@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SessionSyncVitrine } from "@/components/SessionSyncVitrine";
@@ -51,6 +51,16 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+// Corps des réponses de l'IA uniquement (09/08, demande Bourama : façon
+// Claude, identité partagée avec classgpt-frontend -- même police des
+// deux côtés). Distincte de Fraunces (titres, `display`).
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-lecture",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   // Chantier SEO/AEO (2026-08-01) : requis pour que Next.js résolve les
   // URLs relatives (images OG, canonical) en URLs absolues correctes,
@@ -76,7 +86,7 @@ export default function RacineLayout({
   return (
     <html
       lang="fr"
-      className={`${bricolage.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${bricolage.variable} ${inter.variable} ${jetbrainsMono.variable} ${sourceSerif.variable}`}
     >
       <body className="min-h-screen bg-dj-fond font-sans text-dj-texte antialiased">
         <SessionSyncVitrine />
