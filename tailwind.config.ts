@@ -32,7 +32,7 @@ const config: Config = {
           "accent-1": "#E8934A",
           "accent-2": "#C1440E",
           texte: "#2B2118",
-          "texte-muet": "#8A7A64",
+          "texte-muet": "#6E5F4D",
           succes: "#16A34A",
           inactif: "#B0A79B",
         },

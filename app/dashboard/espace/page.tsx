@@ -289,7 +289,7 @@ export default function PageMonEspace() {
                 "flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors " +
                 (onglet === o.id
                   ? "border-dj-accent-1 text-dj-texte"
-                  : "border-transparent text-dj-texte/75 hover:text-dj-texte")
+                  : "border-transparent text-dj-texte-muet hover:text-dj-texte")
               }
             >
               <o.Icone size={16} />
