@@ -114,12 +114,6 @@ html {
 
 body {
   background-color: var(--dj-fond);
-  background-image: radial-gradient(
-    ellipse 120% 60% at 50% -10%,
-    rgba(232, 147, 74, 0.1),
-    transparent 60%
-  );
-  background-attachment: fixed;
   color: var(--dj-texte);
 }
 
