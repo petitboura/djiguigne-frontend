@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { CompteRequisModal } from "@/components/CompteRequisModal";
 
 // Étape D.3 (pivot social) : note 1-5, PAS un like (clarification
 // explicite de Bourama sur ce point). Contrat backend
@@ -20,6 +21,12 @@ export function NoteAgent({ agentId }: { agentId: string }) {
   const [maNote, setMaNote] = useState<number | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // "Crée un compte" (07/08/2026, demande Bourama) : cliquer une étoile
+  // sans être connecté affichait juste un texte d'erreur inerte
+  // ("Connecte-toi pour noter cette IA."), sans lien pour le faire ni
+  // retour après coup -- remplacé par le même modal que le reste du site
+  // (voir components/CompteRequisModal.tsx).
+  const [compteRequis, setCompteRequis] = useState(false);
 
   useEffect(() => {
     appelerApi(`/api/agents/${agentId}/rating`)
@@ -33,7 +40,7 @@ export function NoteAgent({ agentId }: { agentId: string }) {
 
   async function noter(note: number) {
     if (!connecte) {
-      setErreur("Connecte-toi pour noter cette IA.");
+      setCompteRequis(true);
       return;
     }
     setEnvoi(true);
@@ -81,6 +88,12 @@ export function NoteAgent({ agentId }: { agentId: string }) {
         </span>
       </div>
       {erreur && <p className="text-xs text-dj-accent-2">{erreur}</p>}
+      {compteRequis && (
+        <CompteRequisModal
+          texte="Crée un compte pour noter cette IA."
+          onFerme={() => setCompteRequis(false)}
+        />
+      )}
     </div>
   );
 }

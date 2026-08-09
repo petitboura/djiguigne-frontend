@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { CompteRequisModal } from "@/components/CompteRequisModal";
 
 // Étape D.3 (pivot social). Contrat backend (api/agents.py) :
 // GET .../comments est public et renvoie une liste brute (pas d'enveloppe
@@ -29,6 +30,11 @@ export function CommentairesAgent({ agentId }: { agentId: string }) {
   const [brouillon, setBrouillon] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // "Crée un compte" (07/08/2026, demande Bourama) : "Connecte-toi pour
+  // commenter." était un texte inerte, sans lien pour le faire ni retour
+  // après coup -- devient un vrai bouton qui ouvre le même modal que le
+  // reste du site (voir components/CompteRequisModal.tsx).
+  const [compteRequis, setCompteRequis] = useState(false);
 
   function charger() {
     appelerApi(`/api/agents/${agentId}/comments`)
@@ -89,9 +95,13 @@ export function CommentairesAgent({ agentId }: { agentId: string }) {
         </form>
       )}
       {connecte === false && (
-        <p className="text-sm text-dj-texte-muet">
+        <button
+          type="button"
+          onClick={() => setCompteRequis(true)}
+          className="text-left text-sm text-dj-accent-1 hover:underline"
+        >
           Connecte-toi pour commenter.
-        </p>
+        </button>
       )}
 
       <div className="flex flex-col gap-3">
@@ -113,6 +123,13 @@ export function CommentairesAgent({ agentId }: { agentId: string }) {
           </div>
         ))}
       </div>
+
+      {compteRequis && (
+        <CompteRequisModal
+          texte="Crée un compte pour commenter."
+          onFerme={() => setCompteRequis(false)}
+        />
+      )}
     </div>
   );
 }

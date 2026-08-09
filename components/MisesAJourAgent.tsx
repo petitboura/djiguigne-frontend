@@ -6,6 +6,7 @@ import { appelerApi } from "@/lib/api";
 import { formaterDate } from "@/lib/formaterDate";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { messageErreur } from "@/lib/erreurs";
+import { CompteRequisModal } from "@/components/CompteRequisModal";
 
 // Ajouté le 2026-07-15 (Bourama) : section "Mises à jour" sur la page
 // publique d'un agent -- ce que le créateur a changé, avec date,
@@ -90,6 +91,12 @@ function ItemMiseAJour({
   const [brouillon, setBrouillon] = useState("");
   const [envoiCommentaire, setEnvoiCommentaire] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // "Crée un compte" (07/08/2026, demande Bourama) : "j'aime"/commenter
+  // affichaient un texte d'erreur inerte ou statique ("Connecte-toi
+  // pour..."), sans lien pour créer un compte ni retour après coup --
+  // remplacés par le même modal que le reste du site (voir
+  // components/CompteRequisModal.tsx).
+  const [compteRequis, setCompteRequis] = useState(false);
 
   function chargerCommentaires() {
     appelerApi(`/api/agents/${agentId}/updates/${maj.id}/comments`)
@@ -99,7 +106,7 @@ function ItemMiseAJour({
 
   async function basculerLike() {
     if (!connecte) {
-      setErreur("Connecte-toi pour aimer cette mise à jour.");
+      setCompteRequis(true);
       return;
     }
     setEnvoiLike(true);
@@ -200,7 +207,13 @@ function ItemMiseAJour({
             </form>
           )}
           {connecte === false && (
-            <p className="text-sm text-dj-texte-muet">Connecte-toi pour commenter.</p>
+            <button
+              type="button"
+              onClick={() => setCompteRequis(true)}
+              className="text-left text-sm text-dj-accent-1 hover:underline"
+            >
+              Connecte-toi pour commenter.
+            </button>
           )}
 
           {commentaires === null && <p className="text-sm text-dj-texte-muet">Chargement…</p>}
@@ -216,6 +229,13 @@ function ItemMiseAJour({
             </div>
           ))}
         </div>
+      )}
+
+      {compteRequis && (
+        <CompteRequisModal
+          texte="Crée un compte pour aimer ou commenter une mise à jour."
+          onFerme={() => setCompteRequis(false)}
+        />
       )}
     </div>
   );
