@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Affinage des icônes (2026-08-09, demande Bourama) : lucide-react pose
+   stroke-width="2" par défaut sur chaque icône (attribut de présentation
+   SVG), plus épais que le trait fin des icônes de Claude. Un attribut de
+   présentation SVG cède devant n'importe quelle règle CSS auteur, donc
+   cette seule règle suffit à affiner TOUTES les icônes de l'app (lucide
+   ajoute automatiquement la classe "lucide" à chaque icône qu'il rend),
+   sans toucher aux 90+ fichiers qui les utilisent individuellement. */
+.lucide {
+  stroke-width: 1.5;
+}
+
 /* Rendu LaTeX + éditeur de formule (BulleMessage.tsx, EditeurFormule.tsx,
    EditeurMathsRiche.tsx) : déplacés hors de globals.css le 01/08 (audit
    vitesse) vers app/agent/[id]/chat/layout.tsx et
