@@ -15,12 +15,20 @@ import { messageErreur } from "@/lib/erreurs";
 //
 // Règles par type (voir api/posts.py, définies avec Bourama) :
 // - article   : titre obligatoire, texte long obligatoire, couverture
-//               OPTIONNELLE.
+//               OPTIONNELLE, IA (agentId) OBLIGATOIRE -- ajouté le
+//               2026-08-09 : un article est désormais écrit pour une IA
+//               précise (parmi les IA du créateur), affiché à la fois
+//               sur son profil ET sur la page de cette IA.
 // - reflexion : pas de titre, juste un court message, aucune image.
 // - histoire  : titre obligatoire, couverture OBLIGATOIRE, jusqu'à 3
 //               photos supplémentaires optionnelles, légende obligatoire.
 
 type TypePost = "article" | "reflexion" | "histoire";
+
+type AgentPourSelecteur = {
+  id: string;
+  nom: string;
+};
 
 const TITRES_MODALE: Record<TypePost, string> = {
   article: "Publier un article",
@@ -30,10 +38,12 @@ const TITRES_MODALE: Record<TypePost, string> = {
 
 export function ModalePublierPost({
   type,
+  agents,
   onClose,
   onPublie,
 }: {
   type: TypePost;
+  agents: AgentPourSelecteur[];
   onClose: () => void;
   onPublie: () => void;
 }) {
@@ -43,6 +53,7 @@ export function ModalePublierPost({
   const [photo2, setPhoto2] = useState("");
   const [photo3, setPhoto3] = useState("");
   const [photo4, setPhoto4] = useState("");
+  const [agentId, setAgentId] = useState(agents[0]?.id ?? "");
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -54,7 +65,7 @@ export function ModalePublierPost({
     type === "reflexion"
       ? contenu.trim().length > 0
       : type === "article"
-      ? titre.trim().length > 0 && contenu.trim().length > 0
+      ? titre.trim().length > 0 && contenu.trim().length > 0 && agentId.length > 0
       : titre.trim().length > 0 && contenu.trim().length > 0 && couverture.length > 0;
 
   async function publier() {
@@ -72,6 +83,7 @@ export function ModalePublierPost({
             type === "article" ? couverture || undefined : type === "histoire" ? couverture : undefined,
           photos_supplementaires:
             type === "histoire" ? [photo2, photo3, photo4].filter((p) => p) : [],
+          agent_id: type === "article" ? agentId : undefined,
         }),
       });
       onPublie();
@@ -104,6 +116,29 @@ export function ModalePublierPost({
                 placeholder={type === "article" ? "Titre de l'article" : "Titre de l'histoire"}
                 className={champClasse}
               />
+            </div>
+          )}
+
+          {type === "article" && (
+            <div>
+              <label className={labelClasse}>Pour quelle IA ?</label>
+              {agents.length === 0 ? (
+                <p className="mt-1 text-sm text-dj-texte-muet">
+                  Tu dois d'abord créer une IA avant de pouvoir publier un article.
+                </p>
+              ) : (
+                <select
+                  value={agentId}
+                  onChange={(e) => setAgentId(e.target.value)}
+                  className={champClasse}
+                >
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.nom}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 

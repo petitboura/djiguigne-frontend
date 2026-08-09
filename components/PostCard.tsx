@@ -22,6 +22,9 @@ export type PostResume = {
   image_couverture_url?: string | null;
   photos_supplementaires: string[];
   created_at?: string | null;
+  agent_id?: string | null;
+  agent_nom?: string | null;
+  agent_avatar_url?: string | null;
 };
 
 function EnTeteAuteur({ post, cacherAvatar = false }: { post: PostResume; cacherAvatar?: boolean }) {
@@ -109,6 +112,21 @@ function CarteArticle({ post }: { post: PostResume }) {
       )}
       <div className="p-5">
         <EnTeteAuteur post={post} />
+        {post.agent_id && (
+          <Link
+            href={`/agent/${post.agent_id}`}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-dj-bordure bg-dj-surface-haute px-2.5 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+          >
+            {post.agent_avatar_url ? (
+              <span className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full bg-dj-surface">
+                <Image src={post.agent_avatar_url} alt="" fill className="object-cover" sizes="16px" />
+              </span>
+            ) : (
+              <span>🤖</span>
+            )}
+            Écrit pour {post.agent_nom || "cette IA"}
+          </Link>
+        )}
         {post.titre && (
           <h3 className="mt-3 font-display text-xl font-bold text-dj-texte">{post.titre}</h3>
         )}

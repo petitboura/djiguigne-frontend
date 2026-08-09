@@ -10,6 +10,7 @@ import { BoutonUtiliser } from "@/components/BoutonUtiliser";
 import { NoteAgent } from "@/components/NoteAgent";
 import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { MisesAJourAgent } from "@/components/MisesAJourAgent";
+import { ArticlesAgent } from "@/components/ArticlesAgent";
 import { BoutonPartager } from "@/components/BoutonPartager";
 import { JsonLd } from "@/components/JsonLd";
 import { IconeGenerique } from "@/components/icones/IconeGenerique";
@@ -221,6 +222,8 @@ export default async function PageAgent({
           <h2 className="font-display text-lg font-bold text-dj-texte">Mises à jour</h2>
           <MisesAJourAgent agentId={agent.id} nomAgent={agent.nom} />
         </section>
+
+        <ArticlesAgent agentId={agent.id} />
 
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-lg font-bold text-dj-texte">Commentaires</h2>

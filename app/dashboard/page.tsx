@@ -238,6 +238,7 @@ export default function PageDashboard() {
         {modalePostOuverte && (
           <ModalePublierPost
             type={modalePostOuverte}
+            agents={(profil?.agents ?? []).map((a) => ({ id: a.id, nom: a.nom }))}
             onClose={() => setModalePostOuverte(null)}
             onPublie={() => setMessagePublication("Publié ✓")}
           />
