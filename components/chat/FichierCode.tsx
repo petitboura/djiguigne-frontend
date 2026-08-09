@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileCode } from "lucide-react";
+import { FileCode } from "@/components/icons/IconesDessinees";
 import hljs from "@/lib/coloration";
 import { BlocExpansible } from "./BlocExpansible";
 

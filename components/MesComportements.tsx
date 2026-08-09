@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, Plus, X, Check, Maximize2 } from "lucide-react";
+import { Trash2, Plus, X, Check, Maximize2 } from "@/components/icons/IconesDessinees";
 import { lireMesComportements, ajouterComportement, modifierComportement, supprimerComportement, type Comportement } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 

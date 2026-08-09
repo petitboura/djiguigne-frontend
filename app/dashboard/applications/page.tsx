@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "@/components/icons/IconesDessinees";
 import { supabase } from "@/lib/supabase";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";

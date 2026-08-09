@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Wrench, Link2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Wrench, Link2 } from "@/components/icons/IconesDessinees";
 import { OUTILS_DISPONIBLES } from "@/lib/outils";
 import { SourcesBulle } from "./SourcesBulle";
 

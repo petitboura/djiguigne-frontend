@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Check } from "lucide-react";
+import { Download, Check } from "@/components/icons/IconesDessinees";
 import { telechargerImage } from "@/lib/telechargerImageGraphique";
 
 // Rend un bloc ```geometrie du markdown -- même famille que ```chart

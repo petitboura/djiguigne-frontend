@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ImageOff, ExternalLink, Download } from "lucide-react";
+import { X, ImageOff, ExternalLink, Download } from "@/components/icons/IconesDessinees";
 
 // Remplace le <img> par défaut de ReactMarkdown (![alt](url) en markdown).
 // Trois problèmes réglés par rapport au <img> nu :

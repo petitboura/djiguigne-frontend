@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { X, Trash2, Eraser, Pencil } from "lucide-react";
+import { X, Trash2, Eraser, Pencil } from "@/components/icons/IconesDessinees";
 
 // Canvas de dessin (2026-07-25, demande de Bourama : usage maths --
 // géométrie, tracé de courbe, croquis fait directement dans l'app plutôt

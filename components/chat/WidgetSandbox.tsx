@@ -1,6 +1,6 @@
 "use client";
 
-import { AppWindow } from "lucide-react";
+import { AppWindow } from "@/components/icons/IconesDessinees";
 import { BlocExpansible } from "./BlocExpansible";
 
 // Bloc ```html ou ```widget du markdown -- le modèle peut générer un

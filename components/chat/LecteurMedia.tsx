@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { Download } from "@/components/icons/IconesDessinees";
 
 const EXTENSIONS_AUDIO = ["mp3", "wav", "ogg", "m4a"];
 const EXTENSIONS_VIDEO = ["mp4", "webm", "mov"];

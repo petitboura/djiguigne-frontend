@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, BrainCog } from "lucide-react";
+import { ChevronDown, ChevronRight, BrainCog } from "@/components/icons/IconesDessinees";
 
 // Affiche le raisonnement interne du modèle -- consomme les événements SSE
 // {"type": "raisonnement", "texte": "..."} que core/main.py:_agent_groq

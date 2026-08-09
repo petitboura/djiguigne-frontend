@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@/components/icons/IconesDessinees";
 
 // Rendu "bête" d'une liste de puces de sources cliquables -- PLUS de
 // toggle propre depuis le 26/07 (retour Bourama : les sources d'une

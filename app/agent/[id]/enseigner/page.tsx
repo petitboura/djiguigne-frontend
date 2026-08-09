@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap } from "@/components/icons/IconesDessinees";
 import { supabase } from "@/lib/supabase";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";

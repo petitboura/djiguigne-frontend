@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check, Send, Link2, FileUp, Sparkles } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ArrowLeft, Eye, Shuffle, LayoutGrid, MessageSquarePlus, History, Star, Share2, UserCircle, Contact, MoreHorizontal, GraduationCap, Pencil, Check, Send, Link2, FileUp, Sparkles } from "@/components/icons/IconesDessinees";
 import { supabase } from "@/lib/supabase";
 import {
   appelerApi,
