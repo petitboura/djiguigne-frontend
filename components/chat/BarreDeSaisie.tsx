@@ -11,7 +11,7 @@ import dynamic from "next/dynamic";
 import { BlocCode } from "./BlocCode";
 import hljs from "@/lib/coloration";
 import katex from "katex";
-import { messageErreur } from "@/lib/erreurs";
+import { messageErreur, ErreurApi } from "@/lib/erreurs";
 
 // EditeurMathsRiche (tiptap + mathlive) et EditeurFormule (mathlive) ne
 // montent que quand leur modale respective s'ouvre (voir
@@ -199,6 +199,7 @@ export function BarreDeSaisie({
   onModeleChange,
   boutonSansEnseignant = false,
   placeholderSaisie,
+  onCompteRequis,
 }: {
   onEnvoyer: (
     texte: string,
@@ -238,6 +239,13 @@ export function BarreDeSaisie({
   // question...", comportement identique à avant pour tout agent qui n'a
   // pas personnalisé ce champ.
   placeholderSaisie?: string;
+  // "Crée un compte" (07/08/2026, demande Bourama) : la dictée vocale
+  // (transcrireAudioChat, voir api/uploads.py) exige un compte réel côté
+  // backend alors que le micro reste cliquable pour un visiteur non
+  // connecté. Optionnel -- si absent, repli sur l'ancien comportement
+  // (alert du message brut), pour ne pas casser un appel existant qui ne
+  // le fournirait pas encore.
+  onCompteRequis?: () => void;
 }) {
   // Corrigé le 08/08/2026 : voir placeholderSaisie ci-dessus.
   const placeholderEffectif = placeholderSaisie?.trim() || "Pose ta question...";
@@ -1257,6 +1265,14 @@ export function BarreDeSaisie({
           setTexte((prec) => (prec.trim() ? `${prec} ${transcrit}` : transcrit));
           requestAnimationFrame(ajusterHauteurTexte);
         } catch (e) {
+          if (
+            onCompteRequis &&
+            e instanceof ErreurApi &&
+            (e.code === "TOKEN_MANQUANT" || e.code === "SESSION_EXPIREE" || e.code === "TOKEN_INVALIDE")
+          ) {
+            onCompteRequis();
+            return;
+          }
           // Message générique remplacé le 2026-07-20 : masquait la vraie
           // cause (non connecté / audio vide-silencieux / vraie erreur
           // serveur) derrière un seul texte, impossible à diagnostiquer

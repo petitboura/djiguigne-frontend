@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
+import { ErreurApi } from "@/lib/erreurs";
 
 interface Categorie {
   id: string;
@@ -20,6 +21,7 @@ export function PopupFeedback({
   agentId,
   onFerme,
   onEnvoye,
+  onCompteRequis,
 }: {
   type: "positif" | "negatif";
   conversationId: string;
@@ -28,6 +30,14 @@ export function PopupFeedback({
   agentId: string;
   onFerme: () => void;
   onEnvoye: () => void;
+  // "Crée un compte" (07/08/2026, demande Bourama) : POST /api/feedback
+  // exige un compte côté backend (utilisateur_courant, voir
+  // api/feedback.py) alors que les boutons pouce haut/bas restent
+  // visibles pour un visiteur non connecté (voir ChatIA.tsx). Avant,
+  // l'échec passait par un alert() générique ("Impossible d'envoyer ce
+  // retour pour le moment.") qui masquait la vraie cause. Le parent
+  // (ChatIA.tsx) ferme ce popup et ouvre CompteRequisModal à la place.
+  onCompteRequis: () => void;
 }) {
   const [categories, setCategories] = useState<Categorie[]>([]);
   const [categorie, setCategorie] = useState("");
@@ -63,6 +73,10 @@ export function PopupFeedback({
       });
       onEnvoye();
     } catch (e) {
+      if (e instanceof ErreurApi && (e.code === "TOKEN_MANQUANT" || e.code === "SESSION_EXPIREE" || e.code === "TOKEN_INVALIDE")) {
+        onCompteRequis();
+        return;
+      }
       alert("Impossible d'envoyer ce retour pour le moment.");
     } finally {
       setEnvoiEnCours(false);

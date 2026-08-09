@@ -9,8 +9,9 @@ import { BarreDeSaisie, LongueurReponse, LocalisationJointe } from "./BarreDeSai
 import { PopupFeedback } from "./PopupFeedback";
 import { StatutOutil, EtatStatut } from "./StatutOutil";
 import { ConfirmationOutil } from "./ConfirmationOutil";
-import { messageErreur } from "@/lib/erreurs";
+import { messageErreur, ErreurApi } from "@/lib/erreurs";
 import { IconeGenerique } from "@/components/icones/IconeGenerique";
+import { CompteRequisModal } from "@/components/CompteRequisModal";
 
 // Page de chat qui remplace chat.py (Streamlit). Consomme la
 // nouvelle route /api/chat (api/chat.py) en streaming, au lieu d'appeler
@@ -101,6 +102,21 @@ export function ChatIA({
     messageId: number;
     questionMessageId: number | null;
   } | null>(null);
+  // "Crée un compte" (07/08/2026, demande Bourama) : certaines actions du
+  // chat (pièces jointes -- image/audio/vidéo/document, voir
+  // api/uploads.py) exigent un compte réel côté backend
+  // (utilisateur_courant, pas utilisateur_optionnel comme /api/chat lui-
+  // même) alors que rien ne l'indiquait avant côté UI pour un visiteur
+  // non connecté -- l'échec atterrissait tel quel (ex. "Token
+  // d'authentification manquant") dans la bulle de réponse. Ce state
+  // affiche CompteRequisModal à la place dès qu'on détecte ce cas précis
+  // (voir estErreurCompteRequis ci-dessous), jamais pour une vraie erreur
+  // serveur.
+  const [compteRequisTexte, setCompteRequisTexte] = useState<string | null>(null);
+
+  function estErreurCompteRequis(e: unknown): boolean {
+    return e instanceof ErreurApi && (e.code === "TOKEN_MANQUANT" || e.code === "SESSION_EXPIREE" || e.code === "TOKEN_INVALIDE");
+  }
 
   function majMessages(fabriqueSuivant: (prec: MessageAffiche[]) => MessageAffiche[]) {
     setMessages((prec) => {
@@ -357,6 +373,24 @@ export function ChatIA({
             `${texte}\n\n[Document joint : ${fichier.name}${tronque ? " (tronqué)" : ""}]\n${texteDocument}${lienDocument}${lienApercu}`;
         }
       } catch (e) {
+        if (estErreurCompteRequis(e)) {
+          // Retire les deux messages "en attente" (celui de l'utilisateur
+          // avec la pièce jointe + la bulle assistant vide) plutôt que d'y
+          // écrire une erreur -- rien n'a été envoyé, la modal explique
+          // pourquoi et propose de créer un compte.
+          majMessages((prec) => prec.slice(0, -2));
+          setGenEnCours(false);
+          setCompteRequisTexte(
+            typeFichier === "image"
+              ? "Crée un compte pour envoyer une image dans le chat."
+              : typeFichier === "audio"
+              ? "Crée un compte pour envoyer un audio dans le chat."
+              : typeFichier === "video"
+              ? "Crée un compte pour envoyer une vidéo dans le chat."
+              : "Crée un compte pour envoyer un document dans le chat."
+          );
+          return;
+        }
         // Même correction que pour la dictée vocale (2026-07-20) : le
         // message générique masquait la vraie cause (format refusé,
         // fichier trop lourd, erreur serveur précise...) derrière un seul
@@ -645,6 +679,7 @@ export function ChatIA({
           onModeleChange={setModeleSelectionne}
           boutonSansEnseignant={boutonSansEnseignant}
           placeholderSaisie={placeholderSaisie}
+          onCompteRequis={() => setCompteRequisTexte("Crée un compte pour utiliser la dictée vocale.")}
         />
       </div>
 
@@ -657,7 +692,15 @@ export function ChatIA({
           agentId={agentId}
           onFerme={() => setPopupFeedback(null)}
           onEnvoye={() => setPopupFeedback(null)}
+          onCompteRequis={() => {
+            setPopupFeedback(null);
+            setCompteRequisTexte("Crée un compte pour donner ton avis sur une réponse.");
+          }}
         />
+      )}
+
+      {compteRequisTexte && (
+        <CompteRequisModal texte={compteRequisTexte} onFerme={() => setCompteRequisTexte(null)} />
       )}
     </div>
   );
