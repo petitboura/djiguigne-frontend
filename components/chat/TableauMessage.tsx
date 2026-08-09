@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, Children, isValidElement, ReactNode } from "react";
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "@/components/icons/IconesDessinees";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 // Remplace le <table> par défaut de ReactMarkdown (issu de remarkGfm) pour
 // permettre le tri par colonne -- seul point du bloc "Tableaux de

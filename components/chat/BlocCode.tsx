@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Check, Download, Maximize2, Minimize2, X } from "@/components/icons/IconesDessinees";
+import { Copy, Check, Download, Maximize2, Minimize2, X } from "lucide-react";
 import hljs from "@/lib/coloration";
 
 // Rendu des blocs ```lang ... ``` "code réel" du markdown (les langages

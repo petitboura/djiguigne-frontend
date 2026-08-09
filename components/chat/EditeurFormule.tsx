@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, Sigma, FlaskConical } from "@/components/icons/IconesDessinees";
+import { X, Sigma, FlaskConical } from "lucide-react";
 import katex from "katex";
 import "katex/contrib/mhchem/mhchem.js";
 import type { MathfieldElement } from "mathlive";

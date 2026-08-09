@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "@/components/icons/IconesDessinees";
+import { Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { statutConnexion, demarrerConnexion } from "@/lib/api";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";

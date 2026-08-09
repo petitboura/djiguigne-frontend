@@ -29,7 +29,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useRef, useState } from "react";
-import { X, Sigma, Mic, Square, Check } from "@/components/icons/IconesDessinees";
+import { X, Sigma, Mic, Square, Check } from "lucide-react";
 import { NoeudMaths } from "./MathNode";
 import { transcrireAudioChat } from "@/lib/api";
 import { texteParleVersLatex } from "@/lib/texteParleVersLatex";

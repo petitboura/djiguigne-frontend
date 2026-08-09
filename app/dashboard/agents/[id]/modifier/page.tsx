@@ -13,7 +13,7 @@ import { DroitsAgent } from "@/components/DroitsAgent";
 import { ProactiviteAgent } from "@/components/ProactiviteAgent";
 import { ModelesPremiumAgent } from "@/components/ModelesPremiumAgent";
 import { messageErreur } from "@/lib/erreurs";
-import { Loader2, CheckCircle2, XCircle } from "@/components/icons/IconesDessinees";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 // Étape "modifier un agent" (2026-07-12, demande de Bourama : "on ne peut
 // pas modifier ces agents créés" — gros morceau manquant depuis le début

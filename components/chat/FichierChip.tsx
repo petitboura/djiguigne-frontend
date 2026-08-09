@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, FileSpreadsheet, Presentation, FileArchive, FileJson, FileCode, Image as IconeImage, Box, File, Download, X, ImageOff } from "@/components/icons/IconesDessinees";
+import { FileText, FileSpreadsheet, Presentation, FileArchive, FileJson, FileCode, Image as IconeImage, Box, File, Download, X, ImageOff } from "lucide-react";
 import { BlocExpansible } from "./BlocExpansible";
 
 const EXTENSIONS_FICHIER: Record<string, { icone: typeof File; libelle: string }> = {

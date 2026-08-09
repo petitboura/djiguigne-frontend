@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, ReactNode } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, Download, Maximize2, Minimize2, X, Loader2, LucideIcon } from "@/components/icons/IconesDessinees";
+import { ChevronDown, ChevronUp, Copy, Check, Download, Maximize2, Minimize2, X, Loader2, LucideIcon } from "lucide-react";
 
 // Remplace le panneau latéral (retiré, 2026-07-20 -- Bourama a préféré
 // revenir au déroulement dans le fil, avec un vrai plein écran plutôt

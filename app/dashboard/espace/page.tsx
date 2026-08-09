@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck, Sparkles } from "@/components/icons/IconesDessinees";
+import { Library, History, LayoutGrid, Link as IconLien, FileText, Paperclip, Image as IconImage, AudioLines as IconAudio, Video as IconVideo, Brain, Bot, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {

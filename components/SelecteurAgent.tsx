@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, Building2, ChevronDown, Loader2 } from "@/components/icons/IconesDessinees";
+import { BookOpen, Briefcase, Milestone, LayoutGrid, Globe, Zap, Building2, ChevronDown, Loader2 } from "lucide-react";
 import { appelerApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";

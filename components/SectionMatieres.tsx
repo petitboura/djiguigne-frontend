@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GraduationCap, FlaskConical, Copy, Check, Maximize2, Minimize2 } from "@/components/icons/IconesDessinees";
+import { GraduationCap, FlaskConical, Copy, Check, Maximize2, Minimize2 } from "lucide-react";
 import {
   listerAgentsContenuDynamique,
   lireMesContenusMatiere,

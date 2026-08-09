@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, X } from "@/components/icons/IconesDessinees";
+import { AlertTriangle, Check, X } from "lucide-react";
 
 export function ConfirmationOutil({
   nomLisible,

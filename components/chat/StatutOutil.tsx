@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle } from "@/components/icons/IconesDessinees";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 // Affiche l'état "en train d'utiliser un outil" pendant une réponse --
 // consomme les événements SSE {"type": "statut" | "statut_termine", ...}

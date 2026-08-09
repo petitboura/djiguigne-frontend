@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { LucideProps } from "@/components/icons/IconesDessinees";
+import type { LucideProps } from "lucide-react";
 
 // Logo Notion redessiné en contour (style tabler-icons, licence MIT --
 // https://tabler.io/icons), PAS l'icône lucide-react "BookOpen" utilisée

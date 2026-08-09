@@ -1,4 +1,3 @@
-import type { LucideIcon } from "@/components/icons/IconesDessinees";
 import {
   MapPin,
   FileText,
@@ -44,7 +43,7 @@ import {
   PanelsTopLeft,
   SlidersHorizontal,
   Library,
-} from "@/components/icons/IconesDessinees";
+} from "lucide-react";
 import { IconeNotion } from "@/components/icons/IconeNotion";
 
 // Extrait de components/chat/BarreDeSaisie.tsx le 01/08 (Bourama : "est-ce
@@ -66,7 +65,7 @@ import { IconeNotion } from "@/components/icons/IconeNotion";
 //   anciennes icônes autonomes (préfixe "ui_", voir plus bas)
 export type OngletOutil = "generer" | "rechercher" | "action_app" | "utilitaires";
 
-export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: LucideIcon; onglet: OngletOutil; appli?: string }[] = [
+export const OUTILS_DISPONIBLES: { nom: string; label: string; Icone: typeof Search; onglet: OngletOutil; appli?: string }[] = [
   { nom: "generer_document", label: "Générer un PDF/texte", Icone: FileText, onglet: "generer" },
   { nom: "generer_document_word", label: "Générer un Word", Icone: FileType, onglet: "generer" },
   { nom: "generer_document_excel", label: "Générer un Excel", Icone: FileSpreadsheet, onglet: "generer" },
@@ -175,7 +174,7 @@ export const ONGLETS_OUTILS: { id: OngletOutil; label: string }[] = [
 // "Action dans l'app" ci-dessus, via le champ `appli` des entrées de
 // OUTILS_DISPONIBLES -- et pour app/dashboard/applications/page.tsx (liste
 // des applis connectables).
-export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: LucideIcon }[] = [
+export const APPLIS_DISPONIBLES: { nom: string; label: string; Icone: typeof Github }[] = [
   { nom: "github", label: "GitHub", Icone: Github },
   // BookOpen (icône générique) remplacée par le vrai logo Notion (01/08,
   // demande Bourama) -- même logique que Github juste au-dessus : le

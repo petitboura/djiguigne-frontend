@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Play, X } from "@/components/icons/IconesDessinees";
+import { ExternalLink, Play, X } from "lucide-react";
 
 // Aperçu de lien dans le chat -- demande de Bourama (2026-07-20) : "n'importe
 // quel lien génère un aperçu... comme dans n'importe quelle plateforme"

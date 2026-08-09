@@ -7,7 +7,7 @@ import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeKatex from "rehype-katex";
-import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle, ChevronDown, ChevronRight } from "@/components/icons/IconesDessinees";
+import { Copy, RotateCw, Pencil, Volume2, ThumbsUp, ThumbsDown, Check, MessageSquareQuote, FileText, X, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { formaterHeure } from "@/lib/formatageHeure";
 import dynamic from "next/dynamic";
 import { BlocCode } from "./BlocCode";

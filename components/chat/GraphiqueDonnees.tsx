@@ -16,7 +16,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Download, Check } from "@/components/icons/IconesDessinees";
+import { Download, Check } from "lucide-react";
 import { telechargerImage } from "@/lib/telechargerImageGraphique";
 
 // Rend un bloc ```chart du markdown -- convention documentée dans la

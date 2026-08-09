@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapPin, ExternalLink } from "@/components/icons/IconesDessinees";
+import { MapPin, ExternalLink } from "lucide-react";
 
 // Rend un bloc ```carte du markdown -- convention : JSON
 //   { "lat": number, "lng": number, "label"?: string }
