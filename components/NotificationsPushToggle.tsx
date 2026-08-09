@@ -54,7 +54,7 @@ export function NotificationsPushToggle() {
             type="button"
             onClick={activer}
             disabled={etat === "changement"}
-            className="shrink-0 rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+            className="shrink-0 rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
           >
             {etat === "changement" ? "…" : "Activer"}
           </button>

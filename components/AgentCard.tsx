@@ -151,7 +151,7 @@ export function AgentCard({
             title={editable ? "Changer l'icône" : undefined}
             className={
               editable
-                ? "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-dj-bordure bg-dj-surface-haute transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+                ? "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface-haute transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
                 : "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-dj-surface-haute"
             }
           >
@@ -199,7 +199,7 @@ export function AgentCard({
               <Link
                 href={`/agent/${agent.id}/chat`}
                 onClick={(e) => e.stopPropagation()}
-                className="rounded-full border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet hover:text-dj-texte"
+                className="rounded-xl border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet hover:text-dj-texte"
               >
                 Tester
               </Link>
@@ -213,8 +213,8 @@ export function AgentCard({
                 title={estActif ? "IA publique : clique pour rendre privée" : "IA privée : clique pour rendre publique"}
                 className={
                   estActif
-                    ? "rounded-full bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02] disabled:opacity-50"
-                    : "rounded-full border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet disabled:opacity-50"
+                    ? "rounded-xl bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02] disabled:opacity-50"
+                    : "rounded-xl border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet disabled:opacity-50"
                 }
               >
                 {envoiActif ? "…" : estActif ? "Public" : "Privé"}
@@ -349,7 +349,7 @@ export function AgentCard({
                   stopper(e);
                   setEdition(null);
                 }}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
               >
                 Annuler
               </button>
@@ -360,7 +360,7 @@ export function AgentCard({
                   enregistrerDescription();
                 }}
                 disabled={envoiDescription}
-                className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:opacity-50"
+                className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:opacity-50"
               >
                 {envoiDescription ? "Enregistrement…" : "Enregistrer"}
               </button>

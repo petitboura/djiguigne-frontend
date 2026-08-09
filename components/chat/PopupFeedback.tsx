@@ -158,14 +158,14 @@ export function PopupFeedback({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onFerme}
-            className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+            className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
           >
             Annuler
           </button>
           <button
             onClick={envoyer}
             disabled={envoiEnCours}
-            className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:opacity-60"
+            className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:opacity-60"
           >
             {envoiEnCours ? "Envoi..." : "Envoyer"}
           </button>

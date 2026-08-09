@@ -52,7 +52,7 @@ export function BoutonInstaller() {
       <button
         type="button"
         onClick={estIOS ? () => setInstructionsIOS(true) : installer}
-        className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-3 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-accent-1 hover:text-dj-texte"
+        className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-3 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-accent-1 hover:text-dj-texte"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 3v13m0 0-4-4m4 4 4-4M5 19h14" strokeLinecap="round" strokeLinejoin="round" />
@@ -81,7 +81,7 @@ export function BoutonInstaller() {
             <button
               type="button"
               onClick={() => setInstructionsIOS(false)}
-              className="mt-4 w-full rounded-full bg-dj-gradient py-2 text-sm font-bold text-[#1A0D02]"
+              className="mt-4 w-full rounded-xl bg-dj-gradient py-2 text-sm font-bold text-[#1A0D02]"
             >
               Compris
             </button>

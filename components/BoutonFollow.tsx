@@ -62,14 +62,14 @@ export function BoutonFollow({ creatorId }: { creatorId: string }) {
           disabled={envoi || !etat}
           className={
             etat?.suivi_par_moi
-              ? "rounded-full border border-dj-bordure px-5 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
-              : "rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+              ? "rounded-xl border border-dj-bordure px-5 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+              : "rounded-xl bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
           }
         >
           {etat?.suivi_par_moi ? "Suivi" : "Suivre"}
         </button>
       )}
-      <span className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet">
+      <span className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet">
         {etat ? `${etat.total} abonné${etat.total > 1 ? "s" : ""}` : "..."}
       </span>
     </div>

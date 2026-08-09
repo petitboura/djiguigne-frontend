@@ -726,7 +726,7 @@ export default function PageModifierAgent() {
                   <button
                     type="button"
                     onClick={() => setPleinEcranTexteLibre(false)}
-                    className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                    className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
                   >
                     Fermer
                   </button>
@@ -780,7 +780,7 @@ export default function PageModifierAgent() {
                 <button
                   type="button"
                   onClick={() => supprimerChampProfil(i)}
-                  className="mt-1 self-start rounded-full border border-dj-bordure px-3 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] sm:mt-6"
+                  className="mt-1 self-start rounded-xl border border-dj-bordure px-3 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] sm:mt-6"
                 >
                   Retirer
                 </button>
@@ -790,7 +790,7 @@ export default function PageModifierAgent() {
             <button
               type="button"
               onClick={ajouterChampProfil}
-              className="self-start rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="self-start rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               + Ajouter un champ
             </button>
@@ -802,7 +802,7 @@ export default function PageModifierAgent() {
             <button
               type="submit"
               disabled={enregistrement}
-              className="rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+              className="rounded-xl bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
             >
               {enregistrement ? "Enregistrement…" : "Enregistrer"}
             </button>
@@ -869,7 +869,7 @@ export default function PageModifierAgent() {
               type="button"
               onClick={ajouterPdf}
               disabled={!nouveauPdf || envoiPdf}
-              className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
             >
               {envoiPdf ? "Envoi…" : "Ajouter"}
             </button>
@@ -930,7 +930,7 @@ export default function PageModifierAgent() {
                 placeholder="Titre (optionnel)"
                 value={titreFichierBiblio}
                 onChange={(e) => setTitreFichierBiblio(e.target.value)}
-                className="rounded-full border border-dj-bordure bg-dj-surface px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte sm:w-1/3"
+                className="rounded-xl border border-dj-bordure bg-dj-surface px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte sm:w-1/3"
               />
               <input
                 type="file"
@@ -942,7 +942,7 @@ export default function PageModifierAgent() {
                 type="button"
                 onClick={ajouterFichierBiblio}
                 disabled={!nouveauFichierBiblio || !descriptionFichierBiblio.trim() || envoiBiblio}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
               >
                 {envoiBiblio ? "Envoi…" : "Ajouter"}
               </button>
@@ -1042,7 +1042,7 @@ function SectionMiseAJour({ agentId }: { agentId: string }) {
           <button
             type="submit"
             disabled={envoi || !titre.trim() || !contenu.trim()}
-            className="self-start rounded-full bg-dj-gradient px-6 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="self-start rounded-xl bg-dj-gradient px-6 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {envoi ? "Publication…" : "Publier la mise à jour"}
           </button>
@@ -1057,7 +1057,7 @@ function SectionMiseAJour({ agentId }: { agentId: string }) {
             <button
               type="button"
               onClick={() => setPleinEcran(false)}
-              className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               Fermer
             </button>

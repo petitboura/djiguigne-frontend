@@ -28,7 +28,7 @@ export function BoutonUtiliser({ agentId, retour }: { agentId: string; retour?: 
   return (
     <Link
       href={chemin}
-      className="rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
+      className="rounded-xl bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
     >
       Utiliser cette IA
     </Link>

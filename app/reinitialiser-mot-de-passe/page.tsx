@@ -58,7 +58,7 @@ export default function PageReinitialiserMotDePasse() {
             <button
               type="submit"
               disabled={enCours}
-              className="w-full rounded-full bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+              className="w-full rounded-xl bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
             >
               {enCours ? "Enregistrement…" : "Valider"}
             </button>

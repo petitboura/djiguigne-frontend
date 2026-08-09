@@ -304,7 +304,7 @@ export default function PageMonEspace() {
               <p className="text-sm text-dj-texte-muet">Les IA que tu as créées.</p>
               <Link
                 href="/dashboard/agents/nouveau"
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 + Créer une IA
               </Link>
@@ -392,9 +392,9 @@ export default function PageMonEspace() {
                   value={texteOuLien}
                   onChange={(e) => setTexteOuLien(e.target.value)}
                   placeholder="Colle un lien, ou écris/colle un texte…"
-                  className="flex-1 rounded-full border border-dj-bordure bg-dj-fond px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte"
+                  className="flex-1 rounded-xl border border-dj-bordure bg-dj-fond px-4 py-2 text-sm text-dj-texte outline-none focus:border-dj-bordure-forte"
                 />
-                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte">
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte">
                   <Paperclip size={14} />
                   {nouveauxFichiers.length > 0 ? `${nouveauxFichiers.length} fichier(s)` : "Joindre des fichiers"}
                   <input
@@ -410,7 +410,7 @@ export default function PageMonEspace() {
                 type="button"
                 onClick={ajouter}
                 disabled={(nouveauxFichiers.length === 0 && !texteOuLien.trim()) || envoi}
-                className="self-end rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                className="self-end rounded-xl bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
               >
                 {envoi ? "Envoi…" : "Ajouter"}
               </button>

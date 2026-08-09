@@ -191,7 +191,7 @@ function BlocEcritureMatiere({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => chargerPourEdition(c)}
-                  className="rounded-full border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
+                  className="rounded-xl border border-dj-bordure px-3 py-1 text-xs text-dj-texte-muet transition-colors hover:bg-dj-surface-haute hover:text-dj-texte"
                 >
                   {c.matiere} · code {c.code}
                 </button>

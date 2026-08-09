@@ -2173,7 +2173,7 @@ export function BarreDeSaisie({
                 onClick={envoyer}
                 disabled={desactive}
                 aria-label="Envoyer"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-dj-gradient text-[#1A0D02] disabled:opacity-60"
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] disabled:opacity-60"
               >
                 <ArrowUp size={16} />
               </button>
@@ -2370,7 +2370,7 @@ export function BarreDeSaisie({
             onClick={envoyer}
             disabled={desactive}
             aria-label="Envoyer"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-dj-gradient text-[#1A0D02] disabled:opacity-60"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02] disabled:opacity-60"
           >
             <ArrowUp size={16} />
           </button>
@@ -2849,7 +2849,7 @@ export function BarreDeSaisie({
               }}
               disabled={(!texte.trim() && !texteColle) || desactive}
               aria-label="Envoyer"
-              className="flex items-center gap-2 rounded-full bg-dj-gradient px-5 py-2.5 text-sm font-medium text-[#1A0D02] disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-dj-gradient px-5 py-2.5 text-sm font-medium text-[#1A0D02] disabled:opacity-60"
             >
               Envoyer <ArrowUp size={16} />
             </button>

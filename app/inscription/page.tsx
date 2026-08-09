@@ -85,7 +85,7 @@ function ContenuInscription() {
         <div className="rounded-2xl border border-dj-bordure bg-dj-surface p-6 shadow-[0_2px_24px_rgba(0,0,0,0.35)]">
           <h1 className="font-display text-xl font-bold text-dj-texte">Créer un compte</h1>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 rounded-full border border-dj-bordure bg-dj-surface-haute p-1">
+          <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute p-1">
             <button
               type="button"
               onClick={() => setMethode("email")}
@@ -141,7 +141,7 @@ function ContenuInscription() {
             <button
               type="submit"
               disabled={enCours}
-              className="w-full rounded-full bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+              className="w-full rounded-xl bg-dj-gradient px-4 py-2.5 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
             >
               {enCours ? "Création…" : "Créer mon compte"}
             </button>

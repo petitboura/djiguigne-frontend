@@ -69,7 +69,7 @@ export function CarteMessage({ code }: { code: string }) {
       rel="noopener noreferrer"
       className="my-3 flex animate-dj-fade-in items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface p-4 transition-colors hover:border-dj-bordure-forte"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-dj-gradient text-[#1A0D02]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-dj-gradient text-[#1A0D02]">
         <MapPin size={18} />
       </span>
       <span className="flex-1">

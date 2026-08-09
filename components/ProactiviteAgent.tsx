@@ -178,7 +178,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
           type="button"
           onClick={enregistrer}
           disabled={enregistrement}
-          className="self-start rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          className="self-start rounded-xl bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
           {enregistrement ? "Enregistrement…" : "Enregistrer la proactivité"}
         </button>
@@ -192,7 +192,7 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
             type="button"
             onClick={tester}
             disabled={test}
-            className="self-start rounded-full border border-dj-bordure-forte px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-accent-1 disabled:opacity-50"
+            className="self-start rounded-xl border border-dj-bordure-forte px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-accent-1 disabled:opacity-50"
           >
             {test ? "Test en cours…" : "Tester maintenant"}
           </button>

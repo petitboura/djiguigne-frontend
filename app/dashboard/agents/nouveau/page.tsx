@@ -372,7 +372,7 @@ function FormulaireCreerAgent() {
             Ton agent est créé et prêt à discuter. Partage son lien ou va directement le voir.
           </p>
 
-          <div className="mt-6 flex items-center gap-2 rounded-full border border-dj-bordure bg-dj-surface-haute px-4 py-2">
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute px-4 py-2">
             <input
               readOnly
               value={lienPublic}
@@ -390,14 +390,14 @@ function FormulaireCreerAgent() {
             <button
               type="button"
               onClick={() => router.push(`/agent/${agentCree.id}`)}
-              className="rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+              className="rounded-xl bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
             >
               Voir mon agent
             </button>
             <button
               type="button"
               onClick={() => router.push("/dashboard")}
-              className="rounded-full border border-dj-bordure px-6 py-3 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-6 py-3 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
             >
               Retour au dashboard
             </button>
@@ -806,7 +806,7 @@ function FormulaireCreerAgent() {
                   <button
                     type="button"
                     onClick={() => setPleinEcranTexteLibre(false)}
-                    className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                    className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
                   >
                     Fermer
                   </button>
@@ -876,7 +876,7 @@ function FormulaireCreerAgent() {
                 <button
                   type="button"
                   onClick={() => supprimerChampProfil(i)}
-                  className="mt-1 self-start rounded-full border border-dj-bordure px-3 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] sm:mt-6"
+                  className="mt-1 self-start rounded-xl border border-dj-bordure px-3 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] sm:mt-6"
                 >
                   Retirer
                 </button>
@@ -886,7 +886,7 @@ function FormulaireCreerAgent() {
             <button
               type="button"
               onClick={ajouterChampProfil}
-              className="self-start rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="self-start rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               + Ajouter un champ
             </button>
@@ -913,7 +913,7 @@ function FormulaireCreerAgent() {
           <button
             type="submit"
             disabled={envoi}
-            className="self-start rounded-full bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+            className="self-start rounded-xl bg-dj-gradient px-6 py-3 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
           >
             {envoi ? "Création…" : "Créer l'IA"}
           </button>

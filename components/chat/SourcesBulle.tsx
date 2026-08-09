@@ -49,7 +49,7 @@ export function SourcesBulle({ sources }: { sources?: { titre: string; url: stri
           target="_blank"
           rel="noopener noreferrer"
           title={source.titre}
-          className="flex max-w-[220px] items-center gap-1 rounded-full border border-dj-bordure px-2.5 py-1 text-[12px] text-dj-texte-muet transition-colors hover:text-dj-texte"
+          className="flex max-w-[220px] items-center gap-1 rounded-xl border border-dj-bordure px-2.5 py-1 text-[12px] text-dj-texte-muet transition-colors hover:text-dj-texte"
         >
           <Favicon url={source.url} />
           <span className="truncate">{source.titre}</span>

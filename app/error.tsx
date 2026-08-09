@@ -33,13 +33,13 @@ export default function ErreurGlobale({
         <button
           type="button"
           onClick={reset}
-          className="rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02]"
+          className="rounded-xl bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02]"
         >
           Réessayer
         </button>
         <a
           href="/"
-          className="rounded-full border border-dj-bordure px-5 py-2 text-sm text-dj-texte"
+          className="rounded-xl border border-dj-bordure px-5 py-2 text-sm text-dj-texte"
         >
           Accueil
         </a>

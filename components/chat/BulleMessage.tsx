@@ -560,7 +560,7 @@ export function BulleMessage({
               window.getSelection()?.removeAllRanges();
             }}
             style={{ left: selection.x, top: selection.y - 40 }}
-            className="fixed z-20 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-dj-gradient px-3 py-1.5 text-xs font-semibold text-[#1A0D02] shadow-lg"
+            className="fixed z-20 -translate-x-1/2 flex items-center gap-1.5 rounded-xl bg-dj-gradient px-3 py-1.5 text-xs font-semibold text-[#1A0D02] shadow-lg"
           >
             <MessageSquareQuote size={13} />
             Expliquer

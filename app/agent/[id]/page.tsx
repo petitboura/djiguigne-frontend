@@ -199,7 +199,7 @@ export default async function PageAgent({
             </div>
 
             {specialite && (
-              <span className="inline-flex w-fit items-center rounded-full border border-dj-bordure-forte bg-dj-surface-haute px-3 py-1 text-xs font-semibold text-dj-accent-1">
+              <span className="inline-flex w-fit items-center rounded-xl border border-dj-bordure-forte bg-dj-surface-haute px-3 py-1 text-xs font-semibold text-dj-accent-1">
                 Spécialisée en {specialite}
               </span>
             )}

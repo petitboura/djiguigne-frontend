@@ -208,7 +208,7 @@ function LigneNotification({
         n.lu ? "" : "bg-dj-surface-haute/60"
       }`}
     >
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dj-bordure text-dj-texte-muet">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-dj-bordure text-dj-texte-muet">
         <IconeType type={n.type} />
       </span>
       <div className="flex-1">
@@ -339,7 +339,7 @@ export function NotificationsCloche() {
         type="button"
         onClick={() => setOuverte((v) => !v)}
         aria-label="Notifications"
-        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-dj-bordure bg-dj-surface text-dj-texte transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-dj-bordure bg-dj-surface text-dj-texte transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path
@@ -463,14 +463,14 @@ function PopupDetailFeedback({ n, onFermer }: { n: NotificationItem; onFermer: (
             <Link
               href={`/dashboard/agents/${n.agent_id}/modifier`}
               onClick={onFermer}
-              className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               Modifier {n.agent_nom ?? "l'IA"}
             </Link>
             <Link
               href={`/agent/${n.agent_id}/chat`}
               onClick={onFermer}
-              className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02]"
+              className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02]"
             >
               Ouvrir {n.agent_nom ?? "l'IA"}
             </Link>
@@ -584,7 +584,7 @@ function PopupDetailMessage({
             type="button"
             onClick={envoyerReponse}
             disabled={envoiEnCours || !reponse.trim()}
-            className="mt-2 rounded-full bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02] disabled:opacity-50"
+            className="mt-2 rounded-xl bg-dj-gradient px-4 py-2 text-sm font-semibold text-[#1A0D02] disabled:opacity-50"
           >
             {envoiEnCours ? "Envoi..." : "Répondre"}
           </button>

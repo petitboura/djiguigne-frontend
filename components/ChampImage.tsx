@@ -97,7 +97,7 @@ export function ChampImage({
               type="button"
               disabled={envoi}
               onClick={() => inputRef.current?.click()}
-              className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte disabled:opacity-50"
             >
               {envoi ? "Envoi…" : valeur ? "Changer l'image" : "Choisir une image"}
             </button>
@@ -106,14 +106,14 @@ export function ChampImage({
                 <button
                   type="button"
                   onClick={() => setSourceACadrer(valeur)}
-                  className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                  className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte transition-colors hover:border-dj-bordure-forte"
                 >
                   Recadrer
                 </button>
                 <button
                   type="button"
                   onClick={() => onChange("")}
-                  className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171]"
+                  className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171]"
                 >
                   Supprimer
                 </button>

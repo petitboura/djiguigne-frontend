@@ -212,7 +212,7 @@ export default function PageEspaceRole() {
 
         {!chargement && monRole?.role && (
           <div className="animate-dj-fade-in-rapide">
-            <div className="mt-6 grid grid-cols-2 gap-2 rounded-full border border-dj-bordure bg-dj-surface-haute p-1">
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-dj-bordure bg-dj-surface-haute p-1">
               <button
                 type="button"
                 onClick={() => setOnglet("ia")}
@@ -239,7 +239,7 @@ export default function PageEspaceRole() {
                 {monRole.agent_id ? (
                   <Link
                     href={`/agent/${monRole.agent_id}/chat`}
-                    className="mt-4 inline-block rounded-full bg-dj-gradient px-5 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
+                    className="mt-4 inline-block rounded-xl bg-dj-gradient px-5 py-2.5 text-sm font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5"
                   >
                     Discuter avec mon IA
                   </Link>
@@ -269,7 +269,7 @@ export default function PageEspaceRole() {
                         <span className="flex shrink-0 gap-2">
                           <button
                             onClick={() => setContactActif(c)}
-                            className="rounded-full border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
+                            className="rounded-xl border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
                           >
                             Écrire
                           </button>
@@ -277,13 +277,13 @@ export default function PageEspaceRole() {
                             <>
                               <Link
                                 href={`/agent/${c.agent_id}/chat`}
-                                className="rounded-full border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
+                                className="rounded-xl border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
                               >
                                 Tester
                               </Link>
                               <Link
                                 href={`/dashboard/agents/${c.agent_id}/modifier`}
-                                className="rounded-full bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02]"
+                                className="rounded-xl bg-dj-gradient px-3 py-1 text-xs font-bold text-[#1A0D02]"
                               >
                                 Modifier
                               </Link>
@@ -316,7 +316,7 @@ export default function PageEspaceRole() {
                     <button
                       onClick={envoyerAnnonce}
                       disabled={!annonce.trim()}
-                      className="mt-2 rounded-full bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
+                      className="mt-2 rounded-xl bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
                     >
                       Envoyer l'annonce
                     </button>
@@ -353,7 +353,7 @@ export default function PageEspaceRole() {
                     <button
                       onClick={diffuserDocument}
                       disabled={!fichierDiffusion || !descriptionDiffusion.trim() || diffusionEnCours}
-                      className="mt-2 rounded-full bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
+                      className="mt-2 rounded-xl bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
                     >
                       {diffusionEnCours ? "Diffusion…" : "Diffuser à tout le monde"}
                     </button>
@@ -367,7 +367,7 @@ export default function PageEspaceRole() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setContactActif(null)}
-                    className="rounded-full border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
+                    className="rounded-xl border border-dj-bordure px-3 py-1 text-xs font-medium text-dj-texte-muet transition-colors hover:text-dj-texte"
                   >
                     ← Retour
                   </button>
@@ -410,7 +410,7 @@ export default function PageEspaceRole() {
                   <button
                     onClick={envoyerMessage}
                     disabled={!nouveauMessage.trim() || envoiEnCours}
-                    className="rounded-full bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
+                    className="rounded-xl bg-dj-gradient px-4 py-1.5 text-sm font-bold text-[#1A0D02] transition-opacity disabled:opacity-50"
                   >
                     Envoyer
                   </button>

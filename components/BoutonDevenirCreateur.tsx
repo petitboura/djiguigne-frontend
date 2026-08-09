@@ -148,7 +148,7 @@ export function BoutonDevenirCreateur({
       <button
         type="button"
         onClick={gererClicBouton}
-        className="rounded-full border border-dj-bordure px-6 py-3 text-sm font-semibold text-dj-texte transition-colors hover:border-dj-bordure-forte"
+        className="rounded-xl border border-dj-bordure px-6 py-3 text-sm font-semibold text-dj-texte transition-colors hover:border-dj-bordure-forte"
       >
         {label}
       </button>
@@ -179,14 +179,14 @@ export function BoutonDevenirCreateur({
                 <button
                   type="button"
                   onClick={fermer}
-                  className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                  className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
                 >
                   {annulerLabel}
                 </button>
                 <button
                   type="button"
                   onClick={passerAEtapeSuivante}
-                  className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
+                  className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
                 >
                   {continuerLabel}
                 </button>
@@ -294,7 +294,7 @@ export function BoutonDevenirCreateur({
                   type="button"
                   onClick={validerChampLibre}
                   disabled={!valeurLibre.trim()}
-                  className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-40"
+                  className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-40"
                 >
                   Valider
                 </button>

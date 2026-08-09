@@ -65,7 +65,7 @@ export function CreateurCard({ createur }: { createur: CreateurResume }) {
         </div>
       </Link>
 
-      <span className="shrink-0 rounded-full border border-dj-bordure px-4 py-1.5 text-sm text-dj-texte-muet">
+      <span className="shrink-0 rounded-xl border border-dj-bordure px-4 py-1.5 text-sm text-dj-texte-muet">
         {nombreAbonnes !== null ? `${nombreAbonnes} abonné${nombreAbonnes !== 1 ? "s" : ""}` : "…"}
       </span>
     </div>

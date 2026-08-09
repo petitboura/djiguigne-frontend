@@ -139,7 +139,7 @@ export function ModalePublierPost({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
             >
               Annuler
             </button>
@@ -147,7 +147,7 @@ export function ModalePublierPost({
               type="button"
               onClick={publier}
               disabled={!pretAPublier || envoi}
-              className="rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {envoi ? "Publication…" : "Publier"}
             </button>

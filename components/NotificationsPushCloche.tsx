@@ -26,7 +26,7 @@ export function NotificationsPushCloche() {
       disabled={etat === "changement"}
       aria-label="Activer les notifications"
       title="Activer les notifications"
-      className="relative flex h-9 w-9 items-center justify-center rounded-full border border-dj-bordure bg-dj-surface text-dj-texte transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute disabled:opacity-50"
+      className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-dj-bordure bg-dj-surface text-dj-texte transition-colors hover:border-dj-bordure-forte hover:bg-dj-surface-haute disabled:opacity-50"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path

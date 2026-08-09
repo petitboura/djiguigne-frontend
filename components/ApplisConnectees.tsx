@@ -87,7 +87,7 @@ export function ApplisConnectees() {
             {connecte === undefined ? (
               <span className="text-sm text-dj-texte-muet">Vérification…</span>
             ) : connecte ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-4 py-2 text-sm font-semibold text-dj-texte">
+              <span className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-4 py-2 text-sm font-semibold text-dj-texte">
                 <Check size={16} className="text-dj-accent-1" />
                 Connecté
               </span>
@@ -96,7 +96,7 @@ export function ApplisConnectees() {
                 type="button"
                 onClick={() => connecter(appli.nom)}
                 disabled={connexionEnCours !== null}
-                className="rounded-full bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                className="rounded-xl bg-dj-gradient px-5 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
               >
                 {connexionEnCours === appli.nom ? "Connexion…" : "Connecter"}
               </button>

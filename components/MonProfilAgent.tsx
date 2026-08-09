@@ -102,14 +102,14 @@ export function MonProfilAgent({
         <button
           onClick={enregistrer}
           disabled={enregistrement}
-          className="rounded-full bg-dj-gradient px-4 py-2 text-xs font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          className="rounded-xl bg-dj-gradient px-4 py-2 text-xs font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
           {enregistrement ? "..." : "Enregistrer"}
         </button>
         <button
           onClick={effacer}
           disabled={enregistrement}
-          className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] disabled:opacity-50"
+          className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-[#F87171] hover:text-[#F87171] disabled:opacity-50"
         >
           Tout effacer
         </button>

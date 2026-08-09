@@ -67,7 +67,7 @@ export default async function PagePortfolio({ params }: { params: { id: string }
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="relative h-24 w-24 overflow-hidden rounded-full border border-dj-bordure bg-dj-surface-haute">
+          <div className="relative h-24 w-24 overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface-haute">
             {profil.avatar_url ? (
               <Image
                 src={profil.avatar_url}

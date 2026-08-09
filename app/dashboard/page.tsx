@@ -117,7 +117,7 @@ export default function PageDashboard() {
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="relative h-24 w-24 overflow-hidden rounded-full border border-dj-bordure bg-dj-surface-haute">
+          <div className="relative h-24 w-24 overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface-haute">
             {profil?.avatar_url ? (
               <Image
                 src={profil.avatar_url}
@@ -150,7 +150,7 @@ export default function PageDashboard() {
                   page /u/[id] que tout le monde voit. */}
               <Link
                 href={`/u/${profil.user_id}`}
-                className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" strokeLinecap="round" strokeLinejoin="round" />
@@ -168,7 +168,7 @@ export default function PageDashboard() {
               <button
                 type="button"
                 onClick={() => setBulleHistoriqueOuverte((v) => !v)}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 Historique
               </button>
@@ -196,7 +196,7 @@ export default function PageDashboard() {
                 key={libelle}
                 type="button"
                 onClick={() => setModalePostOuverte(type)}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 {libelle}
               </button>
@@ -204,14 +204,14 @@ export default function PageDashboard() {
 
             <Link
               href="/dashboard/profil/modifier"
-              className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               Modifier le profil
             </Link>
 
             <Link
               href="/dashboard/memoire"
-              className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+              className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
             >
               Ma mémoire
             </Link>
@@ -221,7 +221,7 @@ export default function PageDashboard() {
                 key={libelle}
                 type="button"
                 onClick={() => cliquerBouton(libelle)}
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 {libelle}
               </button>
@@ -253,7 +253,7 @@ export default function PageDashboard() {
                 <button
                   type="button"
                   onClick={() => setBulleAgentsOuverte((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                  className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
                 >
                   {/* Icône crayon en currentColor : exactement la même
                       couleur que le texte du bouton, jamais l'accent --
@@ -319,7 +319,7 @@ export default function PageDashboard() {
                 <button
                   type="button"
                   onClick={() => setBulleMajOuverte((v) => !v)}
-                  className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                  className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
                 >
                   Voir les mises à jour
                 </button>
@@ -360,7 +360,7 @@ export default function PageDashboard() {
 
               <Link
                 href="/dashboard/agents/nouveau"
-                className="rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                className="rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               >
                 + Créer une IA
               </Link>

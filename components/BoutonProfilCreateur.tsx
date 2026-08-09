@@ -12,7 +12,7 @@ export function BoutonProfilCreateur({ ownerId }: { ownerId: string }) {
   return (
     <Link
       href={`/u/${ownerId}`}
-      className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+      className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="8" r="3.5" strokeLinecap="round" strokeLinejoin="round" />

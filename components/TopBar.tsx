@@ -71,8 +71,8 @@ export function TopBar() {
               href={lienMonEspace}
               className={
                 dansMonEspace
-                  ? "rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02]"
-                  : "rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+                  ? "rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02]"
+                  : "rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
               }
             >
               Mon espace
@@ -83,7 +83,7 @@ export function TopBar() {
             <BoutonInstaller />
             <Link
               href="/inscription"
-              className="flex items-center gap-1.5 rounded-full bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
+              className="flex items-center gap-1.5 rounded-xl bg-dj-gradient px-4 py-2 text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
             >
               <span aria-hidden="true">+</span>
               Créer mon IA

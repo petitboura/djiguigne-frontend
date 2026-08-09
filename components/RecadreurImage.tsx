@@ -244,7 +244,7 @@ export function RecadreurImage({
           <button
             type="button"
             onClick={onAnnuler}
-            className="rounded-full border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+            className="rounded-xl border border-dj-bordure px-4 py-2 text-xs text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
           >
             Annuler
           </button>
@@ -252,7 +252,7 @@ export function RecadreurImage({
             type="button"
             onClick={valider}
             disabled={!image}
-            className="rounded-full bg-dj-gradient px-4 py-2 text-xs font-medium text-dj-texte disabled:opacity-50"
+            className="rounded-xl bg-dj-gradient px-4 py-2 text-xs font-medium text-dj-texte disabled:opacity-50"
           >
             Valider
           </button>

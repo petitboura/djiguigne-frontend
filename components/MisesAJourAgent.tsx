@@ -176,7 +176,7 @@ function ItemMiseAJour({
         <button
           type="button"
           onClick={ouvrirCommentaires}
-          className="rounded-full border border-dj-bordure px-3 py-1.5 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
+          className="rounded-xl border border-dj-bordure px-3 py-1.5 text-sm text-dj-texte-muet transition-colors hover:border-dj-bordure-forte"
         >
           Commenter{maj.total_commentaires > 0 ? ` (${maj.total_commentaires})` : ""}
         </button>
@@ -200,7 +200,7 @@ function ItemMiseAJour({
               <button
                 type="submit"
                 disabled={envoiCommentaire || !brouillon.trim()}
-                className="self-start rounded-full bg-dj-gradient px-4 py-2 text-xs font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="self-start rounded-xl bg-dj-gradient px-4 py-2 text-xs font-bold text-[#1A0D02] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Publier
               </button>

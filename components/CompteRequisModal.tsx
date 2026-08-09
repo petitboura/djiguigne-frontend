@@ -41,13 +41,13 @@ export function CompteRequisModal({
         <div className="mt-5 flex flex-col gap-2">
           <Link
             href={`/inscription?retour=${encodeURIComponent(retour)}`}
-            className="w-full rounded-full bg-dj-gradient px-4 py-2.5 text-center text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
+            className="w-full rounded-xl bg-dj-gradient px-4 py-2.5 text-center text-sm font-bold text-[#1A0D02] shadow-[0_2px_14px_rgba(217,99,31,0.25)] transition-transform hover:-translate-y-0.5"
           >
             Créer un compte
           </Link>
           <Link
             href={`/connexion?retour=${encodeURIComponent(retour)}`}
-            className="w-full rounded-full border border-dj-bordure px-4 py-2.5 text-center text-sm font-semibold text-dj-texte transition-colors hover:bg-dj-surface-haute"
+            className="w-full rounded-xl border border-dj-bordure px-4 py-2.5 text-center text-sm font-semibold text-dj-texte transition-colors hover:bg-dj-surface-haute"
           >
             J&apos;ai déjà un compte
           </Link>

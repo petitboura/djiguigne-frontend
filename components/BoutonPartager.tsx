@@ -53,7 +53,7 @@ export function BoutonPartager({
     <button
       type="button"
       onClick={partager}
-      className="flex items-center gap-1.5 rounded-full border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
+      className="flex items-center gap-1.5 rounded-xl border border-dj-bordure px-4 py-2 text-sm text-dj-texte transition-colors hover:border-dj-bordure-forte"
     >
       {copie ? "Copié !" : libelle}
     </button>
