@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { MATIERES } from "@/lib/matieres";
+import { supabase } from "@/lib/supabase";
+import { CompteRequisModal } from "@/components/CompteRequisModal";
 
 // Demande de Bourama (2026-07-27) : "Devenir créateur" ne doit plus se
 // contenter d'un lien vers /about -- le clic doit ouvrir un flow direct
@@ -80,8 +82,29 @@ export function BoutonDevenirCreateur({
   const [etape, setEtape] = useState<Etape>("ferme");
   const [categorieChoisie, setCategorieChoisie] = useState<CleSection | null>(null);
   const [valeurLibre, setValeurLibre] = useState("");
+  // "Crée un compte" (07/08/2026, demande Bourama) : avant, ce bouton
+  // ouvrait tout le flow (explication -> catégorie -> matière/champ
+  // libre) même pour un visiteur non connecté, qui n'apprenait qu'il lui
+  // fallait un compte qu'à la toute fin -- redirigé vers /connexion par
+  // app/dashboard/agents/nouveau/page.tsx en perdant au passage tout ce
+  // qu'il venait de choisir (le retour ne portait que le chemin, pas les
+  // query params). Le check ci-dessous coupe court avant la première
+  // étape : visiteur non connecté -> CompteRequisModal direct, jamais le
+  // flow. Connecté -> comportement inchangé.
+  const [compteRequis, setCompteRequis] = useState(false);
 
   useEffect(() => setMonte(true), []);
+
+  async function gererClicBouton() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      setCompteRequis(true);
+      return;
+    }
+    setEtape("explication");
+  }
 
   function fermer() {
     setEtape("ferme");
@@ -124,11 +147,18 @@ export function BoutonDevenirCreateur({
     <>
       <button
         type="button"
-        onClick={() => setEtape("explication")}
+        onClick={gererClicBouton}
         className="rounded-full border border-dj-bordure px-6 py-3 text-sm font-semibold text-dj-texte transition-colors hover:border-dj-bordure-forte"
       >
         {label}
       </button>
+
+      {compteRequis && (
+        <CompteRequisModal
+          texte="Crée un compte pour créer ton IA."
+          onFerme={() => setCompteRequis(false)}
+        />
+      )}
 
       {monte &&
         etape === "explication" &&

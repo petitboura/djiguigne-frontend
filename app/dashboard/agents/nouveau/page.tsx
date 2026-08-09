@@ -224,7 +224,15 @@ function FormulaireCreerAgent() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        router.push("/connexion?retour=/dashboard/agents/nouveau");
+        // Corrigé le 07/08/2026 (Bourama) : le chemin fixe ci-dessous
+        // perdait tous les paramètres (matiere=, metier=, etc.) choisis
+        // via "Devenir créateur" (voir components/BoutonDevenirCreateur.tsx)
+        // -- un visiteur qui atterrissait quand même ici non connecté (lien
+        // direct, onglet déjà ouvert...) devait tout recommencer après
+        // connexion. window.location, pas usePathname/useSearchParams, pour
+        // rester dans ce useEffect sans changer la signature du composant.
+        const retour = window.location.pathname + window.location.search;
+        router.push(`/connexion?retour=${encodeURIComponent(retour)}`);
         return;
       }
       setSession(session);
