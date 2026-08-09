@@ -35,7 +35,7 @@ export default async function OgImageAgent({ params }: { params: { id: string } 
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#0b0908",
+          backgroundColor: "#f4f3ee",
           padding: 80,
         }}
       >
@@ -48,7 +48,7 @@ export default async function OgImageAgent({ params }: { params: { id: string } 
             marginTop: 32,
             fontSize: 56,
             fontWeight: 800,
-            color: "#F5ECE0",
+            color: "#2b2118",
             textAlign: "center",
           }}
         >
@@ -58,7 +58,7 @@ export default async function OgImageAgent({ params }: { params: { id: string } 
           style={{
             marginTop: 20,
             fontSize: 28,
-            color: "#A79A8C",
+            color: "#6e5f4d",
             textAlign: "center",
             maxWidth: 900,
           }}

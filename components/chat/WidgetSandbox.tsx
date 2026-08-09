@@ -13,7 +13,7 @@ import { BlocExpansible } from "./BlocExpansible";
 export function construireDocumentWidget(code: string): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
     <style>
-      html,body{margin:0;padding:12px;background:#161210;color:#F5ECE0;
+      html,body{margin:0;padding:12px;background:#FBFAF8;color:#2B2118;
         font-family:Inter,system-ui,sans-serif;}
       *{box-sizing:border-box;}
       /* Style par défaut pour tout champ/bouton généré sans CSS propre --
@@ -24,7 +24,7 @@ export function construireDocumentWidget(code: string): string {
          écraser ces règles avec son propre <style>, ceci n'est qu'un
          filet de sécurité. */
       input, select, textarea{
-        background:#1E1813;color:#F5ECE0;border:1px solid rgba(255,255,255,0.14);
+        background:#FFFFFF;color:#2B2118;border:1px solid rgba(43,33,24,0.14);
         border-radius:8px;padding:6px 10px;font:inherit;font-size:14px;
       }
       input:focus, select:focus, textarea:focus{
@@ -38,12 +38,12 @@ export function construireDocumentWidget(code: string): string {
       button:hover{filter:brightness(1.08);}
       button:active{filter:brightness(0.95);}
       table{border-collapse:collapse;}
-      td,th{border:1px solid rgba(255,255,255,0.14);padding:4px 8px;}
+      td,th{border:1px solid rgba(43,33,24,0.14);padding:4px 8px;}
       a{color:#E8934A;}
       #dj-erreur-widget{
         display:none;margin-bottom:10px;padding:8px 10px;border-radius:8px;
         background:rgba(220,60,50,0.15);border:1px solid rgba(220,60,50,0.4);
-        color:#F5ECE0;font-size:12px;font-family:monospace;white-space:pre-wrap;
+        color:#2B2118;font-size:12px;font-family:monospace;white-space:pre-wrap;
       }
     </style>
     </head><body>

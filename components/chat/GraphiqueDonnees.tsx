@@ -31,7 +31,7 @@ import { telechargerImage } from "@/lib/telechargerImageGraphique";
 // convention pour que le modèle la respecte -- ce composant ne fait que
 // le rendu, il ne peut pas deviner un format non respecté (dans ce cas :
 // message d'erreur discret, jamais de JSON brut affiché).
-const COULEURS = ["#E8934A", "#C1440E", "#F2A65A", "#8A2E0A", "#A79A8C"];
+const COULEURS = ["#E8934A", "#C1440E", "#F2A65A", "#8A2E0A", "#6E5F4D"];
 
 type Chart = {
   type: "line" | "bar" | "pie";
@@ -211,15 +211,15 @@ export function GraphiqueDonnees({ code }: { code: string }) {
                   <Cell key={index} fill={COULEURS[index % COULEURS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(43,33,24,0.12)" }} />
               <Legend />
             </PieChart>
           ) : chart.type === "bar" ? (
             <BarChart data={chart.data}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
-              <YAxis stroke="#A79A8C" fontSize={12} />
-              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <CartesianGrid stroke="rgba(43,33,24,0.08)" />
+              <XAxis dataKey={cleAxeX} stroke="#6E5F4D" fontSize={12} />
+              <YAxis stroke="#6E5F4D" fontSize={12} />
+              <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(43,33,24,0.12)" }} />
               <Legend />
               {clesSeries.map((cle, index) => (
                 <Bar key={cle} dataKey={cle} fill={COULEURS[index % COULEURS.length]} radius={[4, 4, 0, 0]} />
@@ -227,10 +227,10 @@ export function GraphiqueDonnees({ code }: { code: string }) {
             </BarChart>
           ) : (
             <LineChart data={chart.data}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey={cleAxeX} stroke="#A79A8C" fontSize={12} />
-              <YAxis stroke="#A79A8C" fontSize={12} />
-              <Tooltip contentStyle={{ background: "#1E1813", border: "1px solid rgba(255,255,255,0.08)" }} />
+              <CartesianGrid stroke="rgba(43,33,24,0.08)" />
+              <XAxis dataKey={cleAxeX} stroke="#6E5F4D" fontSize={12} />
+              <YAxis stroke="#6E5F4D" fontSize={12} />
+              <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid rgba(43,33,24,0.12)" }} />
               <Legend />
               {clesSeries.map((cle, index) => (
                 <Line

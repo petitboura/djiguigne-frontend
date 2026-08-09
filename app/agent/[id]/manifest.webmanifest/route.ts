@@ -61,8 +61,8 @@ export async function GET(
     start_url: `/agent/${agent.id}/chat`,
     scope: "/",
     display: "standalone",
-    background_color: "#0b0908",
-    theme_color: "#0b0908",
+    background_color: "#f4f3ee",
+    theme_color: "#f4f3ee",
     icons: [
       { src: `${origine}/agent/${agent.id}/icone?taille=192`, sizes: "192x192", type: "image/png" },
       { src: `${origine}/agent/${agent.id}/icone?taille=512`, sizes: "512x512", type: "image/png" },

@@ -33,7 +33,7 @@ export function Mermaid({ definition }: { definition: string }) {
         const mermaid = (await import("mermaid")).default;
         mermaid.initialize({
           startOnLoad: false,
-          theme: "dark",
+          theme: "base",
           // CORRECTIF 2026-07-30 (audit sécurité) : sans ce réglage
           // explicite, le niveau de sécurité de mermaid dépend de sa
           // valeur par défaut -- qui a changé plusieurs fois selon les
@@ -54,13 +54,14 @@ export function Mermaid({ definition }: { definition: string }) {
           // d'erreur réel du parseur.
           suppressErrorRendering: true,
           themeVariables: {
-            background: "#161210",
-            primaryColor: "#1E1813",
-            primaryTextColor: "#F5ECE0",
+            background: "#FBFAF8",
+            primaryColor: "#FFFFFF",
+            primaryTextColor: "#2B2118",
             primaryBorderColor: "#E8934A",
-            lineColor: "#A79A8C",
-            secondaryColor: "#161210",
-            tertiaryColor: "#0B0908",
+            lineColor: "#6E5F4D",
+            secondaryColor: "#FBFAF8",
+            tertiaryColor: "#F4F3EE",
+            textColor: "#2B2118",
           },
           fontFamily: "var(--font-inter), sans-serif",
         });

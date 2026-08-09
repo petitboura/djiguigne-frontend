@@ -56,7 +56,7 @@ function dessinerLegende(
     for (const item of ligne) {
       ctx.fillStyle = item.couleur;
       ctx.fillRect(x, y - tailleSwatch / 2, tailleSwatch, tailleSwatch);
-      ctx.fillStyle = "#A79A8C";
+      ctx.fillStyle = "#6E5F4D";
       ctx.fillText(item.libelle, x + tailleSwatch + espaceSwatchTexte, y);
       x += tailleSwatch + espaceSwatchTexte + ctx.measureText(item.libelle).width + espaceEntreItems;
     }
@@ -131,7 +131,7 @@ export function telechargerImage(
     const ctx = canvas.getContext("2d");
     URL.revokeObjectURL(url);
     if (!ctx) return;
-    ctx.fillStyle = "#161210";
+    ctx.fillStyle = "#FBFAF8";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(echelle, echelle);
     ctx.drawImage(img, 0, 0, width, height);

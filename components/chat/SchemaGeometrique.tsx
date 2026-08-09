@@ -62,8 +62,8 @@ type Schema = {
 const COULEUR_TRAIT = "#E8934A";
 const COULEUR_TRAIT_2 = "#C1440E";
 const COULEUR_TEXTE = "#EDE7E1";
-const COULEUR_GRILLE = "rgba(255,255,255,0.08)";
-const COULEUR_AXE = "rgba(255,255,255,0.35)";
+const COULEUR_GRILLE = "rgba(43,33,24,0.10)";
+const COULEUR_AXE = "rgba(43,33,24,0.4)";
 
 export function SchemaGeometrique({ code }: { code: string }) {
   const conteneurRef = useRef<HTMLDivElement>(null);
