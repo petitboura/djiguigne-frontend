@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { PostCard, type PostResume } from "@/components/PostCard";
+import { Skeleton } from "@/components/Skeleton";
 
 // Ajouté le 2026-08-09 (Bourama) : section "Articles" sur la page publique
 // d'une IA -- distincte de "Mises à jour" (MisesAJourAgent.tsx, table
@@ -24,7 +25,12 @@ export function ArticlesAgent({ agentId }: { agentId: string }) {
   return (
     <section className="flex flex-col gap-4">
       <h2 className="font-display text-lg font-bold text-dj-texte">Articles</h2>
-      {articles === null && <p className="text-sm text-dj-texte-muet">Chargement…</p>}
+      {articles === null && (
+        <div className="flex flex-col gap-2" aria-hidden>
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+        </div>
+      )}
       {articles !== null && articles.length === 0 && (
         <p className="text-sm text-dj-texte-muet">Aucun article pour l&apos;instant.</p>
       )}
