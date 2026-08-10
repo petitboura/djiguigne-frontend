@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { statutConnexion, demarrerConnexion } from "@/lib/api";
 import { APPLIS_DISPONIBLES, OUTILS_DISPONIBLES } from "@/lib/outils";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 /**
  * Extrait de app/dashboard/applications/page.tsx (2026-08-01, demande
@@ -53,7 +54,12 @@ export function ApplisConnectees() {
   }
 
   if (session === undefined) {
-    return <p className="text-sm text-dj-texte-muet">Chargement…</p>;
+    return (
+      <div className="flex flex-col gap-2" aria-hidden>
+        <Skeleton className="h-12 rounded-lg border border-dj-bordure" />
+        <Skeleton className="h-12 rounded-lg border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+      </div>
+    );
   }
   if (!session) {
     return <p className="text-sm text-dj-texte-muet">Connecte-toi pour gérer tes applications.</p>;

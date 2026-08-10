@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { PostCard, type PostResume } from "@/components/PostCard";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Ajouté le 2026-07-15 (Bourama : "dans son profil aussi, les trois
 // sections") -- mêmes 3 onglets (texte + ligne de couleur) que l'accueil
@@ -80,7 +81,12 @@ export function SectionsPostsCreateur({ userId }: { userId: string }) {
         ))}
       </div>
 
-      {etat.statut === "chargement" && <p className="text-sm text-dj-texte-muet">Chargement…</p>}
+      {etat.statut === "chargement" && (
+        <div className="flex flex-col gap-2" aria-hidden>
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+        </div>
+      )}
       {etat.statut === "erreur" && (
         <p className="text-sm text-dj-texte-muet">Impossible de charger pour le moment.</p>
       )}

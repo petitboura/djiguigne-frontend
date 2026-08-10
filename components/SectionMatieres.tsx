@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { MATIERES } from "@/lib/matieres";
 import { messageErreur, ErreurApi } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 /**
  * Onglet "L'IA de mes élèves" de Mon espace (2026-08-06, demande
@@ -42,7 +43,12 @@ export function SectionMatieres({ agentIdEnseignant }: { agentIdEnseignant: stri
   }, []);
 
   if (agents === null && !erreurAgents) {
-    return <p className="text-sm text-dj-texte-muet">Chargement…</p>;
+    return (
+      <div className="flex flex-col gap-2" aria-hidden>
+        <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+        <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+      </div>
+    );
   }
 
   if (erreurAgents) {

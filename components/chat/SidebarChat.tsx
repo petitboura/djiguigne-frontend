@@ -27,6 +27,7 @@ import { CommentairesAgent } from "@/components/CommentairesAgent";
 import { BoutonInstaller } from "@/components/BoutonInstaller";
 import { MonProfilAgent } from "@/components/MonProfilAgent";
 import { MesComportements } from "@/components/MesComportements";
+import { Skeleton } from "@/components/Skeleton";
 
 // Reproduit la sidebar de faces/vues/chat.py (Streamlit) dans le chat
 // Next.js -- demande de Bourama (2026-07-16) : "comme si j'avais pas
@@ -111,7 +112,7 @@ function ListeMatieresDebloquees({
     return (
       <div className="flex flex-col gap-1.5 px-2 pt-1">
         {[0, 1].map((i) => (
-          <div key={i} className="h-8 animate-pulse rounded-lg bg-dj-surface-haute" />
+          <Skeleton key={i} className="h-8 rounded-lg" style={{ animationDelay: `${i * 100}ms` }} />
         ))}
       </div>
     );

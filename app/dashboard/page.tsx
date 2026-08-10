@@ -15,6 +15,7 @@ import { HistoriqueConversations } from "@/components/HistoriqueConversations";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { ModalePublierPost } from "@/components/ModalePublierPost";
+import { Skeleton } from "@/components/Skeleton";
 
 // Refonte du 2026-07-12 (Bourama) : "Mon espace" doit ressembler
 // EXACTEMENT au portfolio public tel que tout le monde le voit
@@ -368,7 +369,12 @@ export default function PageDashboard() {
             </div>
           </div>
 
-          {profil === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+          {profil === null && (
+            <div className="flex flex-col gap-2" aria-hidden>
+              <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+              <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+            </div>
+          )}
           {profil?.agents.length === 0 && (
             <p className="text-sm text-dj-texte-muet">Aucune IA créée pour l'instant.</p>
           )}

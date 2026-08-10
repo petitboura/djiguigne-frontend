@@ -23,6 +23,7 @@ import { LecteurMedia, typeMedia } from "./LecteurMedia";
 import { LinkPreview } from "./LinkPreview";
 import { RaisonnementBulle } from "./RaisonnementBulle";
 import { OutilResultatBulle } from "./OutilResultatBulle";
+import { Skeleton } from "../Skeleton";
 
 // Chargé à la demande (pas en haut du bundle du chat) : recharts ne sert
 // que si le message contient effectivement un bloc ```chart, et son
@@ -30,7 +31,7 @@ import { OutilResultatBulle } from "./OutilResultatBulle";
 // (mesures de pixels réelles nécessaires) -- ssr:false assumé.
 const GraphiqueDonnees = dynamic(() => import("./GraphiqueDonnees").then((m) => m.GraphiqueDonnees), {
   ssr: false,
-  loading: () => <div className="text-sm text-dj-muted px-1 py-2">Construction du graphique…</div>,
+  loading: () => <Skeleton className="h-[260px] w-full rounded-xl border border-dj-bordure" />,
 });
 
 // Extrait le texte brut d'un enfant React -- nécessaire pour récupérer le
@@ -395,12 +396,9 @@ export function BulleMessage({
           la réponse, ce qui ne reflétait pas l'ordre réel "le modèle
           réfléchit D'ABORD, répond ENSUITE". */}
       {!estUtilisateur && enAttente && (
-        <div className="my-1 flex items-center gap-1.5 text-[13px] text-dj-texte-muet">
-          <span>{nomAgent} réfléchit</span>
-          <span className="flex gap-0.5">
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:0ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:150ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-dj-texte-muet [animation-delay:300ms]" />
+        <div className="my-1 flex items-center text-[13px]">
+          <span className="animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-transparent">
+            {nomAgent} réfléchit
           </span>
         </div>
       )}

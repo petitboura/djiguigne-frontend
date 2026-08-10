@@ -8,6 +8,7 @@ import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { SectionMatieres } from "@/components/SectionMatieres";
+import { Skeleton } from "@/components/Skeleton";
 
 // Page "L'IA de mes élèves", propre à l'agent Stirux (2026-08-06,
 // demande Bourama). Contrairement à Mon espace (générique, tout
@@ -38,7 +39,10 @@ export default function PageEnseignerAgent() {
       <>
         <TopBar />
         <main className="mx-auto flex max-w-2xl flex-col gap-8 px-5 py-10">
-          <p className="text-sm text-dj-texte-muet">Chargement…</p>
+          <div className="flex flex-col gap-2" aria-hidden>
+            <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+            <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+          </div>
         </main>
       </>
     );

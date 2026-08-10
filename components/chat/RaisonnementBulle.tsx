@@ -44,7 +44,15 @@ export function RaisonnementBulle({
         className="flex items-center gap-1.5 text-[13px] text-dj-texte-muet transition-colors hover:text-dj-texte"
       >
         <BrainCog size={13} className={enCours ? "animate-pulse text-dj-accent-1" : ""} />
-        <span>{enCours ? `${nomAgent} réfléchit...` : `Raisonnement de ${nomAgent}`}</span>
+        <span
+          className={
+            enCours
+              ? "animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-transparent"
+              : ""
+          }
+        >
+          {enCours ? `${nomAgent} réfléchit...` : `Raisonnement de ${nomAgent}`}
+        </span>
         {ouvert ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
       </button>
       {/* Glissement fluide (26/07, retour Bourama : le repliement était

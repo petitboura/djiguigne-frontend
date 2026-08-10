@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 /**
  * Extrait de app/dashboard/memoire/page.tsx (2026-08-01, demande Bourama :
@@ -71,7 +72,13 @@ export function MaMemoire() {
         fil des discussions — tu peux aussi le corriger ou l&apos;effacer toi-même ici.
       </p>
 
-      {chargement && <p className="text-sm text-dj-texte-muet">Chargement…</p>}
+      {chargement && (
+        <div className="flex flex-col gap-2" aria-hidden>
+          <Skeleton className="h-3.5 w-full rounded" />
+          <Skeleton className="h-3.5 w-11/12 rounded" style={{ animationDelay: "100ms" }} />
+          <Skeleton className="h-3.5 w-2/3 rounded" style={{ animationDelay: "200ms" }} />
+        </div>
+      )}
 
       {!chargement && (
         <div className="flex flex-col gap-4 rounded-2xl border border-dj-bordure bg-dj-surface p-6">

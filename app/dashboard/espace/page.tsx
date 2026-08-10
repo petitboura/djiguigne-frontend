@@ -23,6 +23,7 @@ import { MaMemoire } from "@/components/MaMemoire";
 import { MesComportements } from "@/components/MesComportements";
 import { AgentCard, type AgentResume } from "@/components/AgentCard";
 import { BoutonPartager } from "@/components/BoutonPartager";
+import { Skeleton } from "@/components/Skeleton";
 
 /**
  * Page "Mon espace" (2026-08-01, demande Bourama).
@@ -263,7 +264,9 @@ export default function PageMonEspace() {
       <>
         <TopBar />
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-sm text-dj-texte-muet">Chargement…</p>
+          <p className="animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-sm text-transparent">
+            Chargement…
+          </p>
         </div>
       </>
     );
@@ -310,7 +313,12 @@ export default function PageMonEspace() {
               </Link>
             </div>
 
-            {agents === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {agents === null && (
+              <div className="flex flex-col gap-2" aria-hidden>
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+              </div>
+            )}
             {agents && agents.length === 0 && (
               <p className="text-sm text-dj-texte-muet">Aucune IA créée pour l&apos;instant.</p>
             )}
@@ -353,7 +361,12 @@ export default function PageMonEspace() {
               Les IA dont on t&apos;a confié l&apos;administration.
             </p>
 
-            {agentsAdministres === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {agentsAdministres === null && (
+              <div className="flex flex-col gap-2" aria-hidden>
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+              </div>
+            )}
             {agentsAdministres && agentsAdministres.length === 0 && (
               <p className="text-sm text-dj-texte-muet">Aucune IA à administrer pour l&apos;instant.</p>
             )}
@@ -443,7 +456,12 @@ export default function PageMonEspace() {
               ))}
             </div>
 
-            {fichiersAffiches === null && <p className="text-sm text-dj-texte-muet">Chargement...</p>}
+            {fichiersAffiches === null && (
+              <div className="flex flex-col gap-2" aria-hidden>
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+                <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+              </div>
+            )}
             {fichiersAffiches?.length === 0 && (
               <p className="text-sm text-dj-texte-muet">Rien ici pour l&apos;instant.</p>
             )}

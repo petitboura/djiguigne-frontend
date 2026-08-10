@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Trash2, Plus, X, Check, Maximize2 } from "lucide-react";
 import { lireMesComportements, ajouterComportement, modifierComportement, supprimerComportement, type Comportement } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "./Skeleton";
 
 // Section "Mes comportements" (06/08/2026, demande Bourama : "on peut en
 // mettre plusieurs hein, pas juste un") : PLUSIEURS instructions perso
@@ -136,8 +137,8 @@ export function MesComportements({ agentId }: { agentId: string }) {
   if (liste === undefined) {
     return (
       <div className="flex flex-col gap-2 px-3 pb-3">
-        <div className="h-8 animate-pulse rounded-lg bg-dj-surface-haute" />
-        <div className="h-8 animate-pulse rounded-lg bg-dj-surface-haute" />
+        <Skeleton className="h-8 rounded-lg" />
+        <Skeleton className="h-8 rounded-lg" style={{ animationDelay: "100ms" }} />
       </div>
     );
   }

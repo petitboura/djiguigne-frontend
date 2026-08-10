@@ -43,7 +43,9 @@ export default function PageApplications() {
       <>
         <TopBar />
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-sm text-dj-texte-muet">Chargement…</p>
+          <p className="animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-sm text-transparent">
+            Chargement…
+          </p>
         </div>
       </>
     );

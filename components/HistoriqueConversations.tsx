@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { appelerApi } from "@/lib/api";
 import { PleinEcran } from "@/components/PleinEcran";
+import { Skeleton } from "@/components/Skeleton";
 
 // Ajouté le 2026-07-13 (Bourama : "conversation récente par membre de la
 // plateforme qui se conserve pour chaque agent utilisée, et qui se met
@@ -106,7 +107,12 @@ export function HistoriqueConversations() {
   }
 
   if (conversations === null) {
-    return <p className="px-3 py-3 text-sm text-dj-texte-muet">Chargement...</p>;
+    return (
+      <div className="flex flex-col gap-1.5 px-3 py-3" aria-hidden>
+        <Skeleton className="h-8 rounded-lg" />
+        <Skeleton className="h-8 rounded-lg" style={{ animationDelay: "100ms" }} />
+      </div>
+    );
   }
 
   if (conversations.length === 0) {

@@ -74,7 +74,9 @@ function VueNoeudMaths({ node, updateAttributes, selected }: NodeViewProps) {
           {node.attrs.latex || ""}
         </math-field>
       ) : (
-        <span className="text-xs text-dj-texte-muet">…</span>
+        <span className="animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-xs text-transparent">
+          …
+        </span>
       )}
     </NodeViewWrapper>
   );

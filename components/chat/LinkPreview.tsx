@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink, Play, X } from "lucide-react";
+import { Skeleton } from "../Skeleton";
 
 // Aperçu de lien dans le chat -- demande de Bourama (2026-07-20) : "n'importe
 // quel lien génère un aperçu... comme dans n'importe quelle plateforme"
@@ -115,29 +116,29 @@ export function LinkPreview({ href, texteLien, compact }: { href: string; texteL
   if (!charge) {
     if (compact) {
       return (
-        <span className="my-2 flex h-20 w-full max-w-sm animate-pulse items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-3">
-          <span className="h-14 w-14 shrink-0 rounded-lg bg-dj-surface-haute" />
+        <span className="my-2 flex h-20 w-full max-w-sm items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-3">
+          <Skeleton as="span" className="h-14 w-14 shrink-0 rounded-lg" />
           <span className="flex-1 space-y-2">
-            <span className="block h-3 w-3/4 rounded bg-dj-surface-haute" />
-            <span className="block h-3 w-1/2 rounded bg-dj-surface-haute" />
+            <Skeleton as="span" className="block h-3 w-3/4 rounded" />
+            <Skeleton as="span" className="block h-3 w-1/2 rounded" style={{ animationDelay: "150ms" }} />
           </span>
         </span>
       );
     }
     return idVideo ? (
-      <span className="my-2 block w-full max-w-md animate-pulse overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface">
-        <span className="block aspect-video w-full bg-dj-surface-haute" />
+      <span className="my-2 block w-full max-w-md overflow-hidden rounded-xl border border-dj-bordure bg-dj-surface">
+        <Skeleton as="span" className="block aspect-video w-full" />
         <span className="block space-y-2 p-3">
-          <span className="block h-3.5 w-3/4 rounded bg-dj-surface-haute" />
-          <span className="block h-3 w-1/3 rounded bg-dj-surface-haute" />
+          <Skeleton as="span" className="block h-3.5 w-3/4 rounded" />
+          <Skeleton as="span" className="block h-3 w-1/3 rounded" style={{ animationDelay: "150ms" }} />
         </span>
       </span>
     ) : (
-      <span className="my-2 flex h-24 w-full max-w-md animate-pulse items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-3">
-        <span className="h-20 w-20 shrink-0 rounded-lg bg-dj-surface-haute" />
+      <span className="my-2 flex h-24 w-full max-w-md items-center gap-3 rounded-xl border border-dj-bordure bg-dj-surface px-3">
+        <Skeleton as="span" className="h-20 w-20 shrink-0 rounded-lg" />
         <span className="flex-1 space-y-2">
-          <span className="block h-3.5 w-3/4 rounded bg-dj-surface-haute" />
-          <span className="block h-3 w-1/2 rounded bg-dj-surface-haute" />
+          <Skeleton as="span" className="block h-3.5 w-3/4 rounded" />
+          <Skeleton as="span" className="block h-3 w-1/2 rounded" style={{ animationDelay: "150ms" }} />
         </span>
       </span>
     );

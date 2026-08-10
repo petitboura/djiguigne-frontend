@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Modèles premium (02/08/2026, Bourama : "on va ajouter Claude, GPT et
 // DeepSeek" -- voir core/fournisseurs_llm.py côté backend et la page
@@ -73,7 +74,14 @@ export function ModelesPremiumAgent({ agentId }: { agentId: string }) {
     return <p className="text-sm text-[#F87171]">{erreur}</p>;
   }
   if (!config) {
-    return <p className="text-sm text-dj-texte-muet">Chargement…</p>;
+    return (
+      <div className="flex flex-col gap-2" aria-hidden>
+        <Skeleton className="h-4 w-1/3 rounded" />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "80ms" }} />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "160ms" }} />
+        <Skeleton className="h-9 w-2/3 rounded-lg" style={{ animationDelay: "240ms" }} />
+      </div>
+    );
   }
 
   const aucunAbonnement = !config.distributeur_debloque || config.distributeur_debloque === "aucun";

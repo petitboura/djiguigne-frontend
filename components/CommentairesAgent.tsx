@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
 import { CompteRequisModal } from "@/components/CompteRequisModal";
+import { Skeleton } from "@/components/Skeleton";
 
 // Étape D.3 (pivot social). Contrat backend (api/agents.py) :
 // GET .../comments est public et renvoie une liste brute (pas d'enveloppe
@@ -106,7 +107,10 @@ export function CommentairesAgent({ agentId }: { agentId: string }) {
 
       <div className="flex flex-col gap-3">
         {commentaires === null && (
-          <p className="text-sm text-dj-texte-muet">Chargement...</p>
+          <div className="flex flex-col gap-2" aria-hidden>
+            <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+            <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+          </div>
         )}
         {commentaires?.length === 0 && (
           <p className="text-sm text-dj-texte-muet">Aucun commentaire pour l'instant.</p>

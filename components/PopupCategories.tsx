@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { appelerApi } from "@/lib/api";
 import { PleinEcran } from "@/components/PleinEcran";
+import { Skeleton } from "@/components/Skeleton";
 
 export type Categorie = {
   id: string;
@@ -113,7 +114,11 @@ export function PopupCategories({
       </div>
       <div className="max-h-[60vh] overflow-y-auto">
         {categories === null && (
-          <p className="px-3 py-4 text-sm text-dj-texte-muet">Chargement...</p>
+          <div className="space-y-1.5 px-3 py-3" aria-hidden>
+            <Skeleton className="h-3 w-3/4 rounded" />
+            <Skeleton className="h-3 w-1/2 rounded" style={{ animationDelay: "120ms" }} />
+            <Skeleton className="h-3 w-2/3 rounded" style={{ animationDelay: "240ms" }} />
+          </div>
         )}
         {categories && groupees.length === 0 && (
           <p className="px-3 py-4 text-sm text-dj-texte-muet">Aucune catégorie ne correspond.</p>

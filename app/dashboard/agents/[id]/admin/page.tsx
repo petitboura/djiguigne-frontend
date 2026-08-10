@@ -9,6 +9,7 @@ import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Page "espace admin" simplifiée (2026-08-04, demande de Bourama : "une
 // autre qui cache la complexité"). Volontairement réduite à 3 champs --
@@ -208,7 +209,11 @@ export default function PageAdminAgent() {
     return (
       <div className="min-h-screen">
         <TopBar />
-        <p className="px-5 py-10 text-dj-texte-muet">Chargement...</p>
+        <div className="flex flex-col gap-2 px-5 py-10" aria-hidden>
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" />
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+          <Skeleton className="h-14 rounded-xl border border-dj-bordure" style={{ animationDelay: "200ms" }} />
+        </div>
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { lireDroitsAgent, modifierDroitsAgent } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Formulaire des droits d'un agent -- categories 1 (generation, par
 // outil), 2 et 3 (serveur externe, par serveur entier). Voir
@@ -116,7 +117,14 @@ export function DroitsAgent({ agentId }: { agentId: string }) {
     return <p className="text-sm text-red-500">{erreur}</p>;
   }
   if (!droits) {
-    return <p className="text-sm text-neutral-500">Chargement des droits…</p>;
+    return (
+      <div className="flex flex-col gap-2" aria-hidden>
+        <Skeleton className="h-4 w-1/3 rounded" />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "80ms" }} />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "160ms" }} />
+        <Skeleton className="h-9 w-2/3 rounded-lg" style={{ animationDelay: "240ms" }} />
+      </div>
+    );
   }
 
   // Regroupe la categorie 2/3 par serveur (une seule ligne registre par

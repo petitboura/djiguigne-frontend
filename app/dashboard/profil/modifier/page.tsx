@@ -18,6 +18,7 @@ import { ChampImage } from "@/components/ChampImage";
 import { IconeGenerique } from "@/components/icones/IconeGenerique";
 import { NotificationsPushToggle } from "@/components/NotificationsPushToggle";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Formulaire d'édition de profil, déplacé depuis app/dashboard/page.tsx
 // le 2026-07-12 (Bourama : "Mon espace" doit maintenant ressembler au
@@ -273,7 +274,12 @@ function SectionZoneDanger({ userId }: { userId: string }) {
 
       <div>
         <p className="text-sm font-medium text-dj-texte">Supprimer un agent</p>
-        {agents === null && <p className="mt-1 text-xs text-dj-texte-muet">Chargement…</p>}
+        {agents === null && (
+          <div className="mt-1 flex flex-col gap-1.5" aria-hidden>
+            <Skeleton className="h-9 rounded-xl border border-dj-bordure" />
+            <Skeleton className="h-9 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+          </div>
+        )}
         {agents?.length === 0 && <p className="mt-1 text-xs text-dj-texte-muet">Aucun agent créé.</p>}
         {agents && agents.length > 0 && (
           <div className="mt-2 flex flex-col gap-1.5">
@@ -308,7 +314,12 @@ function SectionZoneDanger({ userId }: { userId: string }) {
 
       <div>
         <p className="text-sm font-medium text-dj-texte">Supprimer une histoire</p>
-        {histoires === null && <p className="mt-1 text-xs text-dj-texte-muet">Chargement…</p>}
+        {histoires === null && (
+          <div className="mt-1 flex flex-col gap-1.5" aria-hidden>
+            <Skeleton className="h-9 rounded-xl border border-dj-bordure" />
+            <Skeleton className="h-9 rounded-xl border border-dj-bordure" style={{ animationDelay: "100ms" }} />
+          </div>
+        )}
         {histoires?.length === 0 && <p className="mt-1 text-xs text-dj-texte-muet">Aucune histoire publiée.</p>}
         {histoires && histoires.length > 0 && (
           <div className="mt-2 flex flex-col gap-1.5">

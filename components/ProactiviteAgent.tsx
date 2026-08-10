@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { appelerApi } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Proactivité (25/07) : le créateur décide QUAND (délai d'inactivité), à
 // quelle fréquence max, et POURQUOI/COMMENT (instructions libres, comme le
@@ -101,7 +102,14 @@ export function ProactiviteAgent({ agentId }: { agentId: string }) {
     return <p className="text-sm text-[#F87171]">{erreur}</p>;
   }
   if (!config) {
-    return <p className="text-sm text-dj-texte-muet">Chargement…</p>;
+    return (
+      <div className="flex flex-col gap-2" aria-hidden>
+        <Skeleton className="h-4 w-1/3 rounded" />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "80ms" }} />
+        <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "160ms" }} />
+        <Skeleton className="h-9 w-2/3 rounded-lg" style={{ animationDelay: "240ms" }} />
+      </div>
+    );
   }
 
   return (

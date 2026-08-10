@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { lireRegistreOutils } from "@/lib/api";
 import { messageErreur } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // Variante de DroitsAgent.tsx pour le formulaire de CRÉATION : l'agent
 // n'existe pas encore, donc pas d'agentId, pas de lecture "coche" déjà
@@ -89,7 +90,14 @@ export function DroitsAgentCreation({
   }
 
   if (erreur) return <p className="text-sm text-red-500">{erreur}</p>;
-  if (!registre) return <p className="text-sm text-dj-texte-muet">Chargement des droits…</p>;
+  if (!registre) return (
+    <div className="flex flex-col gap-2" aria-hidden>
+      <Skeleton className="h-4 w-1/3 rounded" />
+      <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "80ms" }} />
+      <Skeleton className="h-9 w-full rounded-lg" style={{ animationDelay: "160ms" }} />
+      <Skeleton className="h-9 w-2/3 rounded-lg" style={{ animationDelay: "240ms" }} />
+    </div>
+  );
 
   const serveursParNom = new Map<string, OutilPlateforme>();
   for (const s of registre.serveurs) serveursParNom.set(s.nom_serveur, s);

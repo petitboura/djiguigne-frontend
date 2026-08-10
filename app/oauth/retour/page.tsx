@@ -55,7 +55,15 @@ export default function PageRetourOAuth() {
           etat === "en_cours" ? "animate-pulse bg-dj-accent-1" : etat === "succes" ? "bg-green-500" : "bg-red-500"
         }`}
       />
-      <p className="text-dj-texte">{message}</p>
+      <p
+        className={
+          etat === "en_cours"
+            ? "animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-transparent"
+            : "text-dj-texte"
+        }
+      >
+        {message}
+      </p>
       {etat !== "en_cours" && (
         <Link href="/" className="text-sm text-dj-accent-1 transition-colors hover:text-dj-accent-2">
           Retourner à Djiguignè

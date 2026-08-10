@@ -12,6 +12,7 @@ import { BlocCode } from "./BlocCode";
 import hljs from "@/lib/coloration";
 import katex from "katex";
 import { messageErreur, ErreurApi } from "@/lib/erreurs";
+import { Skeleton } from "@/components/Skeleton";
 
 // EditeurMathsRiche (tiptap + mathlive) et EditeurFormule (mathlive) ne
 // montent que quand leur modale respective s'ouvre (voir
@@ -1046,7 +1047,13 @@ export function BarreDeSaisie({
             className={`mb-1 w-full rounded-lg border border-dj-bordure ${fondChamp} px-3 py-2 text-sm text-dj-texte outline-none placeholder:text-dj-texte-muet`}
           />
           <div className="max-h-56 overflow-y-auto">
-            {lignesBaseEnCours && <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement...</p>}
+            {lignesBaseEnCours && (
+              <div className="space-y-1.5 px-3 py-2" aria-hidden>
+                <Skeleton className="h-3 w-3/4 rounded" />
+                <Skeleton className="h-3 w-1/2 rounded" style={{ animationDelay: "120ms" }} />
+                <Skeleton className="h-3 w-2/3 rounded" style={{ animationDelay: "240ms" }} />
+              </div>
+            )}
             {!lignesBaseEnCours && lignesBaseListe?.length === 0 && (
               <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucune ligne trouvée.</p>
             )}
@@ -1606,7 +1613,11 @@ export function BarreDeSaisie({
                 {selecteurOuvert && (
                   <div className="absolute bottom-full left-0 z-30 mb-2 max-h-64 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-dj-bordure bg-dj-surface-haute p-1 shadow-xl">
                     {depots === null && (
-                      <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes dépôts...</p>
+                      <div className="space-y-1.5 px-3 py-2" aria-hidden>
+                        <Skeleton className="h-3 w-3/4 rounded" />
+                        <Skeleton className="h-3 w-1/2 rounded" style={{ animationDelay: "120ms" }} />
+                        <Skeleton className="h-3 w-2/3 rounded" style={{ animationDelay: "240ms" }} />
+                      </div>
                     )}
                     {depots?.length === 0 && (
                       <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucun dépôt trouvé.</p>
@@ -2645,7 +2656,11 @@ export function BarreDeSaisie({
           className="fixed inset-x-4 bottom-24 z-40 max-h-[60vh] overflow-y-auto rounded-2xl border border-dj-bordure bg-dj-surface p-1 shadow-xl md:hidden"
         >
           {depots === null && (
-            <p className="px-3 py-2 text-xs text-dj-texte-muet">Chargement de tes dépôts...</p>
+            <div className="space-y-1.5 px-3 py-2" aria-hidden>
+              <Skeleton className="h-3 w-3/4 rounded" />
+              <Skeleton className="h-3 w-1/2 rounded" style={{ animationDelay: "120ms" }} />
+              <Skeleton className="h-3 w-2/3 rounded" style={{ animationDelay: "240ms" }} />
+            </div>
           )}
           {depots?.length === 0 && (
             <p className="px-3 py-2 text-xs text-dj-texte-muet">Aucun dépôt trouvé.</p>

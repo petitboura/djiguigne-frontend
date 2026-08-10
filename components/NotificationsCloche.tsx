@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { appelerApi } from "@/lib/api";
 import { PleinEcran } from "@/components/PleinEcran";
+import { Skeleton } from "@/components/Skeleton";
 
 // Demande de Bourama (2026-07-15) : "un icone notification juste à côté
 // de mon espace et dès que tu clique, un pop up qui affiche les
@@ -375,7 +376,11 @@ export function NotificationsCloche() {
 
             <div className="max-h-96 overflow-y-auto">
               {notifications === null && (
-                <p className="px-3 py-4 text-sm text-dj-texte-muet">Chargement...</p>
+                <div className="space-y-1.5 px-3 py-3" aria-hidden>
+                  <Skeleton className="h-3 w-3/4 rounded" />
+                  <Skeleton className="h-3 w-1/2 rounded" style={{ animationDelay: "120ms" }} />
+                  <Skeleton className="h-3 w-2/3 rounded" style={{ animationDelay: "240ms" }} />
+                </div>
               )}
               {notifications?.length === 0 && (
                 <p className="px-3 py-4 text-sm text-dj-texte-muet">

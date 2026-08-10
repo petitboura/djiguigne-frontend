@@ -320,7 +320,11 @@ export function EditeurFormule({
             onInput={notifierMaths}
             className="w-full rounded-lg border border-dj-bordure bg-dj-surface px-3 py-3 text-lg text-dj-texte"
           />
-          {!mathliveInstalle && <p className="mt-1 text-xs text-dj-texte-muet">Chargement de l'éditeur...</p>}
+          {!mathliveInstalle && (
+            <p className="mt-1 animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-xs text-transparent">
+              Chargement de l'éditeur...
+            </p>
+          )}
         </>
       ) : (
         <>

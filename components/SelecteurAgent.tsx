@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { messageErreur } from "@/lib/erreurs";
 import { BoutonDevenirCreateur } from "@/components/BoutonDevenirCreateur";
 import { IconeGenerique } from "@/components/icones/IconeGenerique";
+import { Skeleton } from "@/components/Skeleton";
 
 // Ajouté le 31/07 (Bourama : "je veux que ce soit l'interface d'un chat en
 // premier") -- reprend le principe des boutons de la page Services de la
@@ -325,7 +326,9 @@ export function SelecteurAgent() {
             {chargement ? (
               <div className="flex items-center justify-center gap-2 text-sm text-dj-texte-muet animate-dj-fade-in-rapide sm:justify-start">
                 <Loader2 size={16} className="animate-spin text-dj-accent-1" />
-                Chargement…
+                <span className="animate-dj-shimmer bg-dj-shimmer-texte bg-[length:200%_100%] bg-clip-text text-transparent">
+                  Chargement…
+                </span>
               </div>
             ) : erreur ? (
               <p className="text-center text-sm text-dj-texte-muet sm:text-left">{erreur}</p>

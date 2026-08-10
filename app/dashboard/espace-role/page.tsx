@@ -13,6 +13,7 @@ import { messageErreur } from "@/lib/erreurs";
 import { TopBar } from "@/components/TopBar";
 import { BoutonRetour } from "@/components/BoutonRetour";
 import { BoutonAccueil } from "@/components/BoutonAccueil";
+import { Skeleton } from "@/components/Skeleton";
 
 /**
  * Espace par rôle (2026-08-05, tâche F) -- atterrissage dédié pour un
@@ -193,9 +194,9 @@ export default function PageEspaceRole() {
         {chargement && (
           <div className="mt-6 space-y-2" aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div
+              <Skeleton
                 key={i}
-                className="h-12 animate-pulse rounded-lg border border-dj-bordure bg-dj-surface-haute"
+                className="h-12 rounded-lg border border-dj-bordure"
                 style={{ animationDelay: `${i * 100}ms` }}
               />
             ))}
